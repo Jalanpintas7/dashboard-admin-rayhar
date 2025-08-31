@@ -19,15 +19,22 @@
     airline: '',
     flightName: '',
     deskripsi: '',
-    // Harga berdasarkan tipe bilik
+    // Harga berdasarkan tipe bilik (untuk paket non-cruise)
     hargaDouble: 0,
     hargaTriple: 0,
     hargaQuadruple: 0,
     hargaQuintuple: 0,
-    // Harga untuk anak dan infant
+    // Harga untuk anak dan infant (untuk paket non-cruise)
     hargaCWB: 0,    // Child With Bed
     hargaCNB: 0,    // Child No Bed
-    hargaInfant: 0  // Infant
+    hargaInfant: 0,  // Infant
+    // Harga berdasarkan deck (untuk paket cruise)
+    lowDeckInterior: 0,
+    lowDeckSeaview: 0,
+    lowDeckBalcony: 0,
+    highDeckInterior: 0,
+    highDeckSeaview: 0,
+    highDeckBalcony: 0
   };
 
   // Load data dari database
@@ -60,6 +67,10 @@
   $: selectedKategori = categories.find(c => c.id === packageData.kategoriId);
   $: selectedAirline = airlines.find(a => a.id === packageData.airline);
 
+  // Check if this is a cruise package
+  $: isCruisePackage = selectedMusim?.name === 'Umrah Cruise' && 
+    (selectedKategori?.name === 'PELAYARAN' || selectedKategori?.name === 'UMRAH + PELAYARAN');
+
   let isSubmitting = false;
   let submitMessage = '';
   let submitMessageType = '';
@@ -90,7 +101,8 @@
       return;
     }
 
-    if (!packageData.airline) {
+    // Validasi airline hanya untuk paket non-cruise
+    if (!isCruisePackage && !packageData.airline) {
       showMessage('Pilih maskapai penerbangan', 'error');
       return;
     }
@@ -100,23 +112,41 @@
 
     try {
       // Persiapkan data untuk database
-      const packageDataForDB = {
+      let packageDataForDB = {
         start_date: packageData.tanggalBerangkat,
         end_date: packageData.tanggalKembali,
         umrah_season_id: packageData.musimId,
         umrah_category_id: packageData.kategoriId,
-        airline_id: packageData.airline,
         flight_name: packageData.flightName.trim() || null,
-        // Harga berdasarkan tipe bilik
-        double: packageData.hargaDouble || 0,
-        triple: packageData.hargaTriple || 0,
-        quadruple: packageData.hargaQuadruple || 0,
-        quintuple: packageData.hargaQuintuple || 0,
-        // Harga untuk anak dan infant
-        cwb: packageData.hargaCWB || 0,
-        cnb: packageData.hargaCNB || 0,
-        infant: packageData.hargaInfant || 0
       };
+
+      if (isCruisePackage) {
+        // Untuk paket cruise, gunakan harga berdasarkan deck
+        packageDataForDB = {
+          ...packageDataForDB,
+          low_deck_interior: packageData.lowDeckInterior || 0,
+          low_deck_seaview: packageData.lowDeckSeaview || 0,
+          low_deck_balcony: packageData.lowDeckBalcony || 0,
+          high_deck_interior: packageData.highDeckInterior || 0,
+          high_deck_seaview: packageData.highDeckSeaview || 0,
+          high_deck_balcony: packageData.highDeckBalcony || 0
+        };
+      } else {
+        // Untuk paket non-cruise, gunakan harga berdasarkan tipe bilik dan anak/infant
+        packageDataForDB = {
+          ...packageDataForDB,
+          airline_id: packageData.airline,
+          // Harga berdasarkan tipe bilik
+          double: packageData.hargaDouble || 0,
+          triple: packageData.hargaTriple || 0,
+          quadruple: packageData.hargaQuadruple || 0,
+          quintuple: packageData.hargaQuintuple || 0,
+          // Harga untuk anak dan infant
+          cwb: packageData.hargaCWB || 0,
+          cnb: packageData.hargaCNB || 0,
+          infant: packageData.hargaInfant || 0
+        };
+      }
 
       // Simpan ke database menggunakan Supabase
       const result = await createUmrahPackage(packageDataForDB);
@@ -142,7 +172,14 @@
         // Reset harga anak dan infant
         hargaCWB: 0,
         hargaCNB: 0,
-        hargaInfant: 0
+        hargaInfant: 0,
+        // Reset harga deck
+        lowDeckInterior: 0,
+        lowDeckSeaview: 0,
+        lowDeckBalcony: 0,
+        highDeckInterior: 0,
+        highDeckSeaview: 0,
+        highDeckBalcony: 0
       };
 
     } catch (error) {
@@ -265,8 +302,6 @@
         </div>
       </div>
 
-      
-
       <!-- Tanggal Berangkat dan Kembali -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         <div>
@@ -296,175 +331,294 @@
         </div>
       </div>
 
-      <!-- Airline dan Flight Name -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+      <!-- Airline dan Flight Name (hanya untuk paket non-cruise) -->
+      {#if !isCruisePackage}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <div>
+            <label for="airline" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+              Pilih Airline *
+            </label>
+            <select
+              id="airline"
+              bind:value={packageData.airline}
+              required
+              class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+            >
+              <option value="">Pilih Airline</option>
+              {#each airlines as airline}
+                <option value={airline.id}>
+                  {airline.name}
+                </option>
+              {/each}
+            </select>
+          </div>
+
+          <div>
+            <label for="flightName" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+              Nama Penerbangan
+            </label>
+            <input
+              id="flightName"
+              type="text"
+              bind:value={packageData.flightName}
+              placeholder="Contoh: MH1234"
+              class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+            />
+          </div>
+        </div>
+      {/if}
+
+      <!-- Harga berdasarkan deck (untuk paket cruise) -->
+      {#if isCruisePackage}
         <div>
-          <label for="airline" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-            Pilih Airline *
-          </label>
-          <select
-            id="airline"
-            bind:value={packageData.airline}
-            required
-            class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-          >
-            <option value="">Pilih Airline</option>
-            {#each airlines as airline}
-              <option value={airline.id}>
-                {airline.name}
-              </option>
-            {/each}
-          </select>
-        </div>
+          <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Berdasarkan Deck dan Tipe Bilik:</h4>
+          
+          <!-- Low Deck -->
+          <div class="mb-4">
+            <h5 class="font-medium text-slate-700 mb-3 text-sm">Low Deck</h5>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+              <div>
+                <label for="lowDeckInterior" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                  Interior
+                </label>
+                <input
+                  id="lowDeckInterior"
+                  type="number"
+                  bind:value={packageData.lowDeckInterior}
+                  min="0"
+                  placeholder="0"
+                  class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                />
+                {#if packageData.lowDeckInterior > 0}
+                  <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.lowDeckInterior)}</p>
+                {/if}
+              </div>
 
+              <div>
+                <label for="lowDeckSeaview" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                  Sea View
+                </label>
+                <input
+                  id="lowDeckSeaview"
+                  type="number"
+                  bind:value={packageData.lowDeckSeaview}
+                  min="0"
+                  placeholder="0"
+                  class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                />
+                {#if packageData.lowDeckSeaview > 0}
+                  <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.lowDeckSeaview)}</p>
+                {/if}
+              </div>
+
+              <div>
+                <label for="lowDeckBalcony" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                  Balcony
+                </label>
+                <input
+                  id="lowDeckBalcony"
+                  type="number"
+                  bind:value={packageData.lowDeckBalcony}
+                  min="0"
+                  placeholder="0"
+                  class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                />
+                {#if packageData.lowDeckBalcony > 0}
+                  <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.lowDeckBalcony)}</p>
+                {/if}
+              </div>
+            </div>
+          </div>
+
+          <!-- High Deck -->
+          <div>
+            <h5 class="font-medium text-slate-700 mb-3 text-sm">High Deck</h5>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+              <div>
+                <label for="highDeckInterior" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                  Interior
+                </label>
+                <input
+                  id="highDeckInterior"
+                  type="number"
+                  bind:value={packageData.highDeckInterior}
+                  min="0"
+                  placeholder="0"
+                  class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                />
+                {#if packageData.highDeckInterior > 0}
+                  <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.highDeckInterior)}</p>
+                {/if}
+              </div>
+
+              <div>
+                <label for="highDeckSeaview" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                  Sea View
+                </label>
+                <input
+                  id="highDeckSeaview"
+                  type="number"
+                  bind:value={packageData.highDeckSeaview}
+                  min="0"
+                  placeholder="0"
+                  class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                />
+                {#if packageData.highDeckSeaview > 0}
+                  <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.highDeckSeaview)}</p>
+                {/if}
+              </div>
+
+              <div>
+                <label for="highDeckBalcony" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                  Balcony
+                </label>
+                <input
+                  id="highDeckBalcony"
+                  type="number"
+                  bind:value={packageData.highDeckBalcony}
+                  min="0"
+                  placeholder="0"
+                  class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                />
+                {#if packageData.highDeckBalcony > 0}
+                  <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.highDeckBalcony)}</p>
+                {/if}
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else}
+        <!-- Harga Bilik (untuk paket non-cruise) -->
         <div>
-          <label for="flightName" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-            Nama Penerbangan
-          </label>
-          <input
-            id="flightName"
-            type="text"
-            bind:value={packageData.flightName}
-            placeholder="Contoh: MH1234"
-            class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-          />
-        </div>
-      </div>
+          <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Berdasarkan Tipe Bilik:</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div>
+              <label for="hargaDouble" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                Harga Double Room
+              </label>
+              <input
+                id="hargaDouble"
+                type="number"
+                bind:value={packageData.hargaDouble}
+                min="0"
+                placeholder="0"
+                class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              />
+              {#if packageData.hargaDouble > 0}
+                <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaDouble)}</p>
+              {/if}
+            </div>
 
-      
+            <div>
+              <label for="hargaTriple" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                Harga Triple Room
+              </label>
+              <input
+                id="hargaTriple"
+                type="number"
+                bind:value={packageData.hargaTriple}
+                min="0"
+                placeholder="0"
+                class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              />
+              {#if packageData.hargaTriple > 0}
+                <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaTriple)}</p>
+              {/if}
+            </div>
 
-      <!-- Harga Bilik -->
-      <div>
-        <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Berdasarkan Tipe Bilik:</h4>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div>
-            <label for="hargaDouble" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-              Harga Double Room
-            </label>
-            <input
-              id="hargaDouble"
-              type="number"
-              bind:value={packageData.hargaDouble}
-              min="0"
-              placeholder="0"
-              class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-            />
-            {#if packageData.hargaDouble > 0}
-              <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaDouble)}</p>
-            {/if}
-          </div>
+            <div>
+              <label for="hargaQuadruple" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                Harga Quadruple Room
+              </label>
+              <input
+                id="hargaQuadruple"
+                type="number"
+                bind:value={packageData.hargaQuadruple}
+                min="0"
+                placeholder="0"
+                class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              />
+              {#if packageData.hargaQuadruple > 0}
+                <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaQuadruple)}</p>
+              {/if}
+            </div>
 
-          <div>
-            <label for="hargaTriple" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-              Harga Triple Room
-            </label>
-            <input
-              id="hargaTriple"
-              type="number"
-              bind:value={packageData.hargaTriple}
-              min="0"
-              placeholder="0"
-              class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-            />
-            {#if packageData.hargaTriple > 0}
-              <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaTriple)}</p>
-            {/if}
-          </div>
-
-          <div>
-            <label for="hargaQuadruple" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-              Harga Quadruple Room
-            </label>
-            <input
-              id="hargaQuadruple"
-              type="number"
-              bind:value={packageData.hargaQuadruple}
-              min="0"
-              placeholder="0"
-              class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-            />
-            {#if packageData.hargaQuadruple > 0}
-              <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaQuadruple)}</p>
-            {/if}
-          </div>
-
-          <div>
-            <label for="hargaQuintuple" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-              Harga Quintuple Room
-            </label>
-            <input
-              id="hargaQuintuple"
-              type="number"
-              bind:value={packageData.hargaQuintuple}
-              min="0"
-              placeholder="0"
-              class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-            />
-            {#if packageData.hargaQuintuple > 0}
-              <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaQuintuple)}</p>
-            {/if}
+            <div>
+              <label for="hargaQuintuple" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                Harga Quintuple Room
+              </label>
+              <input
+                id="hargaQuintuple"
+                type="number"
+                bind:value={packageData.hargaQuintuple}
+                min="0"
+                placeholder="0"
+                class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              />
+              {#if packageData.hargaQuintuple > 0}
+                <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaQuintuple)}</p>
+              {/if}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Harga Anak dan Infant -->
-      <div>
-        <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Anak dan Infant:</h4>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-          <div>
-            <label for="hargaCWB" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-              Harga CWB (Child With Bed)
-            </label>
-            <input
-              id="hargaCWB"
-              type="number"
-              bind:value={packageData.hargaCWB}
-              min="0"
-              placeholder="0"
-              class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-            />
-            {#if packageData.hargaCWB > 0}
-              <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaCWB)}</p>
-            {/if}
-          </div>
+        <!-- Harga Anak dan Infant (untuk paket non-cruise) -->
+        <div>
+          <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Anak dan Infant:</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+            <div>
+              <label for="hargaCWB" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                Harga CWB (Child With Bed)
+              </label>
+              <input
+                id="hargaCWB"
+                type="number"
+                bind:value={packageData.hargaCWB}
+                min="0"
+                placeholder="0"
+                class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              />
+              {#if packageData.hargaCWB > 0}
+                <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaCWB)}</p>
+              {/if}
+            </div>
 
-          <div>
-            <label for="hargaCNB" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-              Harga CNB (Child No Bed)
-            </label>
-            <input
-              id="hargaCNB"
-              type="number"
-              bind:value={packageData.hargaCNB}
-              min="0"
-              placeholder="0"
-              class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-            />
-            {#if packageData.hargaCNB > 0}
-              <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaCNB)}</p>
-            {/if}
-          </div>
+            <div>
+              <label for="hargaCNB" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                Harga CNB (Child No Bed)
+              </label>
+              <input
+                id="hargaCNB"
+                type="number"
+                bind:value={packageData.hargaCNB}
+                min="0"
+                placeholder="0"
+                class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              />
+              {#if packageData.hargaCNB > 0}
+                <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaCNB)}</p>
+              {/if}
+            </div>
 
-          <div>
-            <label for="hargaInfant" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-              Harga Infant
-            </label>
-            <input
-              id="hargaInfant"
-              type="number"
-              bind:value={packageData.hargaInfant}
-              min="0"
-              placeholder="0"
-              class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-            />
-            {#if packageData.hargaInfant > 0}
-              <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaInfant)}</p>
-            {/if}
+            <div>
+              <label for="hargaInfant" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+                Harga Infant
+              </label>
+              <input
+                id="hargaInfant"
+                type="number"
+                bind:value={packageData.hargaInfant}
+                min="0"
+                placeholder="0"
+                class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+              />
+              {#if packageData.hargaInfant > 0}
+                <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaInfant)}</p>
+              {/if}
+            </div>
           </div>
         </div>
-      </div>
-
-
+      {/if}
 
       <!-- Tombol Submit -->
       <button

@@ -664,7 +664,6 @@
               <tr>
                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Paket</th>
                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Periode</th>
-                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Harga Double</th>
                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
@@ -693,9 +692,6 @@
                       <div>{formatDate(umrahPackage.start_date)}</div>
                       <div class="text-xs text-slate-400">s/d {formatDate(umrahPackage.end_date)}</div>
                     </div>
-                  </td>
-                  <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900">
-                    {formatCurrency(umrahPackage.double || 0)}
                   </td>
 
                   <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
@@ -935,74 +931,141 @@
             </div>
           </div>
 
-                                <!-- Harga Paket -->
-           <div class="space-y-4">
-             <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-               <DollarSign class="w-5 h-5 text-green-600" />
-               Harga Paket
-             </h3>
-             
-             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-               {#if selectedItem.quintuple}
-                 <div class="bg-green-50 p-4 rounded-lg">
-                   <p class="text-sm text-gray-500">Quintuple</p>
-                   <p class="text-lg font-semibold text-green-700">{formatCurrency(selectedItem.quintuple)}</p>
-                 </div>
-               {/if}
-               
-               {#if selectedItem.quadruple}
-                 <div class="bg-blue-50 p-4 rounded-lg">
-                   <p class="text-sm text-gray-500">Quadruple</p>
-                   <p class="text-lg font-semibold text-blue-700">{formatCurrency(selectedItem.quadruple)}</p>
-                 </div>
-               {/if}
-               
-               {#if selectedItem.triple}
-                 <div class="bg-yellow-50 p-4 rounded-lg">
-                   <p class="text-sm text-gray-500">Triple</p>
-                   <p class="text-lg font-semibold text-yellow-700">{formatCurrency(selectedItem.triple)}</p>
-                 </div>
-               {/if}
-               
-               {#if selectedItem.double}
-                 <div class="bg-purple-50 p-4 rounded-lg">
-                   <p class="text-sm text-gray-500">Double</p>
-                   <p class="text-lg font-semibold text-purple-700">{formatCurrency(selectedItem.double)}</p>
-                 </div>
-               {/if}
-             </div>
-           </div>
+          <!-- Harga Paket - dengan pengkondisian untuk cruise -->
+          {#if selectedItem.umrah_categories?.name === 'PELAYARAN' || selectedItem.umrah_categories?.name === 'UMRAH + PELAYARAN'}
+            <!-- Harga Deck untuk Cruise -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <DollarSign class="w-5 h-5 text-blue-600" />
+                Harga Deck Cruise
+              </h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Low Deck -->
+                <div class="space-y-4">
+                  <h4 class="text-md font-semibold text-gray-800 border-b border-gray-200 pb-2">Low Deck</h4>
+                  <div class="grid grid-cols-1 gap-3">
+                    {#if selectedItem.low_deck_interior}
+                      <div class="bg-blue-50 p-3 rounded-lg">
+                        <p class="text-sm text-gray-600">Interior</p>
+                        <p class="text-lg font-semibold text-blue-700">{formatCurrency(selectedItem.low_deck_interior)}</p>
+                      </div>
+                    {/if}
+                    
+                    {#if selectedItem.low_deck_seaview}
+                      <div class="bg-green-50 p-3 rounded-lg">
+                        <p class="text-sm text-gray-600">Sea View</p>
+                        <p class="text-lg font-semibold text-green-700">{formatCurrency(selectedItem.low_deck_seaview)}</p>
+                      </div>
+                    {/if}
+                    
+                    {#if selectedItem.low_deck_balcony}
+                      <div class="bg-purple-50 p-3 rounded-lg">
+                        <p class="text-sm text-gray-600">Balcony</p>
+                        <p class="text-lg font-semibold text-purple-700">{formatCurrency(selectedItem.low_deck_balcony)}</p>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+                
+                <!-- High Deck -->
+                <div class="space-y-4">
+                  <h4 class="text-md font-semibold text-gray-800 border-b border-gray-200 pb-2">High Deck</h4>
+                  <div class="grid grid-cols-1 gap-3">
+                    {#if selectedItem.high_deck_interior}
+                      <div class="bg-blue-50 p-3 rounded-lg">
+                        <p class="text-sm text-gray-600">Interior</p>
+                        <p class="text-lg font-semibold text-blue-700">{formatCurrency(selectedItem.high_deck_interior)}</p>
+                      </div>
+                    {/if}
+                    
+                    {#if selectedItem.high_deck_seaview}
+                      <div class="bg-green-50 p-3 rounded-lg">
+                        <p class="text-sm text-gray-600">Sea View</p>
+                        <p class="text-lg font-semibold text-green-700">{formatCurrency(selectedItem.high_deck_seaview)}</p>
+                      </div>
+                    {/if}
+                    
+                    {#if selectedItem.high_deck_balcony}
+                      <div class="bg-purple-50 p-3 rounded-lg">
+                        <p class="text-sm text-gray-600">Balcony</p>
+                        <p class="text-lg font-semibold text-purple-700">{formatCurrency(selectedItem.high_deck_balcony)}</p>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {:else}
+            <!-- Harga Bilik untuk Paket Umrah Biasa -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <DollarSign class="w-5 h-5 text-green-600" />
+                Harga Paket
+              </h3>
+              
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {#if selectedItem.quintuple}
+                  <div class="bg-green-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-500">Quintuple</p>
+                    <p class="text-lg font-semibold text-green-700">{formatCurrency(selectedItem.quintuple)}</p>
+                  </div>
+                {/if}
+                
+                {#if selectedItem.quadruple}
+                  <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-500">Quadruple</p>
+                    <p class="text-lg font-semibold text-blue-700">{formatCurrency(selectedItem.quadruple)}</p>
+                  </div>
+                {/if}
+                
+                {#if selectedItem.triple}
+                  <div class="bg-yellow-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-500">Triple</p>
+                    <p class="text-lg font-semibold text-yellow-700">{formatCurrency(selectedItem.triple)}</p>
+                  </div>
+                {/if}
+                
+                {#if selectedItem.double}
+                  <div class="bg-purple-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-500">Double</p>
+                    <p class="text-lg font-semibold text-purple-700">{formatCurrency(selectedItem.double)}</p>
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/if}
 
-           <!-- Harga Kategori Khusus -->
-           <div class="space-y-4">
-             <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-               <DollarSign class="w-5 h-5 text-orange-600" />
-               Harga Kategori Khusus
-             </h3>
-             
-             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-               {#if selectedItem.cwb}
-                 <div class="bg-orange-50 p-4 rounded-lg">
-                   <p class="text-sm text-gray-500">CWB (Child With Bed)</p>
-                   <p class="text-lg font-semibold text-orange-700">{formatCurrency(selectedItem.cwb)}</p>
-                 </div>
-               {/if}
-               
-               {#if selectedItem.cnb}
-                 <div class="bg-red-50 p-4 rounded-lg">
-                   <p class="text-sm text-gray-500">CNB (Child No Bed)</p>
-                   <p class="text-lg font-semibold text-red-700">{formatCurrency(selectedItem.cnb)}</p>
-                 </div>
-               {/if}
-               
-               {#if selectedItem.infant}
-                 <div class="bg-pink-50 p-4 rounded-lg">
-                   <p class="text-sm text-gray-500">Infant</p>
-                   <p class="text-lg font-semibold text-pink-700">{formatCurrency(selectedItem.infant)}</p>
-                 </div>
-               {/if}
-             </div>
-           </div>
+          <!-- Harga Kategori Khusus -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <DollarSign class="w-5 h-5 text-orange-600" />
+              Harga Kategori Khusus
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {#if selectedItem.cwb}
+                <div class="bg-orange-50 p-4 rounded-lg">
+                  <p class="text-sm text-gray-500">CWB (Child With Bed)</p>
+                  <p class="text-lg font-semibold text-orange-700">{formatCurrency(selectedItem.cwb)}</p>
+                </div>
+              {/if}
+              
+              {#if selectedItem.cnb}
+                <div class="bg-red-50 p-4 rounded-lg">
+                  <p class="text-sm text-gray-500">CNB (Child No Bed)</p>
+                  <p class="text-lg font-semibold text-red-700">{formatCurrency(selectedItem.cnb)}</p>
+                </div>
+              {/if}
+              
+              {#if selectedItem.infant}
+                <div class="bg-pink-50 p-4 rounded-lg">
+                  <p class="text-sm text-gray-500">Infant</p>
+                  <p class="text-lg font-semibold text-pink-700">{formatCurrency(selectedItem.infant)}</p>
+                </div>
+              {/if}
+            </div>
+          </div>
         {/if}
       </div>
 
