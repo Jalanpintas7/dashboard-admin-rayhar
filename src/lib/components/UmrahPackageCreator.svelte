@@ -68,7 +68,13 @@
 
   // Check if this is a cruise pakej
   $: isCruisePackage = selectedMusim?.name === 'Umrah Cruise' && 
-    (selectedKategori?.name === 'PELAYARAN' || selectedKategori?.name === 'UMRAH + PELAYARAN');
+    (selectedKategori?.name === 'Pelayaran' || selectedKategori?.name === 'Umrah + Pelayaran');
+
+  // Check if this is a pelayaran category (cruise only)
+  $: isPelayaranCategory = selectedKategori?.name === 'Pelayaran';
+
+  // Check if this is a Umrah + Pelayaran category (has flight but uses deck pricing)
+  $: isUmrahPelayaranCategory = selectedKategori?.name === 'Umrah + Pelayaran';
 
   let isSubmitting = false;
   let submitMessage = '';
@@ -100,8 +106,8 @@
       return;
     }
 
-    // Validasi airline hanya untuk pakej non-cruise
-    if (!isCruisePackage && !packageData.airline) {
+    // Validasi airline untuk pakej non-cruise dan Umrah + Pelayaran
+    if ((!isCruisePackage && !isUmrahPelayaranCategory) && !packageData.airline) {
       showMessage('Pilih maskapai penerbangan', 'error');
       return;
     }
@@ -119,8 +125,8 @@
         flight_name: packageData.flightName.trim() || null,
       };
 
-      if (isCruisePackage) {
-        // Untuk pakej cruise, gunakan harga berdasarkan deck
+      if (isCruisePackage || isUmrahPelayaranCategory) {
+        // Untuk pakej cruise dan Umrah + Pelayaran, gunakan harga berdasarkan deck
         packageDataForDB = {
           ...packageDataForDB,
           low_deck_interior: packageData.lowDeckInterior || 0,
@@ -130,6 +136,11 @@
           high_deck_seaview: packageData.highDeckSeaview || 0,
           high_deck_balcony: packageData.highDeckBalcony || 0
         };
+        
+        // Tambahkan airline_id untuk Umrah + Pelayaran
+        if (isUmrahPelayaranCategory) {
+          packageDataForDB.airline_id = packageData.airline;
+        }
       } else {
         // Untuk pakej non-cruise, gunakan harga berdasarkan tipe bilik dan anak/infant
         packageDataForDB = {
@@ -328,12 +339,12 @@
         </div>
       </div>
 
-              <!-- Airline dan Flight Name (hanya untuk pakej non-cruise) -->
-      {#if !isCruisePackage}
+              <!-- Airline dan Flight Name (hanya untuk pakej non-cruise, non-pelayaran, tapi termasuk Umrah + Pelayaran) -->
+      {#if (!isCruisePackage && !isPelayaranCategory) || isUmrahPelayaranCategory}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <label for="airline" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-              Pilih Airline *
+              Pilih Penerbangan *
             </label>
             <select
               id="airline"
@@ -341,7 +352,7 @@
               required
               class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
             >
-              <option value="">Pilih Airline</option>
+              <option value="">Pilih Penerbangan</option>
               {#each airlines as airline}
                 <option value={airline.id}>
                   {airline.name}
@@ -365,8 +376,8 @@
         </div>
       {/if}
 
-              <!-- Harga berdasarkan deck (untuk pakej cruise) -->
-      {#if isCruisePackage}
+              <!-- Harga berdasarkan deck (untuk pakej cruise, kategori Pelayaran, dan Umrah + Pelayaran) -->
+      {#if isCruisePackage || isPelayaranCategory || isUmrahPelayaranCategory}
         <div>
           <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Berdasarkan Deck dan Tipe Bilik:</h4>
           
