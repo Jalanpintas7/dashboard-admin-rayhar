@@ -196,6 +196,7 @@ export async function fetchCustomersData() {
 // Fungsi untuk mengambil data pelanggan berdasarkan branch tertentu
 export async function fetchCustomersDataByBranch(branchName) {
   try {
+    console.log('=== fetchCustomersDataByBranch START ===');
     console.log('Fetching customers for branch:', branchName);
     
     // Ambil data branches dulu untuk mendapatkan branch_id
@@ -205,10 +206,15 @@ export async function fetchCustomersDataByBranch(branchName) {
       .eq('name', branchName)
       .single();
 
+    console.log('Branch query result:', { branchData, branchError });
+
     if (branchError || !branchData) {
       console.error('Error fetching branch:', branchError);
+      console.error('Branch data:', branchData);
       return [];
     }
+
+    console.log('Branch found:', branchData);
 
     // Ambil data bookings berdasarkan branch_id
     const { data: bookingsData, error: bookingsError } = await supabase
@@ -241,15 +247,23 @@ export async function fetchCustomersDataByBranch(branchName) {
       .eq('branch_id', branchData.id)
       .order('created_at', { ascending: false });
 
+    console.log('Bookings query result:', { bookingsData, bookingsError });
+    console.log('Number of bookings found:', bookingsData?.length || 0);
+
     if (bookingsError) {
       console.error('Error fetching customers by branch:', bookingsError);
+      return [];
+    }
+
+    if (!bookingsData || bookingsData.length === 0) {
+      console.log('No bookings found for this branch');
       return [];
     }
 
     console.log('Raw data from Supabase for branch:', branchName, bookingsData);
     console.log('Number of bookings found:', bookingsData?.length || 0);
 
-    // Ambil data untuk join
+    // Ambil data untuk join secara terpisah
     const { data: packageTypesData } = await supabase
       .from('package_types')
       .select('id, name');
@@ -270,6 +284,14 @@ export async function fetchCustomersDataByBranch(branchName) {
       .from('sales_consultant')
       .select('id, name');
 
+    console.log('Join data fetched:', {
+      packageTypes: packageTypesData?.length || 0,
+      destinations: destinationsData?.length || 0,
+      umrahSeasons: umrahSeasonsData?.length || 0,
+      umrahCategories: umrahCategoriesData?.length || 0,
+      salesConsultant: salesConsultantData?.length || 0
+    });
+
     // Buat map untuk lookup yang lebih cepat
     const packageTypesMap = new Map(packageTypesData?.map(p => [p.id, p.name]) || []);
     const destinationsMap = new Map(destinationsData?.map(d => [d.id, d.name]) || []);
@@ -278,7 +300,7 @@ export async function fetchCustomersDataByBranch(branchName) {
     const salesConsultantMap = new Map(salesConsultantData?.map(s => [s.id, s.name]) || []);
 
     // Transform data untuk kompatibilitas dengan komponen yang ada
-    return bookingsData.map(booking => {
+    const transformedData = bookingsData.map(booking => {
       // Tentukan apakah ini pakej Umrah atau Pelancongan berdasarkan data yang ada
       const isUmrah = booking.umrah_season_id !== null || booking.umrah_category_id !== null;
       const isOutbound = booking.destination_id !== null || booking.outbound_date_id !== null;
@@ -305,7 +327,7 @@ export async function fetchCustomersDataByBranch(branchName) {
         formattedBirthDate = formatDateMalaysia(booking.birth_date);
       }
 
-      return {
+      const transformed = {
         id: booking.id,
         name: `${booking.gelaran || ''} ${booking.nama}`.trim(),
         email: booking.email,
@@ -327,7 +349,14 @@ export async function fetchCustomersDataByBranch(branchName) {
         // Tambahkan field khusus untuk musim/destinasi
         seasonDestination: seasonDestination
       };
+
+      console.log('Transformed booking:', transformed);
+      return transformed;
     });
+
+    console.log('Final transformed data:', transformedData);
+    console.log('=== fetchCustomersDataByBranch END ===');
+    return transformedData;
   } catch (error) {
     console.error('Error in fetchCustomersDataByBranch:', error);
     return [];
