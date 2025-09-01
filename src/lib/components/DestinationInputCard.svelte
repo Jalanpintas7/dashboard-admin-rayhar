@@ -8,7 +8,12 @@
     destination_id: null,
     start_date: '',
     end_date: '',
-    price: ''
+    single: '',
+    double: '',
+    triple: '',
+    cwb: '',
+    cnb: '',
+    infant: ''
   };
 
   let loading = false;
@@ -94,8 +99,9 @@
         throw new Error('Tanggal mulai dan selesai harus diisi');
       }
       
-      if (!packageData.price) {
-        throw new Error('Harga harus diisi');
+      if (!packageData.single || !packageData.double || !packageData.triple || 
+          !packageData.cwb || !packageData.cnb || !packageData.infant) {
+        throw new Error('Semua field harga harus diisi');
       }
 
       // Insert data ke tabel outbound_dates
@@ -106,7 +112,12 @@
             destination_id: packageData.destination_id,
             start_date: packageData.start_date,
             end_date: packageData.end_date,
-            price: packageData.price.toString()
+            single: packageData.single.toString(),
+            double: packageData.double.toString(),
+            triple: packageData.triple.toString(),
+            cwb: packageData.cwb.toString(),
+            cnb: packageData.cnb.toString(),
+            infant: packageData.infant.toString()
           }
         ])
         .select();
@@ -122,7 +133,12 @@
         destination_id: null,
         start_date: '',
         end_date: '',
-        price: ''
+        single: '',
+        double: '',
+        triple: '',
+        cwb: '',
+        cnb: '',
+        infant: ''
       };
       selectedDestination = null;
       searchQuery = '';
@@ -267,20 +283,97 @@
       </div>
     </div>
 
-    <!-- Price -->
-    <div>
-      <label for="price" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-        Harga (RM)
-      </label>
-      <input
-        id="price"
-        type="number"
-        bind:value={packageData.price}
-        required
-        placeholder="Contoh: 5000000"
-        min="0"
-        class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
-      />
+    <!-- Harga Fields -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div>
+        <label for="singlePrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+          Harga Single (RM)
+        </label>
+        <input
+          id="singlePrice"
+          type="number"
+          bind:value={packageData.single}
+          required
+          placeholder="Contoh: 5000000"
+          min="0"
+          class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+        />
+      </div>
+      
+      <div>
+        <label for="doublePrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+          Harga Double (RM)
+        </label>
+        <input
+          id="doublePrice"
+          type="number"
+          bind:value={packageData.double}
+          required
+          placeholder="Contoh: 4500000"
+          min="0"
+          class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+        />
+      </div>
+      
+      <div>
+        <label for="triplePrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+          Harga Triple (RM)
+        </label>
+        <input
+          id="triplePrice"
+          type="number"
+          bind:value={packageData.triple}
+          required
+          placeholder="Contoh: 4000000"
+          min="0"
+          class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+        />
+      </div>
+      
+      <div>
+        <label for="cwbPrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+          Harga CWB (RM)
+        </label>
+        <input
+          id="cwbPrice"
+          type="number"
+          bind:value={packageData.cwb}
+          required
+          placeholder="Contoh: 3500000"
+          min="0"
+          class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+        />
+      </div>
+      
+      <div>
+        <label for="cnbPrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+          Harga CNB (RM)
+        </label>
+        <input
+          id="cnbPrice"
+          type="number"
+          bind:value={packageData.cnb}
+          required
+          placeholder="Contoh: 3000000"
+          min="0"
+          class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+        />
+      </div>
+      
+      <div>
+        <label for="infantPrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
+          Harga Infant (RM)
+        </label>
+        <input
+          id="infantPrice"
+          type="number"
+          bind:value={packageData.infant}
+          required
+          placeholder="Contoh: 500000"
+          min="0"
+          class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+        />
+      </div>
     </div>
 
     <!-- Tombol Submit -->

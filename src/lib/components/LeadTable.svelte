@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { getInitials } from '$lib/data/leads.js';
+  import { getInitials, fetchLeadsDataPaginated } from '$lib/data/leads.js';
   import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, TrendingUp, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-svelte';
   import { user } from '$lib/stores/auth.js';
   import { supabase } from '$lib/supabase.js';
@@ -45,107 +45,7 @@
     await loadPageData(1, filters);
   }
   
-  // Fungsi untuk mengambil data lead dari Supabase dengan pagination
-  async function fetchLeadsDataPaginated(page = 1, limit = 10, filters = {}) {
-    try {
-      console.log(`Fetching leads page ${page} with limit ${limit} and filters:`, filters);
-      
-      // Hitung offset untuk pagination
-      const offset = (page - 1) * limit;
-      
-      // Base query
-      let query = supabase
-        .from('leads')
-        .select(`
-          id,
-          title,
-          full_name,
-          phone,
-          branch_id,
-          season_id,
-          category_id,
-          created_at,
-          package_type_id,
-          destination_id,
-          outbound_date_id,
-          category,
-          branches(name),
-          umrah_seasons(name),
-          umrah_categories(name),
-          package_types(name),
-          destinations(name),
-          outbound_dates(start_date, end_date)
-        `, { count: 'exact' }); // Dapatkan total count
-      
-      // Apply filters
-      if (filters.search) {
-        query = query.or(`full_name.ilike.%${filters.search}%,title.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
-      }
-      
-      // Apply pagination dan ordering
-      const { data, error, count } = await query
-        .range(offset, offset + limit - 1)
-        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching leads:', error);
-        return { data: [], totalCount: 0 };
-      }
-
-      console.log(`Raw data from Supabase page ${page}:`, data);
-      console.log(`Total count: ${count}, Page data: ${data?.length || 0}`);
-
-      // Transform data untuk kompatibilitas dengan komponen yang ada
-      const transformedData = data.map(lead => {
-        // Tentukan interest berdasarkan data yang tersedia
-        let interest = '-';
-        if (lead.umrah_seasons?.name) {
-          interest = lead.umrah_seasons.name;
-        } else if (lead.umrah_categories?.name) {
-          interest = lead.umrah_categories.name;
-        } else if (lead.destinations?.name) {
-          interest = lead.destinations.name;
-        } else if (lead.package_types?.name) {
-          interest = lead.package_types.name;
-        }
-
-        return {
-          id: lead.id,
-          name: lead.full_name || lead.title || 'Nama tidak tersedia',
-          email: '-', // Email tidak ada di tabel leads
-          phone: lead.phone || '-',
-          branch: lead.branches?.name || '-',
-          interest: interest,
-          date: new Date(lead.created_at).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          }),
-          avatar: getInitials(lead.full_name || lead.title || 'NA'),
-          address: '-', // Address tidak ada di tabel leads
-          source: lead.category || '-',
-          budget: '-', // Budget tidak ada di tabel leads
-          timeline: '-', // Timeline tidak ada di tabel leads
-          consultant: '-', // Consultant tidak ada di tabel leads
-          notes: '-', // Notes tidak ada di tabel leads
-          // Tambahan field untuk detail
-          seasonDestination: interest,
-          packageType: lead.package_types?.name || '-',
-          destination: lead.destinations?.name || '-',
-          outboundDate: lead.outbound_dates ? 
-            `${lead.outbound_dates.start_date} - ${lead.outbound_dates.end_date}` : '-'
-        };
-      });
-
-      return {
-        data: transformedData,
-        totalCount: count || 0
-      };
-    } catch (error) {
-      console.error('Error in fetchLeadsDataPaginated:', error);
-      return { data: [], totalCount: 0 };
-    }
-  }
   
   function showLeadDetail(lead) {
     selectedLead = lead;

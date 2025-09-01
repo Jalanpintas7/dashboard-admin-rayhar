@@ -1,4 +1,5 @@
 import { supabase } from '$lib/supabase.js';
+import { formatDateMalaysia } from '$lib/date-helpers.js';
 
 // Fungsi helper untuk mendapatkan inisial nama
 export function getInitials(name) {
@@ -54,7 +55,7 @@ export async function fetchCustomersData() {
         bandar,
         bilangan,
         total_price,
-        jenis_pelancongan,
+        // jenis_pelancongan field tidak ada di tabel, akan dihitung berdasarkan data yang ada
         age,
         birth_date,
         created_at,
@@ -137,11 +138,9 @@ export async function fetchCustomersData() {
 
     // Transform data untuk kompatibilitas dengan komponen yang ada
     return bookingsData.map(booking => {
-      // Tentukan apakah ini pakej Umrah atau Pelancongan
-      const packageName = packageTypesMap.get(booking.package_id);
-      const destinationName = destinationsMap.get(booking.destination_id);
-      const isUmrah = packageName === 'Umrah' || 
-                     (destinationName && (destinationName.toLowerCase().includes('makkah') || destinationName.toLowerCase().includes('madinah')));
+      // Tentukan apakah ini pakej Umrah atau Pelancongan berdasarkan data yang ada
+      const isUmrah = booking.umrah_season_id !== null || booking.umrah_category_id !== null;
+      const isOutbound = booking.destination_id !== null || booking.outbound_date_id !== null;
       
       // Tampilkan musim umrah jika pakej umrah, destinasi jika pakej pelancongan
       let seasonDestination = '-';
@@ -155,18 +154,14 @@ export async function fetchCustomersData() {
         } else {
           seasonDestination = 'Umrah Standard';
         }
-      } else {
-        seasonDestination = destinationName || '-';
+      } else if (isOutbound) {
+        seasonDestination = destinationsMap.get(booking.destination_id) || '-';
       }
 
       // Format tanggal lahir
       let formattedBirthDate = '-';
       if (booking.birth_date) {
-        formattedBirthDate = new Date(booking.birth_date).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        });
+        formattedBirthDate = formatDateMalaysia(booking.birth_date);
       }
 
       return {
@@ -175,20 +170,16 @@ export async function fetchCustomersData() {
         email: booking.email,
         phone: booking.telefon,
         branch: branchesMap.get(booking.branch_id) || '-',
-        package: packageName || (isUmrah ? 'Umrah' : 'Pelancongan'),
+        package: isUmrah ? 'Umrah' : (isOutbound ? 'Outbound' : 'Tidak Diketahui'),
         category: seasonDestination,
         price: booking.bilangan ? `${booking.bilangan} pax` : '-',
         total_price: booking.total_price || '-',
-        date: new Date(booking.created_at).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        }),
+        date: formatDateMalaysia(booking.created_at),
         avatar: getInitials(booking.nama),
         consultant: salesConsultantMap.get(booking.consultant_id) || '-',
         address: `${booking.alamat || ''}, ${booking.poskod || ''} ${booking.bandar || ''}, ${booking.negeri || ''}`.replace(/^[, ]+|[, ]+$/g, ''),
         nokp: booking.nokp,
-        jenis_pelancongan: booking.jenis_pelancongan,
+        jenis_pelancongan: isUmrah ? 'Umrah' : (isOutbound ? 'Outbound' : '-'),
         age: booking.age || '-',
         birth_date: formattedBirthDate,
         from_inquiry: booking.is_from_inquiry || false,
@@ -235,7 +226,7 @@ export async function fetchCustomersDataByBranch(branchName) {
         bandar,
         bilangan,
         total_price,
-        jenis_pelancongan,
+        // jenis_pelancongan field tidak ada di tabel, akan dihitung berdasarkan data yang ada
         age,
         birth_date,
         created_at,
@@ -288,11 +279,9 @@ export async function fetchCustomersDataByBranch(branchName) {
 
     // Transform data untuk kompatibilitas dengan komponen yang ada
     return bookingsData.map(booking => {
-      // Tentukan apakah ini pakej Umrah atau Pelancongan
-      const packageName = packageTypesMap.get(booking.package_id);
-      const destinationName = destinationsMap.get(booking.destination_id);
-      const isUmrah = packageName === 'Umrah' || 
-                     (destinationName && (destinationName.toLowerCase().includes('makkah') || destinationName.toLowerCase().includes('madinah')));
+      // Tentukan apakah ini pakej Umrah atau Pelancongan berdasarkan data yang ada
+      const isUmrah = booking.umrah_season_id !== null || booking.umrah_category_id !== null;
+      const isOutbound = booking.destination_id !== null || booking.outbound_date_id !== null;
       
       // Tampilkan musim umrah jika paket umrah, destinasi jika paket pelancongan
       let seasonDestination = '-';
@@ -306,18 +295,14 @@ export async function fetchCustomersDataByBranch(branchName) {
         } else {
           seasonDestination = 'Umrah Standard';
         }
-      } else {
-        seasonDestination = destinationName || '-';
+      } else if (isOutbound) {
+        seasonDestination = destinationsMap.get(booking.destination_id) || '-';
       }
 
       // Format tanggal lahir
       let formattedBirthDate = '-';
       if (booking.birth_date) {
-        formattedBirthDate = new Date(booking.birth_date).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        });
+        formattedBirthDate = formatDateMalaysia(booking.birth_date);
       }
 
       return {
@@ -326,20 +311,16 @@ export async function fetchCustomersDataByBranch(branchName) {
         email: booking.email,
         phone: booking.telefon,
         branch: branchData.name,
-        package: packageName || (isUmrah ? 'Umrah' : 'Pelancongan'),
+        package: isUmrah ? 'Umrah' : (isOutbound ? 'Outbound' : 'Tidak Diketahui'),
         category: seasonDestination,
         price: booking.bilangan ? `${booking.bilangan} pax` : '-',
         total_price: booking.total_price || '-',
-        date: new Date(booking.created_at).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        }),
+        date: formatDateMalaysia(booking.created_at),
         avatar: getInitials(booking.nama),
         consultant: salesConsultantMap.get(booking.consultant_id) || '-',
         address: `${booking.alamat || ''}, ${booking.poskod || ''} ${booking.bandar || ''}, ${booking.negeri || ''}`.replace(/^[, ]+|[, ]+$/g, ''),
         nokp: booking.nokp,
-        jenis_pelancongan: booking.jenis_pelancongan,
+        jenis_pelancongan: isUmrah ? 'Umrah' : (isOutbound ? 'Outbound' : '-'),
         age: booking.age || '-',
         birth_date: formattedBirthDate,
         from_inquiry: booking.is_from_inquiry || false,
@@ -361,7 +342,7 @@ export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters 
     // Hitung offset untuk pagination
     const offset = (page - 1) * limit;
     
-    // Base query dengan join yang tepat
+    // Ambil data bookings dengan pagination
     let query = supabase
       .from('bookings')
       .select(`
@@ -377,37 +358,21 @@ export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters 
         bandar,
         bilangan,
         total_price,
-        jenis_pelancongan,
         age,
         birth_date,
         created_at,
-        updated_at,
         is_from_inquiry,
         branch_id,
         package_id,
         destination_id,
         umrah_season_id,
         umrah_category_id,
-        consultant_id,
-        branches(name),
-        package_types(name),
-        destinations(name),
-        umrah_seasons(name),
-        umrah_categories(name),
-        sales_consultant(name)
+        consultant_id
       `, { count: 'exact' });
     
     // Apply filters
     if (filters.search) {
       query = query.or(`nama.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
-    }
-    
-    if (filters.package) {
-      query = query.eq('package_types.name', filters.package);
-    }
-    
-    if (filters.branch) {
-      query = query.eq('branches.name', filters.branch);
     }
     
     if (filters.inquiry !== '' && filters.inquiry !== undefined) {
@@ -428,31 +393,45 @@ export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters 
     console.log(`Raw data from Supabase page ${page}:`, data);
     console.log(`Total count: ${count}, Page data: ${data?.length || 0}`);
 
+    // Ambil data untuk join secara terpisah
+    const { data: branchesData } = await supabase.from('branches').select('id, name');
+    const { data: packageTypesData } = await supabase.from('package_types').select('id, name');
+    const { data: destinationsData } = await supabase.from('destinations').select('id, name');
+    const { data: umrahSeasonsData } = await supabase.from('umrah_seasons').select('id, name');
+    const { data: umrahCategoriesData } = await supabase.from('umrah_categories').select('id, name');
+    const { data: salesConsultantData } = await supabase.from('sales_consultant').select('id, name');
+
+    // Buat map untuk lookup yang lebih cepat
+    const branchesMap = new Map(branchesData?.map(b => [b.id, b.name]) || []);
+    const packageTypesMap = new Map(packageTypesData?.map(p => [p.id, p.name]) || []);
+    const destinationsMap = new Map(destinationsData?.map(d => [d.id, d.name]) || []);
+    const umrahSeasonsMap = new Map(umrahSeasonsData?.map(u => [u.id, u.name]) || []);
+    const umrahCategoriesMap = new Map(umrahCategoriesData?.map(u => [u.id, u.name]) || []);
+    const salesConsultantMap = new Map(salesConsultantData?.map(s => [s.id, s.name]) || []);
+
     // Transform data untuk kompatibilitas dengan komponen yang ada
-    const transformedData = data.map(booking => {
-      // Tentukan package type
-      const packageName = booking.package_types?.name || 'Tidak Diketahui';
+    let transformedData = data.map(booking => {
+      // Tentukan package type berdasarkan data yang ada
+      const isUmrah = booking.umrah_season_id !== null || booking.umrah_category_id !== null;
+      const isOutbound = booking.destination_id !== null;
+      const packageName = isUmrah ? 'Umrah' : (isOutbound ? 'Outbound' : 'Tidak Diketahui');
       
       // Tentukan musim/destinasi berdasarkan jenis package
       let seasonDestination = '-';
-      if (packageName === 'Umrah') {
+      if (isUmrah) {
         // Untuk Umrah, gunakan musim umrah atau kategori umrah
-        seasonDestination = booking.umrah_seasons?.name || 
-                          booking.umrah_categories?.name || 
+        seasonDestination = umrahSeasonsMap.get(booking.umrah_season_id) || 
+                          umrahCategoriesMap.get(booking.umrah_category_id) || 
                           'Umrah Standard';
-      } else {
-        // Untuk Pelancongan, gunakan nama destinasi
-        seasonDestination = booking.destinations?.name || '-';
+      } else if (isOutbound) {
+        // Untuk Outbound, gunakan nama destinasi
+        seasonDestination = destinationsMap.get(booking.destination_id) || '-';
       }
 
       // Format tanggal lahir
       let formattedBirthDate = '-';
       if (booking.birth_date) {
-        formattedBirthDate = new Date(booking.birth_date).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        });
+        formattedBirthDate = formatDateMalaysia(booking.birth_date);
       }
 
       return {
@@ -461,26 +440,38 @@ export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters 
         email: booking.email || '-',
         phone: booking.telefon || '-',
         address: `${booking.alamat || ''}, ${booking.poskod || ''} ${booking.bandar || ''}, ${booking.negeri || ''}`.replace(/^[, ]+|[, ]+$/g, '') || '-',
-        branch: booking.branches?.name || 'Tidak Diketahui',
+        branch: branchesMap.get(booking.branch_id) || 'Tidak Diketahui',
         package: packageName,
         seasonDestination: seasonDestination,
         category: seasonDestination, // Untuk backward compatibility
         price: booking.bilangan ? `${booking.bilangan} pax` : '-',
         total_price: booking.total_price || '-',
-        date: new Date(booking.created_at).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        }),
+        date: formatDateMalaysia(booking.created_at),
         avatar: getInitials(booking.nama || 'NA'),
-        consultant: booking.sales_consultant?.name || '-',
+        consultant: salesConsultantMap.get(booking.consultant_id) || '-',
         nokp: booking.nokp || '-',
-        jenis_pelancongan: booking.jenis_pelancongan || '-',
+        jenis_pelancongan: (booking.umrah_season_id || booking.umrah_category_id) ? 'Umrah' : (booking.destination_id ? 'Outbound' : '-'),
         age: booking.age || '-',
         birth_date: formattedBirthDate,
         from_inquiry: booking.is_from_inquiry || false
       };
     });
+
+    // Apply filters yang tidak bisa diterapkan di level database
+    if (filters.branch && filters.branch.trim()) {
+      transformedData = transformedData.filter(customer => 
+        customer.branch === filters.branch
+      );
+    }
+    
+    if (filters.package && filters.package.trim()) {
+      transformedData = transformedData.filter(customer => 
+        customer.package === filters.package
+      );
+    }
+
+    console.log('Transformed data after filtering:', transformedData);
+    console.log('Final data count:', transformedData.length);
 
     return {
       data: transformedData,
@@ -489,5 +480,140 @@ export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters 
   } catch (error) {
     console.error('Error in fetchCustomersDataPaginated:', error);
     throw error;
+  }
+}
+
+// Fungsi test untuk memverifikasi koneksi Supabase
+export async function testSupabaseConnection() {
+  try {
+    console.log('Testing Supabase connection...');
+    console.log('Supabase URL:', supabase.supabaseUrl);
+    console.log('Supabase client:', supabase);
+    
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id, nama')
+      .limit(1);
+    
+    if (error) {
+      console.error('Supabase connection test failed:', error);
+      return false;
+    }
+    
+    console.log('Supabase connection test successful:', data);
+    return true;
+  } catch (err) {
+    console.error('Supabase connection test error:', err);
+    return false;
+  }
+}
+
+// Fungsi test untuk memverifikasi fetchCustomersDataPaginated
+export async function testFetchCustomersDataPaginated() {
+  try {
+    console.log('Testing fetchCustomersDataPaginated...');
+    
+    const result = await fetchCustomersDataPaginated(1, 5, {});
+    
+    console.log('Test result:', result);
+    console.log('Data count:', result.data?.length || 0);
+    console.log('Total count:', result.totalCount);
+    
+    if (result.data && result.data.length > 0) {
+      console.log('First customer:', result.data[0]);
+      return true;
+    } else {
+      console.log('No data returned');
+      return false;
+    }
+  } catch (err) {
+    console.error('Test failed:', err);
+    return false;
+  }
+}
+
+// Fungsi test untuk memeriksa data umrah
+export async function testUmrahData() {
+  try {
+    console.log('Testing Umrah data...');
+    
+    // Test 1: Cek data bookings dengan umrah_season_id
+    const { data: umrahSeasonBookings, error: umrahSeasonError } = await supabase
+      .from('bookings')
+      .select('id, nama, umrah_season_id, umrah_category_id, destination_id')
+      .not('umrah_season_id', 'is', null)
+      .limit(5);
+    
+    if (umrahSeasonError) {
+      console.error('Error fetching umrah season bookings:', umrahSeasonError);
+    } else {
+      console.log('Bookings with umrah_season_id:', umrahSeasonBookings);
+    }
+    
+    // Test 2: Cek data bookings dengan umrah_category_id
+    const { data: umrahCategoryBookings, error: umrahCategoryError } = await supabase
+      .from('bookings')
+      .select('id, nama, umrah_season_id, umrah_category_id, destination_id')
+      .not('umrah_category_id', 'is', null)
+      .limit(5);
+    
+    if (umrahCategoryError) {
+      console.error('Error fetching umrah category bookings:', umrahCategoryError);
+    } else {
+      console.log('Bookings with umrah_category_id:', umrahCategoryBookings);
+    }
+    
+    // Test 3: Cek semua data bookings
+    const { data: allBookings, error: allBookingsError } = await supabase
+      .from('bookings')
+      .select('id, nama, umrah_season_id, umrah_category_id, destination_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (allBookingsError) {
+      console.error('Error fetching all bookings:', allBookingsError);
+    } else {
+      console.log('All bookings sample:', allBookings);
+      
+      // Analisis data
+      const umrahCount = allBookings.filter(b => b.umrah_season_id || b.umrah_category_id).length;
+      const outboundCount = allBookings.filter(b => b.destination_id).length;
+      const unknownCount = allBookings.filter(b => !b.umrah_season_id && !b.umrah_category_id && !b.destination_id).length;
+      
+      console.log('Data analysis:');
+      console.log('- Umrah bookings:', umrahCount);
+      console.log('- Outbound bookings:', outboundCount);
+      console.log('- Unknown type:', unknownCount);
+      console.log('- Total sample:', allBookings.length);
+    }
+    
+    // Test 4: Cek tabel umrah_seasons
+    const { data: umrahSeasons, error: umrahSeasonsError } = await supabase
+      .from('umrah_seasons')
+      .select('id, name')
+      .limit(5);
+    
+    if (umrahSeasonsError) {
+      console.error('Error fetching umrah seasons:', umrahSeasonsError);
+    } else {
+      console.log('Umrah seasons:', umrahSeasons);
+    }
+    
+    // Test 5: Cek tabel umrah_categories
+    const { data: umrahCategories, error: umrahCategoriesError } = await supabase
+      .from('umrah_categories')
+      .select('id, name')
+      .limit(5);
+    
+    if (umrahCategoriesError) {
+      console.error('Error fetching umrah categories:', umrahCategoriesError);
+    } else {
+      console.log('Umrah categories:', umrahCategories);
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Test Umrah data failed:', err);
+    return false;
   }
 }

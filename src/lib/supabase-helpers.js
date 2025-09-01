@@ -242,19 +242,19 @@ export const getDashboardStatsByBranch = async (branchId) => {
     .eq('branch_id', branchId)
     .gte('created_at', sevenDaysAgo.toISOString())
 
-  // Get total Umrah bookings for specific branch
+  // Get total Umrah bookings for specific branch (based on umrah_season_id or umrah_category_id)
   const { count: totalUmrahBookings } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
     .eq('branch_id', branchId)
-    .eq('jenis_pelancongan', 'umrah')
+    .or('umrah_season_id.not.is.null,umrah_category_id.not.is.null')
   
-  // Get total Outbound bookings for specific branch
+  // Get total Outbound bookings for specific branch (based on destination_id or outbound_date_id)
   const { count: totalOutboundBookings } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
     .eq('branch_id', branchId)
-    .eq('jenis_pelancongan', 'outbound')
+    .or('destination_id.not.is.null,outbound_date_id.not.is.null')
   
   return {
     totalLeads: totalLeads || 0,
@@ -272,6 +272,7 @@ export const getTopSalesConsultants = async (limit = 5) => {
     .from('bookings')
     .select(`
       consultant_id,
+      total_price,
       created_at
     `)
     .not('consultant_id', 'is', null)
@@ -342,11 +343,17 @@ export const getTopSalesConsultants = async (limit = 5) => {
         salesConsultantNumber: consultant.sales_consultant_number || '',
         totalBookings: 0,
         recentBookings: 0,
+        totalRevenue: 0,
+        recentRevenue: 0,
         branches: new Set()
       };
     }
     
     consultantStats[consultantId].totalBookings += 1;
+    
+    // Add revenue calculation
+    const bookingPrice = parseFloat(booking.total_price) || 0;
+    consultantStats[consultantId].totalRevenue += bookingPrice;
     
     // Add branch information
     if (booking.branch_id && branchLookup[booking.branch_id]) {
@@ -360,12 +367,13 @@ export const getTopSalesConsultants = async (limit = 5) => {
     
     if (bookingDate >= thirtyDaysAgo) {
       consultantStats[consultantId].recentBookings += 1;
+      consultantStats[consultantId].recentRevenue += bookingPrice;
     }
   });
 
-  // Convert to array and sort by total bookings
+  // Convert to array and sort by total revenue
   const topConsultants = Object.values(consultantStats)
-    .sort((a, b) => b.totalBookings - a.totalBookings)
+    .sort((a, b) => b.totalRevenue - a.totalRevenue)
     .slice(0, limit)
     .map(consultant => ({
       ...consultant,
@@ -392,11 +400,11 @@ export const getTopPackagesByBranch = async (branchId, filter = 'keseluruhan', l
     query = query.eq('branch_id', branchId);
   }
 
-  // Filter berdasarkan jenis pelancongan
+  // Filter berdasarkan jenis pelancongan berdasarkan data yang ada
   if (filter === 'Umrah') {
-    query = query.eq('jenis_pelancongan', 'umrah');
+    query = query.or('umrah_season_id.not.is.null,umrah_category_id.not.is.null');
   } else if (filter === 'Pelancongan') {
-    query = query.eq('jenis_pelancongan', 'outbound');
+    query = query.or('destination_id.not.is.null,outbound_date_id.not.is.null');
   }
 
   const { data: bookings, error } = await query;
@@ -409,15 +417,19 @@ export const getTopPackagesByBranch = async (branchId, filter = 'keseluruhan', l
   bookings.forEach(booking => {
     let packageName = '';
     let packageId = '';
+    let packageType = '';
 
-    if (booking.jenis_pelancongan === 'umrah') {
-      // Untuk umrah, gunakan umrah_season_id
-      packageId = booking.umrah_season_id;
+    // Tentukan jenis pelancongan berdasarkan data yang ada
+    if (booking.umrah_season_id || booking.umrah_category_id) {
+      // Umrah: ada umrah_season_id atau umrah_category_id
+      packageId = booking.umrah_season_id || booking.umrah_category_id;
       packageName = booking.umrah_seasons?.name || 'Umrah Package';
-    } else if (booking.jenis_pelancongan === 'outbound') {
-      // Untuk pelancongan, gunakan destination_id
-      packageId = booking.destination_id;
+      packageType = 'umrah';
+    } else if (booking.destination_id || booking.outbound_date_id) {
+      // Outbound: ada destination_id atau outbound_date_id
+      packageId = booking.destination_id || booking.outbound_date_id;
       packageName = booking.destinations?.name || 'Tour Package';
+      packageType = 'outbound';
     }
 
     if (!packageId) return; // Skip jika tidak ada package ID
@@ -427,7 +439,7 @@ export const getTopPackagesByBranch = async (branchId, filter = 'keseluruhan', l
         id: packageId,
         name: packageName,
         totalSales: 0,
-        type: booking.jenis_pelancongan
+        type: packageType
       };
     }
 
@@ -516,7 +528,7 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
     // Get booking data untuk menghitung conversion
     let bookingQuery = supabase
       .from('bookings')
-      .select('umrah_season_id, destination_id, jenis_pelancongan')
+      .select('umrah_season_id, umrah_category_id, destination_id, outbound_date_id')
       .not('branch_id', 'is', null);
 
     if (branchId) {
@@ -524,9 +536,9 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
     }
 
     if (filter === 'Umrah') {
-      bookingQuery = bookingQuery.eq('jenis_pelancongan', 'umrah');
+      bookingQuery = bookingQuery.or('umrah_season_id.not.is.null,umrah_category_id.not.is.null');
     } else if (filter === 'Pelancongan') {
-      bookingQuery = bookingQuery.eq('jenis_pelancongan', 'outbound');
+      bookingQuery = bookingQuery.or('destination_id.not.is.null,outbound_date_id.not.is.null');
     }
 
     const { data: bookings, error: bookingError } = await bookingQuery;
@@ -536,10 +548,10 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
       bookings.forEach(booking => {
         let packageId = '';
         
-        if (booking.jenis_pelancongan === 'umrah') {
-          packageId = booking.umrah_season_id;
-        } else if (booking.jenis_pelancongan === 'outbound') {
-          packageId = booking.destination_id;
+        if (booking.umrah_season_id || booking.umrah_category_id) {
+          packageId = booking.umrah_season_id || booking.umrah_category_id;
+        } else if (booking.destination_id || booking.outbound_date_id) {
+          packageId = booking.destination_id || booking.outbound_date_id;
         }
 
         if (packageId && inquiryStats[packageId]) {
@@ -633,17 +645,17 @@ export const getDashboardStatsForSuperAdmin = async () => {
     .select('*', { count: 'exact', head: true })
     .gte('created_at', sevenDaysAgo.toISOString())
 
-  // Get total Umrah bookings from all branches
+  // Get total Umrah bookings from all branches (based on umrah_season_id or umrah_category_id)
   const { count: totalUmrahBookings } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
-    .eq('jenis_pelancongan', 'umrah')
+    .or('umrah_season_id.not.is.null,umrah_category_id.not.is.null')
   
-  // Get total Outbound bookings from all branches
+  // Get total Outbound bookings from all branches (based on destination_id or outbound_date_id)
   const { count: totalOutboundBookings } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
-    .eq('jenis_pelancongan', 'outbound')
+    .or('destination_id.not.is.null,outbound_date_id.not.is.null')
   
   return {
     totalLeads: totalLeads || 0,
@@ -666,11 +678,11 @@ export const getTopPackagesForSuperAdmin = async (filter = 'keseluruhan', limit 
     `)
     .not('branch_id', 'is', null);
 
-  // Filter berdasarkan jenis pelancongan
+  // Filter berdasarkan jenis pelancongan berdasarkan data yang ada
   if (filter === 'Umrah') {
-    query = query.eq('jenis_pelancongan', 'umrah');
+    query = query.or('umrah_season_id.not.is.null,umrah_category_id.not.is.null');
   } else if (filter === 'Pelancongan') {
-    query = query.eq('jenis_pelancongan', 'outbound');
+    query = query.or('destination_id.not.is.null,outbound_date_id.not.is.null');
   }
 
   const { data: bookings, error } = await query;
@@ -683,15 +695,19 @@ export const getTopPackagesForSuperAdmin = async (filter = 'keseluruhan', limit 
   bookings.forEach(booking => {
     let packageName = '';
     let packageId = '';
+    let packageType = '';
 
-    if (booking.jenis_pelancongan === 'umrah') {
-      // Untuk umrah, gunakan umrah_season_id
-      packageId = booking.umrah_season_id;
+    // Tentukan jenis pelancongan berdasarkan data yang ada
+    if (booking.umrah_season_id || booking.umrah_category_id) {
+      // Umrah: ada umrah_season_id atau umrah_category_id
+      packageId = booking.umrah_season_id || booking.umrah_category_id;
       packageName = booking.umrah_seasons?.name || 'Umrah Package';
-    } else if (booking.jenis_pelancongan === 'outbound') {
-      // Untuk pelancongan, gunakan destination_id
-      packageId = booking.destination_id;
+      packageType = 'umrah';
+    } else if (booking.destination_id || booking.outbound_date_id) {
+      // Outbound: ada destination_id atau outbound_date_id
+      packageId = booking.destination_id || booking.outbound_date_id;
       packageName = booking.destinations?.name || 'Tour Package';
+      packageType = 'outbound';
     }
 
     if (!packageId) return; // Skip jika tidak ada package ID
@@ -701,7 +717,7 @@ export const getTopPackagesForSuperAdmin = async (filter = 'keseluruhan', limit 
         id: packageId,
         name: packageName,
         totalSales: 0,
-        type: booking.jenis_pelancongan
+        type: packageType
       };
     }
 
@@ -785,13 +801,13 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
     // Get booking data untuk menghitung conversion
     let bookingQuery = supabase
       .from('bookings')
-      .select('umrah_season_id, destination_id, jenis_pelancongan')
+      .select('umrah_season_id, umrah_category_id, destination_id, outbound_date_id')
       .not('branch_id', 'is', null);
 
     if (filter === 'Umrah') {
-      bookingQuery = bookingQuery.eq('jenis_pelancongan', 'umrah');
+      bookingQuery = bookingQuery.or('umrah_season_id.not.is.null,umrah_category_id.not.is.null');
     } else if (filter === 'Pelancongan') {
-      bookingQuery = bookingQuery.eq('jenis_pelancongan', 'outbound');
+      bookingQuery = bookingQuery.eq('destination_id.not.is.null,outbound_date_id.not.is.null');
     }
 
     const { data: bookings, error: bookingError } = await bookingQuery;
@@ -801,10 +817,10 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
       bookings.forEach(booking => {
         let packageId = '';
         
-        if (booking.jenis_pelancongan === 'umrah') {
-          packageId = booking.umrah_season_id;
-        } else if (booking.jenis_pelancongan === 'outbound') {
-          packageId = booking.destination_id;
+        if (booking.umrah_season_id || booking.umrah_category_id) {
+          packageId = booking.umrah_season_id || booking.umrah_category_id;
+        } else if (booking.destination_id || booking.outbound_date_id) {
+          packageId = booking.destination_id || booking.outbound_date_id;
         }
 
         if (packageId && inquiryStats[packageId]) {
@@ -845,9 +861,8 @@ export const getSalesInquiryOverviewForSuperAdmin = async (type = 'sales') => {
     
     const { data: bookings, error } = await supabase
       .from('bookings')
-      .select('jenis_pelancongan, created_at')
-      .gte('created_at', threeMonthsAgo.toISOString())
-      .not('jenis_pelancongan', 'is', null);
+      .select('umrah_season_id, umrah_category_id, destination_id, outbound_date_id, created_at')
+      .gte('created_at', threeMonthsAgo.toISOString());
 
     if (error) throw error;
 
@@ -866,9 +881,10 @@ export const getSalesInquiryOverviewForSuperAdmin = async (type = 'sales') => {
         };
       }
       
-      if (booking.jenis_pelancongan === 'umrah') {
+      // Tentukan jenis pelancongan berdasarkan data yang ada
+      if (booking.umrah_season_id || booking.umrah_category_id) {
         monthlyStats[monthKey].umrah += 1;
-      } else if (booking.jenis_pelancongan === 'outbound') {
+      } else if (booking.destination_id || booking.outbound_date_id) {
         monthlyStats[monthKey].outbound += 1;
       }
       

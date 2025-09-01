@@ -1,3 +1,5 @@
+import { formatDateMalaysia } from '../date-helpers.js';
+
 // Data sample lead untuk Rayhar Admin Dashboard (fallback jika Supabase tidak tersedia)
 export const leadsData = [
   {
@@ -175,13 +177,7 @@ export async function fetchLeadsData() {
         package_type_id,
         destination_id,
         outbound_date_id,
-        category,
-        branches(name),
-        umrah_seasons(name),
-        umrah_categories(name),
-        package_types(name),
-        destinations(name),
-        outbound_dates(start_date, end_date)
+        sales_consultant_id
       `)
       .order('created_at', { ascending: false });
 
@@ -194,18 +190,43 @@ export async function fetchLeadsData() {
     console.log('Raw data from Supabase:', data);
     console.log('Number of leads found:', data?.length || 0);
 
+    // Ambil data untuk join secara terpisah
+    const { data: branchesData } = await supabase.from('branches').select('id, name');
+    const { data: packageTypesData } = await supabase.from('package_types').select('id, name');
+    const { data: destinationsData } = await supabase.from('destinations').select('id, name');
+    const { data: umrahSeasonsData } = await supabase.from('umrah_seasons').select('id, name');
+    const { data: umrahCategoriesData } = await supabase.from('umrah_categories').select('id, name');
+    const { data: salesConsultantData } = await supabase.from('sales_consultant').select('id, name');
+    const { data: outboundDatesData } = await supabase.from('outbound_dates').select('id, start_date, end_date');
+
+    // Buat map untuk lookup yang lebih cepat
+    const branchesMap = new Map(branchesData?.map(b => [b.id, b.name]) || []);
+    const packageTypesMap = new Map(packageTypesData?.map(p => [p.id, p.name]) || []);
+    const destinationsMap = new Map(destinationsData?.map(d => [d.id, d.name]) || []);
+    const umrahSeasonsMap = new Map(umrahSeasonsData?.map(u => [u.id, u.name]) || []);
+    const umrahCategoriesMap = new Map(umrahCategoriesData?.map(u => [u.id, u.name]) || []);
+    const salesConsultantMap = new Map(salesConsultantData?.map(s => [s.id, s.name]) || []);
+    const outboundDatesMap = new Map(outboundDatesData?.map(o => [o.id, o]) || []);
+
     // Transform data untuk kompatibilitas dengan komponen yang ada
     return data.map(lead => {
       // Tentukan interest berdasarkan data yang tersedia
       let interest = '-';
-      if (lead.umrah_seasons?.name) {
-        interest = lead.umrah_seasons.name;
-      } else if (lead.umrah_categories?.name) {
-        interest = lead.umrah_categories.name;
-      } else if (lead.destinations?.name) {
-        interest = lead.destinations.name;
-      } else if (lead.package_types?.name) {
-        interest = lead.package_types.name;
+      if (lead.season_id && umrahSeasonsMap.has(lead.season_id)) {
+        interest = umrahSeasonsMap.get(lead.season_id);
+      } else if (lead.category_id && umrahCategoriesMap.has(lead.category_id)) {
+        interest = umrahCategoriesMap.get(lead.category_id);
+      } else if (lead.destination_id && destinationsMap.has(lead.destination_id)) {
+        interest = destinationsMap.get(lead.destination_id);
+      } else if (lead.package_type_id && packageTypesMap.has(lead.package_type_id)) {
+        interest = packageTypesMap.get(lead.package_type_id);
+      }
+
+      // Get outbound date info
+      let outboundDate = '-';
+      if (lead.outbound_date_id && outboundDatesMap.has(lead.outbound_date_id)) {
+        const outboundDateData = outboundDatesMap.get(lead.outbound_date_id);
+        outboundDate = `${outboundDateData.start_date} - ${outboundDateData.end_date}`;
       }
 
       return {
@@ -213,26 +234,21 @@ export async function fetchLeadsData() {
         name: lead.full_name || lead.title || 'Nama tidak tersedia',
         email: '-', // Email tidak ada di tabel leads
         phone: lead.phone || '-',
-        branch: lead.branches?.name || '-',
+        branch: branchesMap.get(lead.branch_id) || '-',
         interest: interest,
-        date: new Date(lead.created_at).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        }),
+        date: formatDateMalaysia(lead.created_at),
         avatar: getInitials(lead.full_name || lead.title || 'NA'),
         address: '-', // Address tidak ada di tabel leads
-        source: lead.category || '-',
+        source: '-',
         budget: '-', // Budget tidak ada di tabel leads
         timeline: '-', // Timeline tidak ada di tabel leads
-        consultant: '-', // Consultant tidak ada di tabel leads
+        consultant: salesConsultantMap.get(lead.sales_consultant_id) || '-',
         notes: '-', // Notes tidak ada di tabel leads
         // Tambahan field untuk detail
         seasonDestination: interest,
-        packageType: lead.package_types?.name || '-',
-        destination: lead.destinations?.name || '-',
-        outboundDate: lead.outbound_dates ? 
-          `${lead.outbound_dates.start_date} - ${lead.outbound_dates.end_date}` : '-'
+        packageType: packageTypesMap.get(lead.package_type_id) || '-',
+        destination: destinationsMap.get(lead.destination_id) || '-',
+        outboundDate: outboundDate
       };
     });
   } catch (error) {
@@ -250,6 +266,18 @@ export async function fetchLeadsDataByBranch(branchName) {
     
     console.log('Fetching leads for branch:', branchName);
     
+    // Ambil data branch dulu untuk mendapatkan branch_id
+    const { data: branchData, error: branchError } = await supabase
+      .from('branches')
+      .select('id, name')
+      .eq('name', branchName)
+      .single();
+
+    if (branchError || !branchData) {
+      console.error('Error fetching branch:', branchError);
+      return [];
+    }
+
     // Query yang efisien dengan join langsung ke branches
     const { data, error } = await supabase
       .from('leads')
@@ -265,15 +293,9 @@ export async function fetchLeadsDataByBranch(branchName) {
         package_type_id,
         destination_id,
         outbound_date_id,
-        category,
-        branches!inner(name),
-        umrah_seasons(name),
-        umrah_categories(name),
-        package_types(name),
-        destinations(name),
-        outbound_dates(start_date, end_date)
+        sales_consultant_id
       `)
-      .eq('branches.name', branchName)
+      .eq('branch_id', branchData.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -284,18 +306,41 @@ export async function fetchLeadsDataByBranch(branchName) {
     console.log('Raw data from Supabase for branch:', branchName, data);
     console.log('Number of leads found:', data?.length || 0);
 
+    // Ambil data untuk join
+    const { data: packageTypesData } = await supabase.from('package_types').select('id, name');
+    const { data: destinationsData } = await supabase.from('destinations').select('id, name');
+    const { data: umrahSeasonsData } = await supabase.from('umrah_seasons').select('id, name');
+    const { data: umrahCategoriesData } = await supabase.from('umrah_categories').select('id, name');
+    const { data: salesConsultantData } = await supabase.from('sales_consultant').select('id, name');
+    const { data: outboundDatesData } = await supabase.from('outbound_dates').select('id, start_date, end_date');
+
+    // Buat map untuk lookup yang lebih cepat
+    const packageTypesMap = new Map(packageTypesData?.map(p => [p.id, p.name]) || []);
+    const destinationsMap = new Map(destinationsData?.map(d => [d.id, d.name]) || []);
+    const umrahSeasonsMap = new Map(umrahSeasonsData?.map(u => [u.id, u.name]) || []);
+    const umrahCategoriesMap = new Map(umrahCategoriesData?.map(u => [u.id, u.name]) || []);
+    const salesConsultantMap = new Map(salesConsultantData?.map(s => [s.id, s.name]) || []);
+    const outboundDatesMap = new Map(outboundDatesData?.map(o => [o.id, o]) || []);
+
     // Transform data untuk kompatibilitas dengan komponen yang ada
     return data.map(lead => {
       // Tentukan interest berdasarkan data yang tersedia
       let interest = '-';
-      if (lead.umrah_seasons?.name) {
-        interest = lead.umrah_seasons.name;
-      } else if (lead.umrah_categories?.name) {
-        interest = lead.umrah_categories.name;
-      } else if (lead.destinations?.name) {
-        interest = lead.destinations.name;
-      } else if (lead.package_types?.name) {
-        interest = lead.package_types.name;
+      if (lead.season_id && umrahSeasonsMap.has(lead.season_id)) {
+        interest = umrahSeasonsMap.get(lead.season_id);
+      } else if (lead.category_id && umrahCategoriesMap.has(lead.category_id)) {
+        interest = umrahCategoriesMap.get(lead.category_id);
+      } else if (lead.destination_id && destinationsMap.has(lead.destination_id)) {
+        interest = destinationsMap.get(lead.destination_id);
+      } else if (lead.package_type_id && packageTypesMap.has(lead.package_type_id)) {
+        interest = packageTypesMap.get(lead.package_type_id);
+      }
+
+      // Get outbound date info
+      let outboundDate = '-';
+      if (lead.outbound_date_id && outboundDatesMap.has(lead.outbound_date_id)) {
+        const outboundDateData = outboundDatesMap.get(lead.outbound_date_id);
+        outboundDate = `${outboundDateData.start_date} - ${outboundDateData.end_date}`;
       }
 
       return {
@@ -303,26 +348,21 @@ export async function fetchLeadsDataByBranch(branchName) {
         name: lead.full_name || lead.title || 'Nama tidak tersedia',
         email: '-', // Email tidak ada di tabel leads
         phone: lead.phone || '-',
-        branch: lead.branches?.name || '-',
+        branch: branchData.name,
         interest: interest,
-        date: new Date(lead.created_at).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        }),
+        date: formatDateMalaysia(lead.created_at),
         avatar: getInitials(lead.full_name || lead.title || 'NA'),
         address: '-', // Address tidak ada di tabel leads
-        source: lead.category || '-',
+        source: '-',
         budget: '-', // Budget tidak ada di tabel leads
         timeline: '-', // Timeline tidak ada di tabel leads
-        consultant: '-', // Consultant tidak ada di tabel leads
+        consultant: salesConsultantMap.get(lead.sales_consultant_id) || '-',
         notes: '-', // Notes tidak ada di tabel leads
         // Tambahan field untuk detail
         seasonDestination: interest,
-        packageType: lead.package_types?.name || '-',
-        destination: lead.destinations?.name || '-',
-        outboundDate: lead.outbound_dates ? 
-          `${lead.outbound_dates.start_date} - ${lead.outbound_dates.end_date}` : '-'
+        packageType: packageTypesMap.get(lead.package_type_id) || '-',
+        destination: destinationsMap.get(lead.destination_id) || '-',
+        outboundDate: outboundDate
       };
     });
   } catch (error) {
@@ -342,7 +382,7 @@ export async function fetchLeadsDataPaginated(page = 1, limit = 10, filters = {}
     // Hitung offset untuk pagination
     const offset = (page - 1) * limit;
     
-    // Base query
+    // Ambil data leads dengan pagination
     let query = supabase
       .from('leads')
       .select(`
@@ -357,26 +397,12 @@ export async function fetchLeadsDataPaginated(page = 1, limit = 10, filters = {}
         package_type_id,
         destination_id,
         outbound_date_id,
-        category,
-        branches(name),
-        umrah_seasons(name),
-        umrah_categories(name),
-        package_types(name),
-        destinations(name),
-        outbound_dates(start_date, end_date)
-      `, { count: 'exact' }); // Dapatkan total count
+        sales_consultant_id
+      `, { count: 'exact' });
     
     // Apply filters
     if (filters.search) {
       query = query.or(`full_name.ilike.%${filters.search}%,title.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
-    }
-    
-    if (filters.branch) {
-      query = query.eq('branches.name', filters.branch);
-    }
-    
-    if (filters.interest) {
-      query = query.or(`umrah_seasons.name.ilike.%${filters.interest}%,umrah_categories.name.ilike.%${filters.interest}%,destinations.name.ilike.%${filters.interest}%,package_types.name.ilike.%${filters.interest}%`);
     }
     
     // Apply pagination dan ordering
@@ -396,18 +422,53 @@ export async function fetchLeadsDataPaginated(page = 1, limit = 10, filters = {}
     console.log(`Raw data from Supabase page ${page}:`, data);
     console.log(`Total count: ${count}, Page data: ${data?.length || 0}`);
 
+    // Ambil data untuk join secara terpisah
+    const { data: branchesData } = await supabase.from('branches').select('id, name');
+    const { data: packageTypesData } = await supabase.from('package_types').select('id, name');
+    const { data: destinationsData } = await supabase.from('destinations').select('id, name');
+    const { data: umrahSeasonsData } = await supabase.from('umrah_seasons').select('id, name');
+    const { data: umrahCategoriesData } = await supabase.from('umrah_categories').select('id, name');
+    const { data: salesConsultantData } = await supabase.from('sales_consultant').select('id, name');
+    const { data: outboundDatesData } = await supabase.from('outbound_dates').select('id, start_date, end_date');
+
+    // Buat map untuk lookup yang lebih cepat
+    const branchesMap = new Map(branchesData?.map(b => [b.id, b.name]) || []);
+    const packageTypesMap = new Map(packageTypesData?.map(p => [p.id, p.name]) || []);
+    const destinationsMap = new Map(destinationsData?.map(d => [d.id, d.name]) || []);
+    const umrahSeasonsMap = new Map(umrahSeasonsData?.map(u => [u.id, u.name]) || []);
+    const umrahCategoriesMap = new Map(umrahCategoriesData?.map(u => [u.id, u.name]) || []);
+    const salesConsultantMap = new Map(salesConsultantData?.map(s => [s.id, s.name]) || []);
+    const outboundDatesMap = new Map(outboundDatesData?.map(o => [o.id, o]) || []);
+
     // Transform data untuk kompatibilitas dengan komponen yang ada
     const transformedData = data.map(lead => {
       // Tentukan interest berdasarkan data yang tersedia
       let interest = '-';
-      if (lead.umrah_seasons?.name) {
-        interest = lead.umrah_seasons.name;
-      } else if (lead.umrah_categories?.name) {
-        interest = lead.umrah_categories.name;
-      } else if (lead.destinations?.name) {
-        interest = lead.destinations.name;
-      } else if (lead.package_types?.name) {
-        interest = lead.package_types.name;
+      if (lead.season_id && umrahSeasonsMap.has(lead.season_id)) {
+        interest = umrahSeasonsMap.get(lead.season_id);
+      } else if (lead.category_id && umrahCategoriesMap.has(lead.category_id)) {
+        interest = umrahCategoriesMap.get(lead.category_id);
+      } else if (lead.destination_id && destinationsMap.has(lead.destination_id)) {
+        interest = destinationsMap.get(lead.destination_id);
+      } else if (lead.package_type_id && packageTypesMap.has(lead.package_type_id)) {
+        interest = packageTypesMap.get(lead.package_type_id);
+      }
+
+      // Apply branch filter jika ada
+      if (filters.branch && branchesMap.get(lead.branch_id) !== filters.branch) {
+        return null; // Skip data yang tidak sesuai filter
+      }
+
+      // Apply interest filter jika ada
+      if (filters.interest && interest !== filters.interest) {
+        return null; // Skip data yang tidak sesuai filter
+      }
+
+      // Get outbound date info
+      let outboundDate = '-';
+      if (lead.outbound_date_id && outboundDatesMap.has(lead.outbound_date_id)) {
+        const outboundDateData = outboundDatesMap.get(lead.outbound_date_id);
+        outboundDate = `${outboundDateData.start_date} - ${outboundDateData.end_date}`;
       }
 
       return {
@@ -415,28 +476,25 @@ export async function fetchLeadsDataPaginated(page = 1, limit = 10, filters = {}
         name: lead.full_name || lead.title || 'Nama tidak tersedia',
         email: '-', // Email tidak ada di tabel leads
         phone: lead.phone || '-',
-        branch: lead.branches?.name || '-',
+        branch: branchesMap.get(lead.branch_id) || '-',
         interest: interest,
-        date: new Date(lead.created_at).toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        }),
+        date: formatDateMalaysia(lead.created_at),
         avatar: getInitials(lead.full_name || lead.title || 'NA'),
         address: '-', // Address tidak ada di tabel leads
-        source: lead.category || '-',
+        source: '-',
         budget: '-', // Budget tidak ada di tabel leads
         timeline: '-', // Timeline tidak ada di tabel leads
-        consultant: '-', // Consultant tidak ada di tabel leads
+        consultant: salesConsultantMap.get(lead.sales_consultant_id) || '-',
         notes: '-', // Notes tidak ada di tabel leads
         // Tambahan field untuk detail
         seasonDestination: interest,
-        packageType: lead.package_types?.name || '-',
-        destination: lead.destinations?.name || '-',
-        outboundDate: lead.outbound_dates ? 
-          `${lead.outbound_dates.start_date} - ${lead.outbound_dates.end_date}` : '-'
+        packageType: packageTypesMap.get(lead.package_type_id) || '-',
+        destination: destinationsMap.get(lead.destination_id) || '-',
+        outboundDate: outboundDate
       };
-    });
+    }).filter(Boolean); // Hapus data yang null (tidak sesuai filter)
+
+    console.log('Transformed data:', transformedData);
 
     return {
       data: transformedData,

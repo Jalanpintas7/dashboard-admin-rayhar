@@ -4,6 +4,7 @@
   import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-svelte';
   import { user } from '$lib/stores/auth.js';
   import { supabase } from '$lib/supabase.js';
+  import { formatDateMalaysia } from '$lib/date-helpers.js';
   
   let leadsData = [];
   let loading = true;
@@ -119,11 +120,7 @@
           phone: lead.phone || '-',
           branch: lead.branches?.name || '-',
           interest: interest,
-          date: new Date(lead.created_at).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          }),
+          date: formatDateMalaysia(lead.created_at),
           avatar: getInitials(lead.full_name || lead.title || 'NA'),
           address: '-', // Address tidak ada di tabel leads
           source: lead.category || '-',

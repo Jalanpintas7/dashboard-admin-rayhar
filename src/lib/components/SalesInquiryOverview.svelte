@@ -34,9 +34,15 @@
   // Fungsi untuk format tanggal
   function formatDate(date) {
     const day = date.getDate();
-    const month = date.getMonth() + 1;
+    const month = date.getMonth();
     const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    
+    const monthNames = [
+      'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'
+    ];
+    
+    return `${day} ${monthNames[month]} ${year}`;
   }
 
   // Fungsi untuk mengambil data dari Supabase

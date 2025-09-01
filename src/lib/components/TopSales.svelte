@@ -21,8 +21,10 @@
        topSalesData = consultants.map(consultant => ({
          id: consultant.id,
          name: consultant.name,
-         total: consultant.totalBookings,
-         recent: consultant.recentBookings,
+         total: consultant.totalRevenue,
+         recent: consultant.recentRevenue,
+         totalBookings: consultant.totalBookings,
+         recentBookings: consultant.recentBookings,
          email: consultant.email,
          whatsapp: consultant.whatsapp,
          salesConsultantNumber: consultant.salesConsultantNumber,
@@ -158,19 +160,21 @@
                 </div>
               </div>
               
-              <!-- Name and Recent Activity -->
+              <!-- Name and Total Bookings -->
               <div class="min-w-0 flex-1 overflow-hidden">
                 <h3 class="text-slate-900 font-bold text-xs sm:text-sm lg:text-sm xl:text-sm truncate">{item.name}</h3>
-                {#if item.recent > 0}
-                  <p class="text-green-600 text-[11px] sm:text-xs truncate">+{item.recent} sales 30 hari terakhir</p>
-                {/if}
+                <p class="text-slate-500 text-[11px] sm:text-xs truncate">
+                  {item.totalBookings} Total Bookings
+                </p>
               </div>
             </div>
             
-            <!-- Total Bookings -->
+            <!-- Total Revenue -->
             <div class="text-right flex-shrink-0 ml-2">
-              <p class="text-slate-900 font-bold text-sm sm:text-base lg:text-base xl:text-base">{item.total}</p>
-              <p class="text-slate-500 text-xs sm:text-sm truncate">Total Sales</p>
+              <p class="text-slate-900 font-bold text-sm sm:text-base lg:text-base xl:text-base">
+                RM {item.total.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p class="text-slate-500 text-xs sm:text-sm truncate">Total Revenue</p>
             </div>
           </div>
         </div>
@@ -238,22 +242,34 @@
               <span class="truncate">{selectedConsultant.whatsapp}</span>
             </p>
           {/if}
+          
+          {#if selectedConsultant.branches}
+            <p class="text-slate-600 text-xs sm:text-sm flex items-center justify-center break-words">
+              <svg class="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+              </svg>
+              <span class="truncate">{selectedConsultant.branches}</span>
+            </p>
+          {/if}
         </div>
       </div>
       
       <!-- Statistics -->
-      <div class="bg-green-50 p-3 sm:p-4 rounded-lg text-center mb-6">
-        <p class="text-xl sm:text-2xl font-bold text-green-600">{selectedConsultant.total}</p>
-        <p class="text-xs sm:text-sm text-green-700">Total Bookings</p>
-      </div>
-      
-      <!-- Recent Activity -->
-      {#if selectedConsultant.recent > 0}
-        <div class="bg-yellow-50 p-3 sm:p-4 rounded-lg text-center">
-          <p class="text-base sm:text-lg font-bold text-yellow-700">+{selectedConsultant.recent}</p>
-          <p class="text-xs sm:text-sm text-yellow-800">Booking 30 Hari Terakhir</p>
+      <div class="space-y-3 mb-6">
+        <!-- Total Revenue -->
+        <div class="bg-green-50 p-3 sm:p-4 rounded-lg text-center">
+          <p class="text-xl sm:text-2xl font-bold text-green-600">
+            RM {selectedConsultant.total.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p class="text-xs sm:text-sm text-green-700">Total Revenue</p>
         </div>
-      {/if}
+        
+        <!-- Total Bookings -->
+        <div class="bg-blue-50 p-3 sm:p-4 rounded-lg text-center">
+          <p class="text-lg sm:text-xl font-bold text-blue-600">{selectedConsultant.totalBookings}</p>
+          <p class="text-xs sm:text-sm text-blue-700">Total Bookings</p>
+        </div>
+      </div>
       
       <!-- Close Button -->
       <div class="mt-6 text-center">

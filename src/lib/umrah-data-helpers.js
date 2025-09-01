@@ -134,9 +134,16 @@ export function formatDate(dateString) {
   if (!dateString) return '-';
   
   const date = new Date(dateString);
-  return date.toLocaleDateString('id-ID', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  if (isNaN(date.getTime())) return '-';
+  
+  const day = date.getDate();
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  
+  const monthNames = [
+    'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'
+  ];
+  
+  return `${day} ${monthNames[month]} ${year}`;
 }

@@ -462,7 +462,20 @@
   // Format date function
   function formatDate(dateString) {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('id-ID');
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    
+    const day = date.getDate();
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    
+    const monthNames = [
+      'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'
+    ];
+    
+    return `${day} ${monthNames[month]} ${year}`;
   }
 
   // Snackbar notification system

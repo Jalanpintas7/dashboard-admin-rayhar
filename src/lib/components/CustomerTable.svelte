@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { fetchCustomersDataPaginated, getInitials, getPackageColor } from '$lib/data/customers.js';
+  import { supabase } from '$lib/supabase.js';
   import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, ChevronLeft, ChevronRight } from 'lucide-svelte';
   
   // State untuk data
@@ -25,7 +26,26 @@
   
   // Load data saat komponen dimount
   onMount(async () => {
-    await loadPageData(1);
+    console.log('CustomerTable component mounted');
+    
+    // Test koneksi Supabase
+    try {
+      const { data, error: supabaseError } = await supabase
+        .from('bookings')
+        .select('id, nama')
+        .limit(1);
+      
+      if (supabaseError) {
+        console.error('Supabase connection test failed:', supabaseError);
+        error = 'Gagal terhubung ke database';
+      } else {
+        console.log('Supabase connection test successful:', data);
+        await loadPageData(1);
+      }
+    } catch (err) {
+      console.error('Error testing Supabase connection:', err);
+      error = 'Gagal terhubung ke database';
+    }
   });
   
   // Fungsi untuk load data per halaman
@@ -127,6 +147,92 @@
     branchFilter = '';
     inquiryFilter = '';
     await loadPageData(1);
+  }
+  
+  // Fungsi untuk test data umrah
+  async function testUmrahData() {
+    try {
+      console.log('=== TESTING UMRAH DATA ===');
+      
+      // Test 1: Cek data bookings dengan umrah_season_id
+      const { data: umrahSeasonBookings, error: umrahSeasonError } = await supabase
+        .from('bookings')
+        .select('id, nama, umrah_season_id, umrah_category_id, destination_id')
+        .not('umrah_season_id', 'is', null)
+        .limit(5);
+      
+      if (umrahSeasonError) {
+        console.error('Error fetching umrah season bookings:', umrahSeasonError);
+      } else {
+        console.log('Bookings with umrah_season_id:', umrahSeasonBookings);
+      }
+      
+      // Test 2: Cek data bookings dengan umrah_category_id
+      const { data: umrahCategoryBookings, error: umrahCategoryError } = await supabase
+        .from('bookings')
+        .select('id, nama, umrah_season_id, umrah_category_id, destination_id')
+        .not('umrah_category_id', 'is', null)
+        .limit(5);
+      
+      if (umrahCategoryError) {
+        console.error('Error fetching umrah category bookings:', umrahCategoryError);
+      } else {
+        console.log('Bookings with umrah_category_id:', umrahCategoryBookings);
+      }
+      
+      // Test 3: Cek semua data bookings
+      const { data: allBookings, error: allBookingsError } = await supabase
+        .from('bookings')
+        .select('id, nama, umrah_season_id, umrah_category_id, destination_id, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (allBookingsError) {
+        console.error('Error fetching all bookings:', allBookingsError);
+      } else {
+        console.log('All bookings sample:', allBookings);
+        
+        // Analisis data
+        const umrahCount = allBookings.filter(b => b.umrah_season_id || b.umrah_category_id).length;
+        const outboundCount = allBookings.filter(b => b.destination_id).length;
+        const unknownCount = allBookings.filter(b => !b.umrah_season_id && !b.umrah_category_id && !b.destination_id).length;
+        
+        console.log('Data analysis:');
+        console.log('- Umrah bookings:', umrahCount);
+        console.log('- Outbound bookings:', outboundCount);
+        console.log('- Unknown type:', unknownCount);
+        console.log('- Total sample:', allBookings.length);
+      }
+      
+      // Test 4: Cek tabel umrah_seasons
+      const { data: umrahSeasons, error: umrahSeasonsError } = await supabase
+        .from('umrah_seasons')
+        .select('id, name')
+        .limit(5);
+      
+      if (umrahSeasonsError) {
+        console.error('Error fetching umrah seasons:', umrahSeasonsError);
+      } else {
+        console.log('Umrah seasons:', umrahSeasons);
+      }
+      
+      // Test 5: Cek tabel umrah_categories
+      const { data: umrahCategories, error: umrahCategoriesError } = await supabase
+        .from('umrah_categories')
+        .select('id, name')
+        .limit(5);
+      
+      if (umrahCategoriesError) {
+        console.error('Error fetching umrah categories:', umrahCategoriesError);
+      } else {
+        console.log('Umrah categories:', umrahCategories);
+      }
+      
+      console.log('=== END TEST ===');
+      
+    } catch (err) {
+      console.error('Test Umrah data failed:', err);
+    }
   }
   
   // Fungsi untuk menampilkan modal detail

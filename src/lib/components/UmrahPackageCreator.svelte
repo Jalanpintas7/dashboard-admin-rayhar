@@ -25,7 +25,6 @@
     hargaQuadruple: 0,
     hargaQuintuple: 0,
     // Harga untuk anak dan infant (untuk pakej non-cruise)
-    hargaCWB: 0,    // Child With Bed
     hargaCNB: 0,    // Child No Bed
     hargaInfant: 0,  // Infant
     // Harga berdasarkan deck (untuk pakej cruise)
@@ -142,7 +141,6 @@
           quadruple: packageData.hargaQuadruple || 0,
           quintuple: packageData.hargaQuintuple || 0,
           // Harga untuk anak dan infant
-          cwb: packageData.hargaCWB || 0,
           cnb: packageData.hargaCNB || 0,
           infant: packageData.hargaInfant || 0
         };
@@ -170,7 +168,6 @@
         hargaQuadruple: 0,
         hargaQuintuple: 0,
         // Reset harga anak dan infant
-        hargaCWB: 0,
         hargaCNB: 0,
         hargaInfant: 0,
         // Reset harga deck
@@ -565,24 +562,7 @@
         <!-- Harga Anak dan Infant (untuk pakej non-cruise) -->
         <div>
           <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Anak dan Infant:</h4>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-            <div>
-              <label for="hargaCWB" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-                Harga CWB (Child With Bed)
-              </label>
-              <input
-                id="hargaCWB"
-                type="number"
-                bind:value={packageData.hargaCWB}
-                min="0"
-                placeholder="0"
-                class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-              />
-              {#if packageData.hargaCWB > 0}
-                <p class="text-xs text-slate-500 mt-1">{formatCurrency(packageData.hargaCWB)}</p>
-              {/if}
-            </div>
-
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label for="hargaCNB" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
                 Harga CNB (Child No Bed)
