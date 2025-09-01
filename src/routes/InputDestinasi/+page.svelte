@@ -21,7 +21,7 @@
         Manajemen Destinasi
       </h1>
       <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-        Kelola destinasi pelancongan untuk paket perjalanan Anda
+        Kelola destinasi pelancongan untuk pakej perjalanan Anda
       </p>
     </div>
 

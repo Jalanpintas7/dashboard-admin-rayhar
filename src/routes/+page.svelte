@@ -43,20 +43,20 @@
     <SummaryCards />
     
     <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-10 mb-6 sm:mb-8 lg:mb-10">
+    <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-12 gap-3 sm:gap-4 lg:gap-5 xl:gap-6">
       <!-- Sales & Inquiry Overview - Lebih besar (2 kolom) -->
-      <div class="lg:col-span-2">
+      <div class="lg:col-span-2 xl:col-span-7">
         <SalesInquiryOverview />
       </div>
       
       <!-- Top Sales - Lebih kecil (1 kolom) -->
-      <div class="lg:col-span-1">
+      <div class="lg:col-span-1 xl:col-span-5">
         <TopSales />
       </div>
     </div>
     
     <!-- Bottom Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-5 xl:gap-6 mt-2 sm:mt-3 lg:mt-4">
       <!-- Package Top Sales -->
       <PackageTopSales />
       

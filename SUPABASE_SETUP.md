@@ -37,7 +37,7 @@ Project ini terhubung ke database dengan tabel-tabel berikut:
 - `branches` - Data cabang
 - `destinations` - Data destinasi
 - `outbound_dates` - Tanggal keberangkatan
-- `package_types` - Jenis paket
+- `package_types` - Jenis pakej
 - `umrah_seasons` - Musim umrah
 - `umrah_categories` - Kategori umrah
 - `leads` - Data leads
@@ -139,7 +139,7 @@ await signOut()
 - `getUmrahSeasons()` - Ambil musim umrah
 - `getUmrahCategories()` - Ambil kategori umrah
 - `getSalesConsultants()` - Ambil konsultan penjualan
-- `getPackageTypes()` - Ambil jenis paket
+- `getPackageTypes()` - Ambil jenis pakej
 - `getAirlines()` - Ambil data maskapai
 
 ### Data Creation

@@ -1,17 +1,17 @@
-# Fitur Buat Paket Umrah Baru
+# Fitur Buat Pakej Umrah Baru
 
 ## Deskripsi
-Fitur ini memungkinkan admin untuk membuat paket umrah baru dengan memilih musim dan kategori yang sudah ada di database. Data musim diambil dari tabel `umrah_seasons` dan data kategori diambil dari tabel `umrah_categories`.
+Fitur ini memungkinkan admin untuk membuat pakej umrah baru dengan memilih musim dan kategori yang sudah ada di database. Data musim diambil dari tabel `umrah_seasons` dan data kategori diambil dari tabel `umrah_categories`.
 
 ## Komponen yang Diupdate
 
 ### UmrahPackageCreator.svelte
-Komponen form untuk membuat paket umrah baru dengan integrasi database.
+Komponen form untuk membuat pakej umrah baru dengan integrasi database.
 
 **Fitur:**
 - **Data Dinamis**: Musim dan kategori diambil dari database Supabase
-- **Form Lengkap**: Input semua detail paket umrah
-- **Preview Paket**: Tampilkan detail musim dan kategori yang dipilih
+- **Form Lengkap**: Input semua detail pakej umrah
+- **Preview Pakej**: Tampilkan detail musim dan kategori yang dipilih
 - **Validasi**: Form validation yang komprehensif
 - **Loading State**: Loading saat memuat data dari database
 - **Error Handling**: Error handling yang user-friendly
@@ -60,10 +60,10 @@ Komponen form untuk membuat paket umrah baru dengan integrasi database.
 }
 ```
 
-#### Paket Umrah (umrah_dates)
+#### Pakej Umrah (umrah_dates)
 ```javascript
 {
-  id: string,                    // UUID paket
+  id: string,                    // UUID pakej
   start_date: date,              // Tanggal berangkat
   end_date: date,                // Tanggal kembali
   umrah_season_id: string,       // Foreign key ke umrah_seasons
@@ -86,10 +86,10 @@ Komponen form untuk membuat paket umrah baru dengan integrasi database.
 
 ## Form Fields
 
-### 1. Nama Paket
+### 1. Nama Pakej
 - **Type**: Text input
 - **Required**: Ya
-- **Placeholder**: "Contoh: Paket Umrah Ramadhan Premium 2024"
+- **Placeholder**: "Contoh: Pakej Umrah Ramadhan Premium 2024"
 
 ### 2. Pilih Musim
 - **Type**: Dropdown select
@@ -139,23 +139,23 @@ Komponen form untuk membuat paket umrah baru dengan integrasi database.
 - **Required**: Ya
 - **Placeholder**: "Contoh: SV 123, EK 456, QR 789"
 
-### 9. Status Paket
+### 9. Status Pakej
 - **Type**: Dropdown select
 - **Options**: Aktif, Non-Aktif, Draft
 
-### 10. Deskripsi Paket
+### 10. Deskripsi Pakej
 - **Type**: Textarea
 - **Required**: Tidak
 - **Rows**: 4
 
-## Overview Paket
+## Overview Pakej
 
 ### Lokasi dan Tampilan
-Overview paket ditampilkan di bagian bawah form, sebelum tombol submit, dengan design yang menarik menggunakan gradient background.
+Overview pakej ditampilkan di bagian bawah form, sebelum tombol submit, dengan design yang menarik menggunakan gradient background.
 
 ### Kondisi Tampilan
 Overview akan muncul ketika ada data yang diisi:
-- Nama paket
+- Nama pakej
 - Musim yang dipilih
 - Kategori yang dipilih
 - Maskapai yang dipilih
@@ -166,7 +166,7 @@ Overview akan muncul ketika ada data yang diisi:
 ### Detail yang Ditampilkan
 
 #### 1. Informasi Dasar
-- **Nama Paket**: Nama paket yang diinput
+- **Nama Pakej**: Nama pakej yang diinput
 - **Musim**: Nama musim + status badge (Aktif/Non-Aktif)
 - **Kategori**: Nama kategori + status badge (Aktif/Non-Aktif)
 - **Maskapai**: Nama maskapai + status badge (Aktif/Non-Aktif)
@@ -188,7 +188,7 @@ Overview akan muncul ketika ada data yang diisi:
 - **CNB (Child No Bed)**: Harga anak tanpa tempat tidur
 - **Infant**: Harga bayi/infant
 
-#### 5. Status Paket
+#### 5. Status Pakej
 - **Status**: Badge berwarna (Aktif/Non-Aktif) sesuai checkbox
 
 ### Design Features
@@ -210,7 +210,7 @@ Overview akan muncul ketika ada data yang diisi:
 - `airlines` - Array data airlines dari database
 - `isLoading` - Status loading saat memuat data
 - `error` - Pesan error jika ada masalah
-- `packageData` - Data form input paket
+- `packageData` - Data form input pakej
 
 ### Reactive Updates
 - `selectedMusim` - Musim yang dipilih (reactive)
@@ -287,18 +287,18 @@ const [seasonsData, categoriesData, airlinesData] = await Promise.all([
 2. Pilih kategori dari dropdown (hanya yang aktif)
 3. Preview detail akan muncul otomatis
 
-### 3. Isi Detail Paket
-1. Isi nama paket yang deskriptif
+### 3. Isi Detail Pakej
+1. Isi nama pakej yang deskriptif
 2. Pilih tanggal berangkat dan kembali
 3. Pilih maskapai penerbangan
 4. Input harga untuk setiap tipe bilik (Double, Triple, Quadruple, Quintuple)
 5. Input harga untuk anak dan infant (CWB, CNB, Infant)
 6. Input flight name
-7. Pilih status paket
+7. Pilih status pakej
 8. Tambah deskripsi (opsional)
 
 ### 4. Submit
-1. Klik "Buat Paket Umrah"
+1. Klik "Buat Pakej Umrah"
 2. Validasi form akan dijalankan
 3. Data akan disimpan ke database Supabase
 4. Pesan sukses/error akan ditampilkan
@@ -307,7 +307,7 @@ const [seasonsData, categoriesData, airlinesData] = await Promise.all([
 ## Validasi Form
 
 ### Client-side Validation
-- **Nama Paket**: Wajib diisi
+- **Nama Pakej**: Wajib diisi
 - **Musim**: Wajib dipilih
 - **Kategori**: Wajib dipilih
 - **Tanggal Berangkat**: Wajib diisi
@@ -323,16 +323,16 @@ const [seasonsData, categoriesData, airlinesData] = await Promise.all([
 ## Future Enhancements
 
 ### Fitur yang Bisa Ditambahkan
-1. **Image Upload**: Upload gambar paket
+1. **Image Upload**: Upload gambar pakej
 2. **Price Calculator**: Kalkulator harga otomatis
 3. **Validation Rules**: Validasi tanggal berdasarkan musim
-4. **Bulk Import**: Import paket dari Excel/CSV
-5. **Package Management**: Edit dan hapus paket yang sudah dibuat
+4. **Bulk Import**: Import pakej dari Excel/CSV
+5. **Package Management**: Edit dan hapus pakej yang sudah dibuat
 
 ### Database Integration
-1. **Tabel Paket**: Menggunakan tabel `umrah_dates` yang sudah ada
+1. **Tabel Pakej**: Menggunakan tabel `umrah_dates` yang sudah ada
 2. **Foreign Keys**: Relasi dengan musim, kategori, dan airlines
-3. **Audit Trail**: Tracking perubahan paket
+3. **Audit Trail**: Tracking perubahan pakej
 
 ## Dependencies
 
@@ -349,7 +349,7 @@ const [seasonsData, categoriesData, airlinesData] = await Promise.all([
 
 ```
 src/lib/components/
-└── UmrahPackageCreator.svelte    # Form buat paket umrah
+└── UmrahPackageCreator.svelte    # Form buat pakej umrah
 
 src/lib/
 ├── supabase.js                   # Supabase client

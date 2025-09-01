@@ -79,12 +79,20 @@
   });
 </script>
 
-<div class="bg-white/90 backdrop-blur-sm rounded-card shadow-soft border border-white/80 p-3 sm:p-4 lg:p-5 xl:p-7 h-[500px] sm:h-[550px] lg:h-[650px]">
+<!-- Container utama dengan responsive design yang lebih baik -->
+<div class="
+  bg-white/95 backdrop-blur-sm 
+  rounded-card shadow-soft 
+  border border-white/80 
+  p-3 sm:p-4 lg:p-5 xl:p-5 2xl:p-7
+  h-[440px] sm:h-[550px] lg:h-[620px] xl:h-[540px] 2xl:h-[650px]
+  min-w-0
+  overflow-hidden
+  flex flex-col
+">
   <!-- Header -->
-  <div class="flex items-center justify-between mb-3 sm:mb-4 lg:mb-6">
-    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-900">Top Sales Consultant</h2>
-    
-
+  <div class="flex items-center justify-between mb-3 sm:mb-4 lg:mb-5">
+    <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate">Top Sales Consultant</h2>
   </div>
   
   <!-- Loading State -->
@@ -103,32 +111,35 @@
       </button>
     </div>
   {:else}
-    <!-- Content -->
-    <div class="space-y-2 lg:space-y-3 xl:space-y-4">
+    <!-- Content dengan responsive design yang lebih baik -->
+    <div class="flex-1 overflow-y-auto pr-1 space-y-2 lg:space-y-2.5 xl:space-y-3">
       {#each topSalesData as item, index}
         <div 
           class="
             bg-white
-            p-2 lg:p-3 xl:p-4 
+            p-2 lg:p-2.5 xl:p-3 
             transition-all duration-200
-            rounded-lg
+            rounded-xl
             hover:shadow-md
             cursor-pointer
+            border border-gray-100
+            shadow-sm
+            min-w-0
           " 
           style="background-color: #ffffff !important;"
           on:click={() => showConsultantDetail(item)}
         >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2 lg:space-x-3 xl:space-x-4">
+          <div class="flex items-center justify-between min-w-0">
+            <div class="flex items-center space-x-2 lg:space-x-2.5 xl:space-x-3 min-w-0 flex-1">
               <!-- Profile Picture - Circular -->
               <div class="
-                w-7 h-7 lg:w-8 lg:h-8 xl:w-10 xl:h-10
+                w-7 h-7 lg:w-8 lg:h-8 xl:w-9 xl:h-9
                 bg-gradient-to-br from-green-400 to-green-600
                 rounded-full
                 flex items-center justify-center
                 text-white
                 font-semibold
-                text-xs lg:text-sm
+                text-xs lg:text-xs
                 shadow-md
                 overflow-hidden
                 flex-shrink-0
@@ -148,38 +159,43 @@
               </div>
               
               <!-- Name and Recent Activity -->
-              <div class="min-w-0 flex-1">
-                <h3 class="text-slate-900 font-bold text-sm sm:text-base lg:text-lg truncate">{item.name}</h3>
+              <div class="min-w-0 flex-1 overflow-hidden">
+                <h3 class="text-slate-900 font-bold text-xs sm:text-sm lg:text-sm xl:text-sm truncate">{item.name}</h3>
                 {#if item.recent > 0}
-                  <p class="text-green-600 text-xs">+{item.recent} booking 30 hari terakhir</p>
+                  <p class="text-green-600 text-[11px] sm:text-xs truncate">+{item.recent} sales 30 hari terakhir</p>
                 {/if}
               </div>
             </div>
             
-                         <!-- Total Bookings -->
-             <div class="text-right flex-shrink-0">
-               <p class="text-slate-900 font-bold text-sm sm:text-base lg:text-lg">{item.total}</p>
-               <p class="text-slate-500 text-sm sm:text-base">Total Bookings</p>
-             </div>
+            <!-- Total Bookings -->
+            <div class="text-right flex-shrink-0 ml-2">
+              <p class="text-slate-900 font-bold text-sm sm:text-base lg:text-base xl:text-base">{item.total}</p>
+              <p class="text-slate-500 text-xs sm:text-sm truncate">Total Sales</p>
+            </div>
           </div>
         </div>
       {/each}
     </div>
-    
-
   {/if}
 </div>
 
-<!-- Detail Modal -->
+<!-- Detail Modal dengan responsive design yang lebih baik -->
 {#if showDetailModal && selectedConsultant}
   <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white/95 backdrop-blur-md rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl border border-white/50">
+    <div class="
+      bg-white/95 backdrop-blur-md 
+      rounded-xl p-4 sm:p-6 
+      max-w-md w-full max-h-[80vh] 
+      overflow-y-auto shadow-2xl 
+      border border-white/50
+      mx-4
+    ">
       <!-- Modal Header -->
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold text-slate-900">Detail Sales Consultant</h3>
+        <h3 class="text-lg font-bold text-slate-900 truncate">Detail Sales Consultant</h3>
         <button 
           on:click={closeDetailModal}
-          class="text-slate-400 hover:text-slate-600 p-1"
+          class="text-slate-400 hover:text-slate-600 p-1 flex-shrink-0"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -189,14 +205,14 @@
       
       <!-- Consultant Info -->
       <div class="text-center mb-6">
-        <div class="w-20 h-20 mx-auto mb-4">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4">
           <img 
             src={selectedConsultant.profileImage}
             alt={selectedConsultant.name}
             class="w-full h-full rounded-full object-cover"
           />
         </div>
-        <h4 class="text-xl font-bold text-slate-900 mb-2">{selectedConsultant.name}</h4>
+        <h4 class="text-lg sm:text-xl font-bold text-slate-900 mb-2 truncate">{selectedConsultant.name}</h4>
         
         <!-- Sales Consultant Number -->
         {#if selectedConsultant.salesConsultantNumber}
@@ -206,36 +222,36 @@
         <!-- Contact Information -->
         <div class="space-y-2 mb-4">
           {#if selectedConsultant.email}
-            <p class="text-slate-600 text-sm flex items-center justify-center">
-              <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <p class="text-slate-600 text-xs sm:text-sm flex items-center justify-center break-words">
+              <svg class="w-4 h-4 mr-2 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
               </svg>
-              {selectedConsultant.email}
+              <span class="truncate">{selectedConsultant.email}</span>
             </p>
           {/if}
           
           {#if selectedConsultant.whatsapp}
-            <p class="text-slate-600 text-sm flex items-center justify-center">
-              <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <p class="text-slate-600 text-xs sm:text-sm flex items-center justify-center break-words">
+              <svg class="w-4 h-4 mr-2 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
               </svg>
-              {selectedConsultant.whatsapp}
+              <span class="truncate">{selectedConsultant.whatsapp}</span>
             </p>
           {/if}
         </div>
       </div>
       
-             <!-- Statistics -->
-       <div class="bg-green-50 p-4 rounded-lg text-center mb-6">
-         <p class="text-2xl font-bold text-green-600">{selectedConsultant.total}</p>
-         <p class="text-sm text-green-700">Total Bookings</p>
-       </div>
+      <!-- Statistics -->
+      <div class="bg-green-50 p-3 sm:p-4 rounded-lg text-center mb-6">
+        <p class="text-xl sm:text-2xl font-bold text-green-600">{selectedConsultant.total}</p>
+        <p class="text-xs sm:text-sm text-green-700">Total Bookings</p>
+      </div>
       
       <!-- Recent Activity -->
       {#if selectedConsultant.recent > 0}
-        <div class="bg-yellow-50 p-4 rounded-lg text-center">
-          <p class="text-lg font-bold text-yellow-700">+{selectedConsultant.recent}</p>
-          <p class="text-sm text-yellow-800">Booking 30 Hari Terakhir</p>
+        <div class="bg-yellow-50 p-3 sm:p-4 rounded-lg text-center">
+          <p class="text-base sm:text-lg font-bold text-yellow-700">+{selectedConsultant.recent}</p>
+          <p class="text-xs sm:text-sm text-yellow-800">Booking 30 Hari Terakhir</p>
         </div>
       {/if}
       
@@ -243,7 +259,7 @@
       <div class="mt-6 text-center">
         <button 
           on:click={closeDetailModal}
-          class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+          class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm sm:text-base"
         >
           Tutup
         </button>

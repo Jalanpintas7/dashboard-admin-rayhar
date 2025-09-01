@@ -262,7 +262,7 @@
       }
       
       // Show success message
-      showToast('success', `${modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Paket'} berhasil diperbarui!`);
+              showToast('success', `${modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Pakej'} berhasil diperbarui!`);
       
       // Close modal after save
       closeModals();
@@ -295,7 +295,7 @@
           .limit(1);
           
         if (seasonUsage.data && seasonUsage.data.length > 0) {
-          throw new Error('Musim ini tidak dapat dihapus karena masih digunakan dalam paket umrah');
+          throw new Error('Musim ini tidak dapat dihapus karena masih digunakan dalam pakej umrah');
         }
         
         // Delete from umrah_seasons table
@@ -313,7 +313,7 @@
           .limit(1);
           
         if (categoryUsage.data && categoryUsage.data.length > 0) {
-          throw new Error('Kategori ini tidak dapat dihapus karena masih digunakan dalam paket umrah');
+          throw new Error('Kategori ini tidak dapat dihapus karena masih digunakan dalam pakej umrah');
         }
         
         // Delete from umrah_categories table
@@ -331,7 +331,7 @@
           .limit(1);
           
         if (packageUsage.data && packageUsage.data.length > 0) {
-          throw new Error('Paket ini tidak dapat dihapus karena masih digunakan dalam booking');
+          throw new Error('Pakej ini tidak dapat dihapus karena masih digunakan dalam booking');
         }
         
         // Delete from umrah_dates table
@@ -346,7 +346,7 @@
       }
       
       // Show success message
-      showToast('success', `${modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Paket'} berhasil dihapus!`);
+              showToast('success', `${modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Pakej'} berhasil dihapus!`);
       
       // Close modal after delete
       closeModals();
@@ -413,7 +413,7 @@
         class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 {activeTab === 'packages' ? 'border-green-500 text-green-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}"
         on:click={() => activeTab = 'packages'}
       >
-        Paket ({packages.length})
+        Pakej ({packages.length})
       </button>
     </nav>
   </div>
@@ -452,7 +452,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21v-4a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v4"/>
           </svg>
         </div>
-        <h3 class="text-base sm:text-lg font-medium text-slate-900 mb-1 sm:mb-2">Tidak ada data paket</h3>
+                  <h3 class="text-base sm:text-lg font-medium text-slate-900 mb-1 sm:mb-2">Tidak ada data pakej</h3>
         <p class="text-xs sm:text-sm text-slate-500">Coba ubah filter pencarian Anda</p>
       </div>
     {:else}
@@ -662,7 +662,7 @@
           <table class="min-w-full divide-y divide-slate-200">
             <thead class="bg-slate-50">
               <tr>
-                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Paket</th>
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Pakej</th>
                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Periode</th>
                 <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi</th>
               </tr>
@@ -794,7 +794,7 @@
               {/if}
             </h2>
             <p class="text-gray-500">
-              Detail {modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Paket'} Umrah
+              Detail {modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Pakej'} Umrah
             </p>
           </div>
         </div>
@@ -888,17 +888,17 @@
           </div>
 
         {:else}
-          <!-- Detail Paket -->
+          <!-- Detail Pakej -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-4">
               <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <Globe class="w-5 h-5 text-green-600" />
-                Informasi Paket
+                Informasi Pakej
               </h3>
               
               <div class="space-y-3">
                 <div>
-                  <p class="text-sm text-gray-500">Nama Paket</p>
+                  <p class="text-sm text-gray-500">Nama Pakej</p>
                   <p class="text-lg font-semibold text-gray-900">
                     {selectedItem.umrah_seasons?.name || 'N/A'} - {selectedItem.umrah_categories?.name || 'N/A'}
                   </p>
@@ -931,7 +931,7 @@
             </div>
           </div>
 
-          <!-- Harga Paket - dengan pengkondisian untuk cruise -->
+          <!-- Harga Pakej - dengan pengkondisian untuk cruise -->
           {#if selectedItem.umrah_categories?.name === 'PELAYARAN' || selectedItem.umrah_categories?.name === 'UMRAH + PELAYARAN'}
             <!-- Harga Deck untuk Cruise -->
             <div class="space-y-4">
@@ -997,11 +997,11 @@
               </div>
             </div>
           {:else}
-            <!-- Harga Bilik untuk Paket Umrah Biasa -->
+            <!-- Harga Bilik untuk Pakej Umrah Biasa -->
             <div class="space-y-4">
               <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <DollarSign class="w-5 h-5 text-green-600" />
-                Harga Paket
+                Harga Pakej
               </h3>
               
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1120,10 +1120,10 @@
           </div>
           <div>
             <h2 class="text-2xl font-bold text-gray-900">
-              Edit {modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Paket'} Umrah
+              Edit {modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Pakej'} Umrah
             </h2>
             <p class="text-gray-500">
-              Perbarui informasi {modalType === 'season' ? 'musim' : modalType === 'category' ? 'kategori' : 'paket'}
+              Perbarui informasi {modalType === 'season' ? 'musim' : modalType === 'category' ? 'kategori' : 'pakej'}
             </p>
           </div>
         </div>
@@ -1159,7 +1159,7 @@
             </div>
 
           {:else}
-            <!-- Form untuk Paket -->
+            <!-- Form untuk Pakej -->
             <div class="space-y-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1333,7 +1333,7 @@
           Konfirmasi Hapus
         </h3>
         <p class="text-gray-500 mb-6">
-          Apakah Anda yakin ingin menghapus {modalType === 'season' ? 'musim' : modalType === 'category' ? 'kategori' : 'paket'} 
+          Apakah Anda yakin ingin menghapus {modalType === 'season' ? 'musim' : modalType === 'category' ? 'kategori' : 'pakej'} 
           <span class="font-semibold text-gray-900">
             "{#if modalType === 'season' || modalType === 'category'}{selectedItem.name}{:else}{selectedItem.umrah_seasons?.name || 'N/A'} - {selectedItem.umrah_categories?.name || 'N/A'}{/if}"
           </span>?

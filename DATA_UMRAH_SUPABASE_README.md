@@ -6,10 +6,10 @@ Halaman Data Umrah telah berhasil diintegrasikan dengan database Supabase untuk 
 ## Fitur yang Tersedia
 
 ### 1. Data Overview
-- **Statistik Cards**: Menampilkan total musim, kategori, dan paket umrah
+- **Statistik Cards**: Menampilkan total musim, kategori, dan pakej umrah
 - **Daftar Musim**: Menampilkan semua musim umrah dengan status aktif/non-aktif
 - **Daftar Kategori**: Menampilkan semua kategori umrah dengan level layanan
-- **Daftar Paket**: Menampilkan paket umrah terbaru dengan informasi lengkap
+- **Daftar Pakej**: Menampilkan pakej umrah terbaru dengan informasi lengkap
 
 ### 2. Pencarian dan Filter
 - **Pencarian Musim**: Mencari musim berdasarkan nama
@@ -18,7 +18,7 @@ Halaman Data Umrah telah berhasil diintegrasikan dengan database Supabase untuk 
 - **Filter Periode**: Filter berdasarkan periode musim (Ramadhan, Syawal, dll)
 
 ### 3. Data Terfilter
-- **Tab Navigation**: Navigasi antara musim, kategori, dan paket
+- **Tab Navigation**: Navigasi antara musim, kategori, dan pakej
 - **Tabel Detail**: Menampilkan data dalam format tabel dengan aksi edit/view/delete
 - **Loading States**: Indikator loading saat memuat data
 - **Empty States**: Pesan ketika tidak ada data yang ditemukan
@@ -71,9 +71,9 @@ Halaman Data Umrah telah berhasil diintegrasikan dengan database Supabase untuk 
 Fungsi helper untuk mengambil data dari Supabase:
 - `fetchUmrahSeasons()` - Mengambil data musim umrah
 - `fetchUmrahCategories()` - Mengambil data kategori umrah
-- `fetchUmrahPackages()` - Mengambil data paket umrah
-- `getPackageCountBySeason()` - Menghitung jumlah paket per musim
-- `getPackageCountByCategory()` - Menghitung jumlah paket per kategori
+- `fetchUmrahPackages()` - Mengambil data pakej umrah
+- `getPackageCountBySeason()` - Menghitung jumlah pakej per musim
+- `getPackageCountByCategory()` - Menghitung jumlah pakej per kategori
 - `formatCurrency()` - Format currency ke format Indonesia
 - `formatDate()` - Format tanggal ke format Indonesia
 
@@ -84,7 +84,7 @@ Fungsi helper untuk mengambil data dari Supabase:
 
 ### 3. `src/lib/components/FilteredUmrahData.svelte` (Baru)
 - Komponen tabel untuk menampilkan data terfilter
-- Tab navigation untuk musim, kategori, dan paket
+- Tab navigation untuk musim, kategori, dan pakej
 - Aksi edit, view, dan delete (placeholder)
 
 ### 4. `src/routes/DataUmrah/+page.svelte` (Dimodifikasi)
@@ -109,7 +109,7 @@ Fungsi helper untuk mengambil data dari Supabase:
 - Data akan kembali ke tampilan awal
 
 ### 4. Lihat Data Detail
-- Gunakan tab navigation untuk melihat data musim, kategori, atau paket
+- Gunakan tab navigation untuk melihat data musim, kategori, atau pakej
 - Data ditampilkan dalam format tabel dengan informasi lengkap
 
 ## Error Handling

@@ -37,7 +37,7 @@ $: paginatedCustomers = // ... current page data
 #### 1. Filter Data
 - **Search**: Pencarian berdasarkan nama, email, atau nomor telepon
 - **Status Filter**: Filter berdasarkan status pemesanan
-- **Package Filter**: Filter berdasarkan jenis paket
+- **Package Filter**: Filter berdasarkan jenis pakej
 - **Branch Filter**: Filter berdasarkan cabang kantor
 
 #### 2. Pagination
@@ -89,7 +89,7 @@ Mengembalikan inisial dari nama (2 karakter pertama).
 Mengembalikan class CSS untuk warna status.
 
 #### getPackageColor(packageType: string): string
-Mengembalikan class CSS untuk warna paket.
+Mengembalikan class CSS untuk warna pakej.
 
 #### filterCustomers(customers: Customer[], filters: Filter): Customer[]
 Filter data pelanggan berdasarkan kriteria yang diberikan.

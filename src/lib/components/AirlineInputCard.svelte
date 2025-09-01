@@ -11,7 +11,7 @@
 
   async function handleSubmit() {
     if (!airlineName.trim()) {
-      message = 'Mohon isi nama airline';
+      message = 'Mohon isi nama penerbangan';
       messageType = 'error';
       return;
     }
@@ -31,7 +31,7 @@
 
       if (error) throw error;
 
-      message = 'Airline berhasil ditambahkan!';
+      message = 'Penerbangan berhasil ditambahkan!';
       messageType = 'success';
       
       // Reset form
@@ -42,7 +42,7 @@
 
     } catch (error) {
       console.error('Error adding airline:', error);
-      message = 'Gagal menambahkan airline. Silakan coba lagi.';
+      message = 'Gagal menambahkan penerbangan. Silakan coba lagi.';
       messageType = 'error';
     } finally {
       loading = false;
@@ -58,7 +58,7 @@
         <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-1.5 0-2 1-2 1l-3.5 3.5L7.2 6.2C6.4 6 6 6.6 6.8 7.4L11 12l-7.8 1.8c-.8.2-.4.8.4.6L12 13l3.5 3.5c.8.8 1.4.4 1.2-.4L17.8 19.2Z"/>
       </svg>
     </div>
-    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Input Airline</h2>
+    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Input Penerbangan</h2>
   </div>
 
   <!-- Message -->
@@ -71,7 +71,7 @@
   <form on:submit|preventDefault={handleSubmit} class="space-y-3 sm:space-y-4 lg:space-y-6">
     <div>
       <label for="airlineName" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-        Nama Airline *
+        Nama Penerbangan *
       </label>
       <input
         id="airlineName"
@@ -94,7 +94,7 @@
           <span class="text-xs sm:text-sm">Menambahkan...</span>
         </div>
       {:else}
-        <span class="text-xs sm:text-sm">Tambah Airline</span>
+        <span class="text-xs sm:text-sm">Tambah Penerbangan</span>
       {/if}
     </button>
   </form>

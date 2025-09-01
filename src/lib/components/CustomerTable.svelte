@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { fetchCustomersData, getInitials, getPackageColor } from '$lib/data/customers.js';
+  import { fetchCustomersDataPaginated, getInitials, getPackageColor } from '$lib/data/customers.js';
   import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, ChevronLeft, ChevronRight } from 'lucide-svelte';
   
   // State untuk data
@@ -11,6 +11,7 @@
   // State untuk pagination
   let currentPage = 1;
   let itemsPerPage = 10;
+  let totalCount = 0; // Total data dari Supabase
   
   // State untuk filter
   let searchTerm = '';
@@ -24,59 +25,62 @@
   
   // Load data saat komponen dimount
   onMount(async () => {
+    await loadPageData(1);
+  });
+  
+  // Fungsi untuk load data per halaman
+  async function loadPageData(page, filters = {}) {
     try {
       loading = true;
-      customersData = await fetchCustomersData();
+      const result = await fetchCustomersDataPaginated(page, itemsPerPage, filters);
+      customersData = result.data;
+      totalCount = result.totalCount;
+      currentPage = page;
     } catch (err) {
       error = 'Gagal memuat data pelanggan';
       console.error('Error loading customers:', err);
     } finally {
       loading = false;
     }
-  });
+  }
   
-  // Data yang sudah difilter
-  $: filteredCustomers = customersData.filter(customer => {
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      if (!customer.name.toLowerCase().includes(search)) {
-        return false;
-      }
-    }
-    if (packageFilter && customer.package !== packageFilter) return false;
-    if (branchFilter && customer.branch !== branchFilter) return false;
-    if (inquiryFilter !== '') {
-      const isFromInquiry = customer.from_inquiry === true;
-      if (inquiryFilter === 'true' && !isFromInquiry) return false;
-      if (inquiryFilter === 'false' && isFromInquiry) return false;
-    }
-    return true;
-  });
+  // Load data dengan filter
+  async function loadDataWithFilters() {
+    const filters = {
+      search: searchTerm,
+      package: packageFilter,
+      branch: branchFilter,
+      inquiry: inquiryFilter
+    };
+    await loadPageData(1, filters);
+  }
+  
+  // Data yang sudah difilter (server-side filtering sudah diterapkan)
+  $: filteredCustomers = customersData;
   
   // Pagination
-  $: totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  $: totalPages = Math.ceil(totalCount / itemsPerPage);
   $: startIndex = (currentPage - 1) * itemsPerPage;
   $: endIndex = startIndex + itemsPerPage;
-  $: paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
   
   // Fungsi untuk halaman berikutnya
-  function nextPage() {
+  async function nextPage() {
     if (currentPage < totalPages) {
-      currentPage++;
+      await loadPageData(currentPage + 1);
     }
   }
   
   // Fungsi untuk halaman sebelumnya
-  function prevPage() {
+  async function prevPage() {
     if (currentPage > 1) {
-      currentPage--;
+      await loadPageData(currentPage - 1);
     }
   }
 
   // Fungsi untuk pergi ke halaman tertentu
-  function goToPage(page) {
+  async function goToPage(page) {
     if (page >= 1 && page <= totalPages) {
-      currentPage = page;
+      await loadPageData(page);
     }
   }
 
@@ -117,12 +121,12 @@
   }
   
   // Fungsi untuk reset filter
-  function resetFilters() {
+  async function resetFilters() {
     searchTerm = '';
     packageFilter = '';
     branchFilter = '';
     inquiryFilter = '';
-    currentPage = 1;
+    await loadPageData(1);
   }
   
   // Fungsi untuk menampilkan modal detail
@@ -137,13 +141,19 @@
     selectedCustomer = null;
   }
   
-  // Dapatkan daftar unik untuk filter
-  $: uniquePackages = [...new Set(customersData.map(c => c.package))];
-  $: uniqueBranches = [...new Set(customersData.map(c => c.branch))];
+  // Dapatkan daftar unik untuk filter (dari data yang sudah di-load)
+  $: uniquePackages = [...new Set(customersData.map(c => c.package).filter(Boolean))];
+  $: uniqueBranches = [...new Set(customersData.map(c => c.branch).filter(Boolean))];
   
-  // Reset currentPage ketika filter berubah
-  $: if (searchTerm || packageFilter || branchFilter || inquiryFilter) {
-    currentPage = 1;
+  // Watch filter changes dan reload data dengan debounce
+  let filterTimeout;
+  $: {
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => {
+      if (searchTerm || packageFilter || branchFilter || inquiryFilter) {
+        loadDataWithFilters();
+      }
+    }, 300);
   }
 </script>
 
@@ -170,7 +180,7 @@
         bind:value={packageFilter}
         class="w-full sm:w-40 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
       >
-        <option value="">Semua Paket</option>
+        <option value="">Semua Pakej</option>
         {#each uniquePackages as packageType}
           <option value={packageType}>{packageType}</option>
         {/each}
@@ -267,7 +277,7 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-100">
-          {#each paginatedCustomers as customer}
+          {#each filteredCustomers as customer}
             <tr class="hover:bg-gray-50 transition-colors cursor-pointer" on:click={() => showCustomerDetail(customer)}>
               <!-- Kolom PELANGGAN -->
               <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
@@ -297,18 +307,18 @@
                 </span>
               </td>
               
-              <!-- Kolom DESTINASI -->
+              <!-- Kolom MUSIM/DESTINASI -->
               <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                <div class="text-xs sm:text-sm text-gray-900">{customer.seasonDestination || customer.category || '-'}</div>
+                <div class="text-xs sm:text-sm text-gray-900">{customer.seasonDestination || '-'}</div>
               </td>
               
               <!-- Kolom DARI INQUIRY -->
               <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                 <div class="text-xs sm:text-sm text-gray-900">
                   {#if customer.from_inquiry}
-                    <span class="text-green-600">✓</span>
+                    <span class="text-green-600">✓ Ya</span>
                   {:else}
-                    <span class="text-red-600">✗</span>
+                    <span class="text-red-600">✗ Tidak</span>
                   {/if}
                 </div>
               </td>
@@ -339,7 +349,7 @@
         <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex items-center text-xs sm:text-sm text-gray-700">
-              <span>Menampilkan {startIndex + 1} - {Math.min(endIndex, filteredCustomers.length)} dari {filteredCustomers.length} data</span>
+              <span>Menampilkan {startIndex + 1} - {Math.min(endIndex, totalCount)} dari {totalCount} data</span>
             </div>
             <div class="flex items-center justify-center sm:justify-end space-x-2">
               <button
@@ -490,7 +500,7 @@
               <div class="flex items-center gap-3">
                 <Package class="w-4 h-4 text-gray-400" />
                 <div>
-                  <p class="text-sm text-gray-500">Jenis Paket</p>
+                  <p class="text-sm text-gray-500">Jenis Pakej</p>
                   <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border {getPackageColor(selectedCustomer.package)}">
                     {selectedCustomer.package}
                   </span>
@@ -501,7 +511,7 @@
                 <Globe class="w-4 h-4 text-gray-400" />
                 <div>
                   <p class="text-sm text-gray-500">Musim/Destinasi</p>
-                  <p class="text-gray-900">{selectedCustomer.seasonDestination || selectedCustomer.category || '-'}</p>
+                  <p class="text-gray-900">{selectedCustomer.seasonDestination || '-'}</p>
                 </div>
               </div>
               
@@ -541,7 +551,7 @@
             <div class="space-y-3">
               {#if selectedCustomer.price && selectedCustomer.price !== '-'}
                 <div>
-                  <p class="text-sm text-gray-500">Harga/Bilangan</p>
+                  <p class="text-sm text-gray-500">Bilangan</p>
                   <p class="text-lg font-semibold text-gray-900">{selectedCustomer.price}</p>
                 </div>
               {/if}
@@ -570,10 +580,19 @@
                 </div>
               {/if}
               
-              {#if selectedCustomer.jenis_pelancongan}
+              {#if selectedCustomer.jenis_pelancongan && selectedCustomer.jenis_pelancongan !== '-'}
                 <div>
                   <p class="text-sm text-gray-500">Jenis Pelancongan</p>
                   <p class="text-gray-900">{selectedCustomer.jenis_pelancongan}</p>
+                </div>
+              {/if}
+              
+              {#if selectedCustomer.package}
+                <div>
+                  <p class="text-sm text-gray-500">Jenis Pakej</p>
+                  <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border {getPackageColor(selectedCustomer.package)}">
+                    {selectedCustomer.package}
+                  </span>
                 </div>
               {/if}
             </div>

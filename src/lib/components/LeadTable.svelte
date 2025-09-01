@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { getInitials } from '$lib/data/leads.js';
-  import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, TrendingUp, Search, Filter } from 'lucide-svelte';
+  import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, TrendingUp, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-svelte';
   import { user } from '$lib/stores/auth.js';
   import { supabase } from '$lib/supabase.js';
   
@@ -12,18 +12,140 @@
   let selectedLead = null;
   let showDetailModal = false;
   
+  // State untuk pagination
+  let currentPage = 1;
+  let itemsPerPage = 10;
+  let totalCount = 0; // Total data dari Supabase
+  
   onMount(async () => {
+    await loadPageData(1);
+  });
+  
+  // Fungsi untuk load data per halaman
+  async function loadPageData(page, filters = {}) {
     try {
       loading = true;
-      const { leadsData: sampleData } = await import('$lib/data/leads.js');
-      leadsData = sampleData;
+      const result = await fetchLeadsDataPaginated(page, itemsPerPage, filters);
+      leadsData = result.data;
+      totalCount = result.totalCount;
+      currentPage = page;
     } catch (err) {
       error = 'Gagal memuat data lead';
       console.error('Error loading leads:', err);
     } finally {
       loading = false;
     }
-  });
+  }
+  
+  // Load data dengan filter
+  async function loadDataWithFilters() {
+    const filters = {
+      search: searchTerm
+    };
+    await loadPageData(1, filters);
+  }
+  
+  // Fungsi untuk mengambil data lead dari Supabase dengan pagination
+  async function fetchLeadsDataPaginated(page = 1, limit = 10, filters = {}) {
+    try {
+      console.log(`Fetching leads page ${page} with limit ${limit} and filters:`, filters);
+      
+      // Hitung offset untuk pagination
+      const offset = (page - 1) * limit;
+      
+      // Base query
+      let query = supabase
+        .from('leads')
+        .select(`
+          id,
+          title,
+          full_name,
+          phone,
+          branch_id,
+          season_id,
+          category_id,
+          created_at,
+          package_type_id,
+          destination_id,
+          outbound_date_id,
+          category,
+          branches(name),
+          umrah_seasons(name),
+          umrah_categories(name),
+          package_types(name),
+          destinations(name),
+          outbound_dates(start_date, end_date)
+        `, { count: 'exact' }); // Dapatkan total count
+      
+      // Apply filters
+      if (filters.search) {
+        query = query.or(`full_name.ilike.%${filters.search}%,title.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
+      }
+      
+      // Apply pagination dan ordering
+      const { data, error, count } = await query
+        .range(offset, offset + limit - 1)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching leads:', error);
+        return { data: [], totalCount: 0 };
+      }
+
+      console.log(`Raw data from Supabase page ${page}:`, data);
+      console.log(`Total count: ${count}, Page data: ${data?.length || 0}`);
+
+      // Transform data untuk kompatibilitas dengan komponen yang ada
+      const transformedData = data.map(lead => {
+        // Tentukan interest berdasarkan data yang tersedia
+        let interest = '-';
+        if (lead.umrah_seasons?.name) {
+          interest = lead.umrah_seasons.name;
+        } else if (lead.umrah_categories?.name) {
+          interest = lead.umrah_categories.name;
+        } else if (lead.destinations?.name) {
+          interest = lead.destinations.name;
+        } else if (lead.package_types?.name) {
+          interest = lead.package_types.name;
+        }
+
+        return {
+          id: lead.id,
+          name: lead.full_name || lead.title || 'Nama tidak tersedia',
+          email: '-', // Email tidak ada di tabel leads
+          phone: lead.phone || '-',
+          branch: lead.branches?.name || '-',
+          interest: interest,
+          date: new Date(lead.created_at).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }),
+          avatar: getInitials(lead.full_name || lead.title || 'NA'),
+          address: '-', // Address tidak ada di tabel leads
+          source: lead.category || '-',
+          budget: '-', // Budget tidak ada di tabel leads
+          timeline: '-', // Timeline tidak ada di tabel leads
+          consultant: '-', // Consultant tidak ada di tabel leads
+          notes: '-', // Notes tidak ada di tabel leads
+          // Tambahan field untuk detail
+          seasonDestination: interest,
+          packageType: lead.package_types?.name || '-',
+          destination: lead.destinations?.name || '-',
+          outboundDate: lead.outbound_dates ? 
+            `${lead.outbound_dates.start_date} - ${lead.outbound_dates.end_date}` : '-'
+        };
+      });
+
+      return {
+        data: transformedData,
+        totalCount: count || 0
+      };
+    } catch (error) {
+      console.error('Error in fetchLeadsDataPaginated:', error);
+      return { data: [], totalCount: 0 };
+    }
+  }
   
   function showLeadDetail(lead) {
     selectedLead = lead;
@@ -35,6 +157,7 @@
     selectedLead = null;
   }
   
+  // Data yang sudah difilter (client-side filtering untuk data yang sudah di-load)
   $: filteredLeads = leadsData.filter(lead => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
@@ -46,10 +169,83 @@
       lead.interest.toLowerCase().includes(term)
     );
   });
+  
+  // Pagination
+  $: totalPages = Math.ceil(totalCount / itemsPerPage);
+  $: startIndex = (currentPage - 1) * itemsPerPage;
+  $: endIndex = startIndex + itemsPerPage;
+  
+  // Fungsi untuk halaman berikutnya
+  async function nextPage() {
+    if (currentPage < totalPages) {
+      await loadPageData(currentPage + 1);
+    }
+  }
+  
+  // Fungsi untuk halaman sebelumnya
+  async function prevPage() {
+    if (currentPage > 1) {
+      await loadPageData(currentPage - 1);
+    }
+  }
+
+  // Fungsi untuk pergi ke halaman tertentu
+  async function goToPage(page) {
+    if (page >= 1 && page <= totalPages) {
+      await loadPageData(page);
+    }
+  }
+
+  // Generate page numbers for pagination
+  function getPageNumbers() {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  }
+  
+  // Watch filter changes dan reload data dengan debounce
+  let filterTimeout;
+  $: {
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => {
+      if (searchTerm) {
+        loadDataWithFilters();
+      }
+    }, 300);
+  }
 </script>
 
 <div class="bg-white rounded-xl shadow-soft border border-white/60 overflow-hidden">
-  <!-- Header dengan search dan filter -->
+  <!-- Header dengan search -->
   <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
@@ -114,7 +310,6 @@
             <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               TARIKH
             </th>
-            
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-100">
@@ -147,18 +342,57 @@
               <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                 <div class="text-xs sm:text-sm text-gray-900">{lead.date}</div>
               </td>
-              
-              
             </tr>
           {/each}
         </tbody>
       </table>
     </div>
     
+    <!-- Pagination -->
+    {#if totalPages > 1}
+      <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div class="flex items-center text-xs sm:text-sm text-gray-700">
+            <span>Menampilkan {startIndex + 1} - {Math.min(endIndex, totalCount)} dari {totalCount} data</span>
+          </div>
+          <div class="flex items-center justify-center sm:justify-end space-x-2">
+            <button
+              on:click={prevPage}
+              disabled={currentPage === 1}
+              class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft class="w-3 h-3 sm:w-4 sm:h-4" />
+            </button>
+            
+            {#each getPageNumbers() as page}
+              {#if page === '...'}
+                <span class="px-2 sm:px-3 py-2 text-gray-400 text-xs sm:text-sm">...</span>
+              {:else}
+                <button
+                  on:click={() => goToPage(page)}
+                  class="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors duration-200 {currentPage === page ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}"
+                >
+                  {page}
+                </button>
+              {/if}
+            {/each}
+            
+            <button
+              on:click={nextPage}
+              disabled={currentPage === totalPages}
+              class="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight class="w-3 h-3 sm:w-4 sm:h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
+    
     <!-- Summary -->
     <div class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t border-gray-100">
       <div class="text-sm text-gray-600">
-        Menampilkan {filteredLeads.length} dari {leadsData.length} lead
+        Menampilkan {filteredLeads.length} dari {totalCount} lead
       </div>
     </div>
   {/if}
@@ -256,12 +490,38 @@
                 </div>
               </div>
               
+              {#if selectedLead.packageType && selectedLead.packageType !== '-'}
+                <div class="flex items-center gap-3">
+                  <Package class="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p class="text-sm text-gray-500">Jenis Paket</p>
+                    <p class="text-gray-900">{selectedLead.packageType}</p>
+                  </div>
+                </div>
+              {/if}
               
+              {#if selectedLead.destination && selectedLead.destination !== '-'}
+                <div class="flex items-center gap-3">
+                  <Globe class="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p class="text-sm text-gray-500">Destinasi</p>
+                    <p class="text-gray-900">{selectedLead.destination}</p>
+                  </div>
+                </div>
+              {/if}
+              
+              {#if selectedLead.outboundDate && selectedLead.outboundDate !== '-'}
+                <div class="flex items-center gap-3">
+                  <Calendar class="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p class="text-sm text-gray-500">Tarikh Perjalanan</p>
+                    <p class="text-gray-900">{selectedLead.outboundDate}</p>
+                  </div>
+                </div>
+              {/if}
             </div>
           </div>
         </div>
-        
-        
       </div>
 
       <div class="flex justify-end gap-3 p-6 border-t border-gray-200">

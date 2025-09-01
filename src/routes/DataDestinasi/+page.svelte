@@ -15,9 +15,13 @@
   // Tab state
   let activeTab = 'destinations';
   
-  // Pagination state
+  // Server-side pagination state
   let currentPage = 1;
   const itemsPerPage = 10;
+  
+  // Total count untuk server-side pagination
+  let totalDestinationsCount = 0;
+  let totalOutboundPackagesCount = 0;
   
   // Modal edit
   let showEditModal = false;
@@ -38,41 +42,109 @@
   let deletingItem = null;
   let deleteType = ''; // 'destination' or 'outbound'
 
-  // Load data dari Supabase
-  async function loadDestinations() {
+  // Flag untuk menandai apakah load data awal sudah selesai
+  let initialLoadComplete = false;
+
+  // Load destinations dengan server-side pagination
+  async function loadDestinations(page = 1, search = '') {
     try {
       loading = true;
-      const [destinationsData, outboundData] = await Promise.all([
-        supabase
-          .from('destinations')
-          .select('*')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('outbound_dates')
-          .select(`
-            *,
-            destinations (
-              name
-            )
-          `)
-          .order('created_at', { ascending: false })
-      ]);
-
-      if (destinationsData.error) {
-        throw destinationsData.error;
+      error = null;
+      console.log(`🔄 Loading destinations page ${page} with search: "${search}"`);
+      
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      
+      let query = supabase
+        .from('destinations')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
+      // Tambahkan filter search jika ada
+      if (search.trim()) {
+        query = query.ilike('name', `%${search}%`);
+        console.log(`🔍 Applied search filter: ${search}`);
+      }
+      
+      const { data, error: queryError, count } = await query;
+      
+      console.log('📊 Destinations query result:', { data, error: queryError, count });
+      
+      if (queryError) {
+        throw queryError;
       }
 
-      if (outboundData.error) {
-        throw outboundData.error;
-      }
-
-      destinations = destinationsData.data || [];
-      outboundPackages = outboundData.data || [];
+      destinations = data || [];
+      totalDestinationsCount = count || 0;
+      currentPage = page;
+      
+      console.log(`✅ Destinations loaded: ${destinations.length} items, total count: ${totalDestinationsCount}`);
     } catch (err) {
       error = err.message;
-      console.error('Error loading destinations:', err);
+      console.error('❌ Error loading destinations:', err);
     } finally {
       loading = false;
+      console.log('🏁 Loading completed. Loading state:', loading);
+    }
+  }
+
+  // Load outbound packages dengan server-side pagination
+  async function loadOutboundPackages(page = 1, search = '') {
+    try {
+      loading = true;
+      error = null;
+      console.log(`🔄 Loading outbound packages page ${page} with search: "${search}"`);
+      
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      
+      let query = supabase
+        .from('outbound_dates')
+        .select(`
+          *,
+          destinations (
+            name
+          )
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
+      // Tambahkan filter search jika ada
+      if (search.trim()) {
+        query = query.or(`destinations.name.ilike.%${search}%,price.ilike.%${search}%`);
+        console.log(`🔍 Applied search filter: ${search}`);
+      }
+      
+      const { data, error: queryError, count } = await query;
+      
+      console.log('📊 Outbound packages query result:', { data, error: queryError, count });
+      
+      if (queryError) {
+        throw queryError;
+      }
+
+      outboundPackages = data || [];
+      totalOutboundPackagesCount = count || 0;
+      currentPage = page;
+      
+      console.log(`✅ Outbound packages loaded: ${outboundPackages.length} items, total count: ${totalOutboundPackagesCount}`);
+    } catch (err) {
+      error = err.message;
+      console.error('❌ Error loading outbound packages:', err);
+    } finally {
+      loading = false;
+      console.log('🏁 Loading completed. Loading state:', loading);
+    }
+  }
+
+  // Load data berdasarkan tab aktif
+  async function loadData(page = 1, search = '') {
+    console.log(`🔄 Loading data for tab: ${activeTab}, page: ${page}, search: "${search}"`);
+    if (activeTab === 'destinations') {
+      await loadDestinations(page, search);
+    } else {
+      await loadOutboundPackages(page, search);
     }
   }
 
@@ -88,9 +160,8 @@
         throw deleteError;
       }
 
-      // Update local state
-      destinations = destinations.filter(d => d.id !== id);
-      filteredDestinations = filteredDestinations.filter(d => d.id !== id);
+      // Reload data setelah delete
+      await loadData(currentPage, searchTerm);
       
       // Show success snackbar
       showSnackbarNotification('success', 'Destinasi berhasil dihapus!');
@@ -103,7 +174,7 @@
     }
   }
 
-  // Hapus paket outbound
+  // Hapus pakej outbound
   async function deleteOutboundPackage(id) {
     try {
       const { error: deleteError } = await supabase
@@ -115,18 +186,17 @@
         throw deleteError;
       }
 
-      // Update local state
-      outboundPackages = outboundPackages.filter(p => p.id !== id);
-      filteredOutboundPackages = filteredOutboundPackages.filter(p => p.id !== id);
+      // Reload data setelah delete
+      await loadData(currentPage, searchTerm);
       
       // Show success snackbar
-      showSnackbarNotification('success', 'Paket outbound berhasil dihapus!');
+      showSnackbarNotification('success', 'Pakej outbound berhasil dihapus!');
     } catch (err) {
       error = err.message;
       console.error('Error deleting outbound package:', err);
       
       // Show error snackbar
-      showSnackbarNotification('error', 'Gagal menghapus paket outbound!');
+      showSnackbarNotification('error', 'Gagal menghapus pakej outbound!');
     }
   }
 
@@ -186,15 +256,8 @@
         throw updateError;
       }
 
-      // Update local state - update both arrays
-      const destination = destinations.find(d => d.id === editingDestination.id);
-      if (destination) {
-        destination.name = editName;
-      }
-
-      // Force reactivity by reassigning the arrays
-      destinations = [...destinations];
-      filteredDestinations = [...filteredDestinations];
+      // Reload data setelah update
+      await loadData(currentPage, searchTerm);
 
       closeEditModal();
       
@@ -247,97 +310,120 @@
         throw updateError;
       }
 
-      // Update local state - update both arrays
-      const outboundPackage = outboundPackages.find(p => p.id === editingOutboundPackage.id);
-      if (outboundPackage) {
-        outboundPackage.start_date = editOutboundForm.start_date;
-        outboundPackage.end_date = editOutboundForm.end_date;
-        outboundPackage.price = editOutboundForm.price;
-      }
-
-      // Force reactivity by reassigning the arrays
-      outboundPackages = [...outboundPackages];
-      filteredOutboundPackages = [...filteredOutboundPackages];
+      // Reload data setelah update
+      await loadData(currentPage, searchTerm);
 
       closeEditOutboundModal();
       
       // Show success snackbar
-      showSnackbarNotification('success', 'Paket outbound berhasil diperbarui!');
+      showSnackbarNotification('success', 'Pakej outbound berhasil diperbarui!');
     } catch (err) {
       error = err.message;
       console.error('Error updating outbound package:', err);
       
       // Show error snackbar
-      showSnackbarNotification('error', 'Gagal memperbarui paket outbound!');
+      showSnackbarNotification('error', 'Gagal memperbarui pakej outbound!');
     }
   }
 
   // Load data saat komponen mount
-  onMount(() => {
-    loadDestinations();
-  });
-
-  // Hitung statistik
-  $: totalDestinations = destinations.length;
-  $: totalOutboundPackages = outboundPackages.length;
-
-  // Filter destinations berdasarkan search
-  $: filteredDestinations = destinations.filter(destination => {
-    const matchesSearch = searchTerm === '' || 
-      destination.name.toLowerCase().includes(searchTerm.toLowerCase());
+  onMount(async () => {
+    console.log('🚀 Component mounted, loading initial data...');
     
-    return matchesSearch;
+    // Load kedua data sekaligus di awal untuk mendapatkan total count yang benar
+    try {
+      loading = true;
+      error = null;
+      
+      const [destinationsResult, outboundResult] = await Promise.all([
+        supabase
+          .from('destinations')
+          .select('*', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(0, itemsPerPage - 1),
+        supabase
+          .from('outbound_dates')
+          .select(`*, destinations(name)`, { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(0, itemsPerPage - 1)
+      ]);
+      
+      if (destinationsResult.error) throw destinationsResult.error;
+      if (outboundResult.error) throw outboundResult.error;
+      
+      // Set data dan total count
+      destinations = destinationsResult.data || [];
+      outboundPackages = outboundResult.data || [];
+      totalDestinationsCount = destinationsResult.count || 0;
+      totalOutboundPackagesCount = outboundResult.count || 0;
+      
+      console.log(`✅ Initial data loaded: Destinations ${destinations.length}/${totalDestinationsCount}, Outbound ${outboundPackages.length}/${totalOutboundPackagesCount}`);
+      
+    } catch (err) {
+      error = err.message;
+      console.error('❌ Error loading initial data:', err);
+    } finally {
+      loading = false;
+      initialLoadComplete = true;
+    }
   });
 
-  // Filter outbound packages berdasarkan search
-  $: filteredOutboundPackages = outboundPackages.filter(outboundPackage => {
-    const matchesSearch = searchTerm === '' || 
-      outboundPackage.destinations?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      outboundPackage.price?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
-  });
-
-  // Reset pagination when tab changes
-  $: if (activeTab) {
-    currentPage = 1;
+  // Handle search dengan debounce
+  let searchTimeout;
+  
+  // Manual search handler
+  function handleSearch() {
+    if (initialLoadComplete && searchTerm.trim() !== '') {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        loadData(1, searchTerm);
+      }, 500);
+    }
   }
 
-  // Computed values for pagination
-  $: totalPagesDestinations = Math.ceil(filteredDestinations.length / itemsPerPage);
-  $: totalPagesOutboundPackages = Math.ceil(filteredOutboundPackages.length / itemsPerPage);
+  // Handle tab change - hapus reactive statement
+  // Tab change akan handle manual saat user klik tab
   
-  $: startIndexDestinations = (currentPage - 1) * itemsPerPage;
-  $: endIndexDestinations = startIndexDestinations + itemsPerPage;
-  $: startIndexOutboundPackages = (currentPage - 1) * itemsPerPage;
-  $: endIndexOutboundPackages = startIndexOutboundPackages + itemsPerPage;
-  
-  $: paginatedDestinations = filteredDestinations.slice(startIndexDestinations, endIndexDestinations);
-  $: paginatedOutboundPackages = filteredOutboundPackages.slice(startIndexOutboundPackages, endIndexOutboundPackages);
+  // Manual handler untuk tab change
+  function handleTabChange(tab) {
+    if (tab !== activeTab && initialLoadComplete) {
+      activeTab = tab;
+      currentPage = 1;
+      loadData(1, searchTerm);
+    }
+  }
 
-  // Get current total pages based on active tab
+  // Hitung statistik
+  $: totalDestinations = totalDestinationsCount;
+  $: totalOutboundPackages = totalOutboundPackagesCount;
+
+  // Computed values untuk pagination
+  $: totalPagesDestinations = Math.ceil(totalDestinationsCount / itemsPerPage);
+  $: totalPagesOutboundPackages = Math.ceil(totalOutboundPackagesCount / itemsPerPage);
+  
+  // Get current total pages berdasarkan active tab
   $: currentTotalPages = activeTab === 'destinations' ? totalPagesDestinations : totalPagesOutboundPackages;
 
   // Pagination functions
-  function goToPage(page) {
+  async function goToPage(page) {
     if (page >= 1 && page <= currentTotalPages) {
-      currentPage = page;
+      await loadData(page, searchTerm);
     }
   }
 
-  function goToPreviousPage() {
+  async function goToPreviousPage() {
     if (currentPage > 1) {
-      currentPage--;
+      await loadData(currentPage - 1, searchTerm);
     }
   }
 
-  function goToNextPage() {
+  async function goToNextPage() {
     if (currentPage < currentTotalPages) {
-      currentPage++;
+      await loadData(currentPage + 1, searchTerm);
     }
   }
 
-  // Generate page numbers for pagination
+  // Generate page numbers untuk pagination
   function getPageNumbers() {
     const pages = [];
     const maxVisiblePages = 5;
@@ -425,11 +511,11 @@
         </div>
       </div>
 
-      <!-- Total Paket Outbound -->
+              <!-- Total Pakej Outbound -->
       <div class="bg-white rounded-xl sm:rounded-2xl shadow-soft p-3 sm:p-4 lg:p-6 border border-white/60">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-xs sm:text-sm font-medium text-slate-600">Total Paket Outbound</p>
+            <p class="text-xs sm:text-sm font-medium text-slate-600">Total Pakej Outbound</p>
             <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800">{totalOutboundPackages}</p>
           </div>
           <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -454,8 +540,9 @@
                 id="searchTerm"
                 type="text"
                 bind:value={searchTerm}
-                placeholder="Cari destinasi atau paket outbound..."
+                placeholder="Cari destinasi atau pakej outbound..."
                 class="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                on:input={handleSearch}
               />
             </div>
           </div>
@@ -469,7 +556,7 @@
               <p class="text-blue-800 text-xs sm:text-sm">Memuat data...</p>
             </div>
           </div>
-        {:else if filteredDestinations.length === 0 && filteredOutboundPackages.length === 0}
+        {:else if (activeTab === 'destinations' && destinations.length === 0) || (activeTab === 'outbound' && outboundPackages.length === 0)}
           <div class="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl">
             <div class="flex items-center gap-1.5 sm:gap-2">
               <svg class="w-3 h-3 sm:w-4 sm:h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -486,15 +573,15 @@
         <nav class="flex space-x-4 sm:space-x-8 px-3 sm:px-6">
           <button
             class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 {activeTab === 'destinations' ? 'border-green-500 text-green-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}"
-            on:click={() => activeTab = 'destinations'}
+            on:click={() => handleTabChange('destinations')}
           >
-            Destinasi ({filteredDestinations.length})
+            Destinasi ({totalDestinationsCount})
           </button>
           <button
             class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 {activeTab === 'outbound' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}"
-            on:click={() => activeTab = 'outbound'}
+            on:click={() => handleTabChange('outbound')}
           >
-            Paket Outbound ({filteredOutboundPackages.length})
+            Pakej Outbound ({totalOutboundPackagesCount})
           </button>
         </nav>
       </div>
@@ -506,7 +593,7 @@
             <div class="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 border-b-2 border-yellow-500"></div>
             <span class="ml-2 sm:ml-3 text-xs sm:text-sm text-slate-600">Memuat data...</span>
           </div>
-        {:else if activeTab === 'destinations' && filteredDestinations.length === 0}
+        {:else if activeTab === 'destinations' && destinations.length === 0}
           <div class="text-center py-6 sm:py-8 lg:py-12">
             <div class="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 lg:mb-4">
               <MapPin class="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-slate-400" />
@@ -514,12 +601,12 @@
             <h3 class="text-sm sm:text-base lg:text-lg font-medium text-slate-900 mb-1 sm:mb-2">Tidak ada data destinasi</h3>
             <p class="text-xs sm:text-sm text-slate-500">Coba ubah filter pencarian Anda</p>
           </div>
-        {:else if activeTab === 'outbound' && filteredOutboundPackages.length === 0}
+        {:else if activeTab === 'outbound' && outboundPackages.length === 0}
           <div class="text-center py-6 sm:py-8 lg:py-12">
             <div class="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 lg:mb-4">
               <MapPin class="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-slate-400" />
             </div>
-            <h3 class="text-sm sm:text-base lg:text-lg font-medium text-slate-900 mb-1 sm:mb-2">Tidak ada data paket outbound</h3>
+            <h3 class="text-sm sm:text-base lg:text-lg font-medium text-slate-900 mb-1 sm:mb-2">Tidak ada data pakej outbound</h3>
             <p class="text-xs sm:text-sm text-slate-500">Coba ubah filter pencarian Anda</p>
           </div>
         {:else}
@@ -535,7 +622,7 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-slate-200">
-                  {#each paginatedDestinations as destination}
+                  {#each destinations as destination}
                     <tr class="hover:bg-slate-50">
                       <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <div class="flex items-center">
@@ -578,7 +665,7 @@
             {#if totalPagesDestinations > 1}
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-4 border-t border-slate-200">
                 <div class="flex items-center text-xs sm:text-sm text-slate-700">
-                  <span>Menampilkan {startIndexDestinations + 1} - {Math.min(endIndexDestinations, filteredDestinations.length)} dari {filteredDestinations.length} data</span>
+                  <span>Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalDestinationsCount)} dari {totalDestinationsCount} data</span>
                 </div>
                 <div class="flex items-center justify-center sm:justify-end space-x-1.5 sm:space-x-2">
                   <button
@@ -627,7 +714,7 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-slate-200">
-                  {#each paginatedOutboundPackages as outboundPackage}
+                  {#each outboundPackages as outboundPackage}
                     <tr class="hover:bg-slate-50">
                       <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <div class="flex items-center">
@@ -678,7 +765,7 @@
             {#if totalPagesOutboundPackages > 1}
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-4 border-t border-slate-200">
                 <div class="flex items-center text-xs sm:text-sm text-slate-700">
-                  <span>Menampilkan {startIndexOutboundPackages + 1} - {Math.min(endIndexOutboundPackages, filteredOutboundPackages.length)} dari {filteredOutboundPackages.length} data</span>
+                  <span>Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalOutboundPackagesCount)} dari {totalOutboundPackagesCount} data</span>
                 </div>
                 <div class="flex items-center justify-center sm:justify-end space-x-1.5 sm:space-x-2">
                   <button
@@ -774,7 +861,7 @@
       <div class="bg-white rounded-xl shadow-2xl max-w-md w-full border border-slate-200">
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b border-slate-200">
-          <h3 class="text-lg font-semibold text-slate-800">Edit Paket Outbound</h3>
+          <h3 class="text-lg font-semibold text-slate-800">Edit Pakej Outbound</h3>
           <button
             on:click={closeEditOutboundModal}
             class="p-2 hover:bg-slate-100 rounded-lg transition-colors duration-200"
@@ -818,7 +905,7 @@
               type="text"
               bind:value={editOutboundForm.price}
               class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
-              placeholder="Masukkan harga paket"
+              placeholder="Masukkan harga pakej"
             />
           </div>
         </div>
@@ -861,7 +948,7 @@
             Konfirmasi Hapus
           </h3>
           <p class="text-gray-500 mb-6">
-            Apakah Anda yakin ingin menghapus {deleteType === 'destination' ? 'destinasi' : 'paket outbound'} 
+            Apakah Anda yakin ingin menghapus {deleteType === 'destination' ? 'destinasi' : 'pakej outbound'} 
             <span class="font-semibold text-gray-900">
               "{deleteType === 'destination' ? deletingItem.name : `${deletingItem.destinations?.name || 'N/A'} - ${formatDate(deletingItem.start_date)}`}"
             </span>?

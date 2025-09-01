@@ -1,21 +1,21 @@
 # Fitur Manajemen Musim & Kategori Umrah - Dashboard Admin Rayhar
 
 ## Overview
-Fitur manajemen musim dan kategori umrah memungkinkan admin untuk mengelola komponen-komponen dasar paket umrah dan membuat paket baru yang menarik. Fitur ini terdiri dari dua halaman utama:
+Fitur manajemen musim dan kategori umrah memungkinkan admin untuk mengelola komponen-komponen dasar pakej umrah dan membuat pakej baru yang menarik. Fitur ini terdiri dari dua halaman utama:
 
-1. **Input Musim & Kategori** (`/InputMusim&Kategori`) - Untuk menambah musim dan kategori umrah baru, serta membuat paket umrah
-2. **Data Umrah** (`/DataUmrah`) - Untuk melihat dan mengelola semua data musim, kategori, dan paket umrah yang tersedia
+1. **Input Musim & Kategori** (`/InputMusim&Kategori`) - Untuk menambah musim dan kategori umrah baru, serta membuat pakej umrah
+2. **Data Umrah** (`/DataUmrah`) - Untuk melihat dan mengelola semua data musim, kategori, dan pakej umrah yang tersedia
 
 ## Struktur File
 
 ### Komponen
 - `src/lib/components/UmrahSeasonInput.svelte` - Form input musim umrah
 - `src/lib/components/UmrahCategoryInput.svelte` - Form input kategori umrah
-- `src/lib/components/UmrahPackageCreator.svelte` - Form pembuatan paket umrah baru
-- `src/lib/components/UmrahDataOverview.svelte` - Overview data musim, kategori, dan paket
+- `src/lib/components/UmrahPackageCreator.svelte` - Form pembuatan pakej umrah baru
+- `src/lib/components/UmrahDataOverview.svelte` - Overview data musim, kategori, dan pakej
 
 ### Halaman
-- `src/routes/InputMusim&Kategori/+page.svelte` - Halaman input musim, kategori, dan pembuatan paket umrah
+- `src/routes/InputMusim&Kategori/+page.svelte` - Halaman input musim, kategori, dan pembuatan pakej umrah
 - `src/routes/DataUmrah/+page.svelte` - Halaman data overview dan manajemen data umrah
 
 ## Fitur yang Tersedia
@@ -72,12 +72,12 @@ Fitur manajemen musim dan kategori umrah memungkinkan admin untuk mengelola komp
 - **Statistik Cards:**
   - Total Musim (dengan jumlah yang aktif)
   - Total Kategori (dengan jumlah yang aktif)
-  - Total Paket (dengan jumlah yang aktif)
+  - Total Pakej (dengan jumlah yang aktif)
 
 - **Daftar Data:**
-  - Daftar Musim Umrah dengan periode dan jumlah paket
+  - Daftar Musim Umrah dengan periode dan jumlah pakej
   - Daftar Kategori Umrah dengan level layanan
-  - Paket Umrah Terbaru dengan detail lengkap
+  - Pakej Umrah Terbaru dengan detail lengkap
 
 ## Cara Penggunaan
 
@@ -95,18 +95,18 @@ Fitur manajemen musim dan kategori umrah memungkinkan admin untuk mengelola komp
 4. Set status aktif/non-aktif
 5. Klik "Tambah Kategori Umrah"
 
-### Membuat Paket Umrah Baru
-1. Scroll ke section "Buat Paket Umrah Baru"
+### Membuat Pakej Umrah Baru
+1. Scroll ke section "Buat Pakej Umrah Baru"
 2. Pilih musim dan kategori yang sudah dibuat
 3. Set tanggal berangkat dan kembali
 4. Pilih maskapai penerbangan
 5. Tentukan harga dan kuota
-6. Klik "Buat Paket Umrah"
+6. Klik "Buat Pakej Umrah"
 
 ### Melihat Data Overview
 1. Klik menu "Data Umrah" di sidebar
 2. Lihat statistik di cards bagian atas
-3. Review daftar musim, kategori, dan paket yang tersedia
+3. Review daftar musim, kategori, dan pakej yang tersedia
 4. Gunakan Quick Actions untuk akses cepat ke fitur manajemen
 
 ## Integrasi dengan Sidebar
@@ -120,7 +120,7 @@ Sidebar sudah terintegrasi dengan fitur umrah melalui menu:
 - **Design System:**
   - Musim: Warna ungu (purple) untuk identitas
   - Kategori: Warna kuning (yellow) untuk identitas
-  - Paket: Warna hijau (green) untuk identitas
+  - Pakej: Warna hijau (green) untuk identitas
   - Overview: Warna biru (blue) untuk identitas
 
 - **Layout:**
@@ -140,7 +140,7 @@ Sidebar sudah terintegrasi dengan fitur umrah melalui menu:
   periodeAwal: String (YYYY-MM-DD),
   periodeAkhir: String (YYYY-MM-DD),
   status: 'aktif' | 'nonaktif',
-  jumlahPaket: Number
+  jumlahPakej: Number
 }
 ```
 
@@ -153,11 +153,11 @@ Sidebar sudah terintegrasi dengan fitur umrah melalui menu:
   levelLayanan: 'standard' | 'premium' | 'vip' | 'ekonomi' | 'luxury',
   fasilitas: Array<String>,
   status: 'aktif' | 'nonaktif',
-  jumlahPaket: Number
+  jumlahPakej: Number
 }
 ```
 
-### Paket Umrah
+### Pakej Umrah
 ```javascript
 {
   id: Number,
@@ -186,7 +186,7 @@ Sidebar sudah terintegrasi dengan fitur umrah melalui menu:
 - Level layanan harus valid
 - Fasilitas bisa dipilih multiple
 
-### Validasi Paket
+### Validasi Pakej
 - Tanggal berangkat harus dalam periode musim
 - Tanggal kembali harus setelah tanggal berangkat
 - Musim dan kategori harus aktif
@@ -197,18 +197,18 @@ Sidebar sudah terintegrasi dengan fitur umrah melalui menu:
 
 - **Integrasi Database:**
   - Supabase/PostgreSQL untuk data persistence
-  - Real-time updates untuk status paket
+  - Real-time updates untuk status pakej
   - Audit trail untuk perubahan data
 
 - **Fitur Advanced:**
   - Bulk import/export data
-  - Template paket untuk musim tertentu
+  - Template pakej untuk musim tertentu
   - Pricing calculator otomatis
   - Integration dengan sistem booking
-  - Notifikasi untuk paket yang akan berakhir
+  - Notifikasi untuk pakej yang akan berakhir
 
 - **Analytics:**
-  - Dashboard performance paket
+  - Dashboard performance pakej
   - Trend booking per musim
   - Revenue analysis per kategori
   - Customer preference tracking

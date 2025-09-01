@@ -6,7 +6,7 @@ Fitur filter baru telah ditambahkan ke komponen `CustomerTable.svelte` untuk mem
 ## Fitur yang Ditambahkan
 
 ### 1. Filter Dropdown "Dari Inquiry"
-- **Lokasi**: Berada di bar filter bersama dengan filter Paket dan Cawangan
+- **Lokasi**: Berada di bar filter bersama dengan filter Pakej dan Cawangan
 - **Opsi**: 
   - "Semua Dari Inquiry" (default)
   - "Ya" (untuk data yang berasal dari inquiry)
@@ -69,7 +69,7 @@ function resetFilters() {
 1. **Pilih Filter**: Klik dropdown "Dari Inquiry" dan pilih salah satu opsi
 2. **Lihat Hasil**: Tabel akan otomatis memfilter data sesuai pilihan
 3. **Reset Filter**: Klik tombol "Reset" untuk menghapus semua filter
-4. **Kombinasi Filter**: Filter ini dapat dikombinasikan dengan filter lain (nama, paket, cawangan)
+4. **Kombinasi Filter**: Filter ini dapat dikombinasikan dengan filter lain (nama, pakej, cawangan)
 
 ## Tampilan Data
 

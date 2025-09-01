@@ -79,7 +79,7 @@ ORDER BY created_at DESC
 - `branches!inner(name)` - Inner join untuk memastikan ada branch
 - `umrah_seasons(name)` - Musim umrah
 - `umrah_categories(name)` - Kategori umrah
-- `package_types(name)` - Jenis paket
+- `package_types(name)` - Jenis pakej
 - `destinations(name)` - Destinasi perjalanan
 - `outbound_dates(start_date, end_date)` - Tanggal keberangkatan
 

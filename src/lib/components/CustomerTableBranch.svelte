@@ -429,7 +429,7 @@
               <div class="flex items-center gap-3">
                 <Package class="w-4 h-4 text-gray-400" />
                 <div>
-                  <p class="text-sm text-gray-500">Jenis Paket</p>
+                  <p class="text-sm text-gray-500">Jenis Pakej</p>
                   <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border {getPackageColor(selectedCustomer.package)}">
                     {selectedCustomer.package}
                   </span>

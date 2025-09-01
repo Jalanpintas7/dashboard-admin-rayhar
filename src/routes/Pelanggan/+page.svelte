@@ -16,7 +16,7 @@
     <!-- Page Header -->
     <div class="mb-3 sm:mb-4 lg:mb-6">
       <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Pelanggan</h1>
-      <p class="text-sm sm:text-base text-gray-600">Kelola data pelanggan dan pemesanan paket</p>
+              <p class="text-sm sm:text-base text-gray-600">Kelola data pelanggan dan pemesanan pakej</p>
     </div>
 
     <!-- Customer Table -->

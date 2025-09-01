@@ -40,7 +40,7 @@ export async function fetchUmrahCategories() {
   }
 }
 
-// Fungsi untuk mengambil data paket umrah (umrah_dates)
+// Fungsi untuk mengambil data pakej umrah (umrah_dates)
 export async function fetchUmrahPackages() {
   try {
     const { data, error } = await supabase
@@ -65,7 +65,7 @@ export async function fetchUmrahPackages() {
   }
 }
 
-// Fungsi untuk menghitung jumlah paket per musim
+// Fungsi untuk menghitung jumlah pakej per musim
 export async function getPackageCountBySeason() {
   try {
     const { data, error } = await supabase
@@ -91,7 +91,7 @@ export async function getPackageCountBySeason() {
   }
 }
 
-// Fungsi untuk menghitung jumlah paket per kategori
+// Fungsi untuk menghitung jumlah pakej per kategori
 export async function getPackageCountByCategory() {
   try {
     const { data, error } = await supabase

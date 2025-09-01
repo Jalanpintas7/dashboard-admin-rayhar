@@ -18,10 +18,10 @@
     <!-- Header Halaman -->
     <div class="mb-4 sm:mb-6">
       <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 mb-2 sm:mb-3">
-        Manajemen Musim, Kategori & Airline Umrah
+        Input Umrah
       </h1>
       <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-        Kelola musim, kategori, airline, dan buat paket umrah baru untuk
+        Kelola musim, kategori, penerbangan, dan buat pakej umrah baru untuk
         pelanggan Anda
       </p>
     </div>
@@ -38,7 +38,7 @@
       </div>
     </div>
 
-    <!-- Section: Buat Paket Umrah Baru -->
+          <!-- Section: Buat Pakej Umrah Baru -->
     <UmrahPackageCreator />
   </div>
 </RoleGuard>

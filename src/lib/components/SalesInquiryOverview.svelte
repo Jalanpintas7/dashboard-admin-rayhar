@@ -196,10 +196,10 @@
 <svelte:window on:click={handleClickOutside} />
 
 <!-- CARD WRAPPER -->
-<section class="rounded-2xl sm:rounded-3xl bg-white/90 border border-white shadow-card p-4 sm:p-6 h-[500px] sm:h-[550px] lg:h-[650px]">
+<section class="rounded-2xl sm:rounded-3xl bg-white/90 border border-white shadow-card p-4 sm:p-6 xl:p-5 2xl:p-6 h-[440px] sm:h-[550px] lg:h-[620px] xl:h-[540px] 2xl:h-[650px] overflow-hidden">
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
     <div>
-      <h2 class="text-lg sm:text-xl lg:text-[22px] font-extrabold text-slate-800">Sales & Inquiry Overview</h2>
+      <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate">Sales & Inquiry Overview</h2>
     </div>
     
     <!-- Dropdown (custom styled) -->
@@ -240,31 +240,31 @@
 
   <!-- Loading State -->
   {#if isLoading}
-    <div class="mt-6 sm:mt-10 flex justify-center items-center h-[300px] sm:h-[420px]">
+    <div class="mt-6 sm:mt-10 flex justify-center items-center h-[230px] sm:h-[380px]">
       <div class="text-slate-500 text-sm sm:text-base">Loading data...</div>
     </div>
   {:else}
     <!-- UNIFIED CHART AREA -->
-    <div class="mt-6 sm:mt-10 flex justify-center">
-      <div class="flex gap-4 sm:gap-8 lg:gap-12 items-end">
+    <div class="mt-6 sm:mt-10 flex justify-center w-full overflow-hidden">
+      <div class="flex gap-3 sm:gap-6 lg:gap-8 xl:gap-10 items-end flex-wrap">
         {#each barChartData as bar, index}
           <!-- BAR {index + 1} -->
           <div class="flex flex-col items-center">
-            <div class="w-20 sm:w-32 lg:w-44 h-[300px] sm:h-[350px] lg:h-[420px] rounded-xl sm:rounded-2xl overflow-hidden shadow-md flex flex-col">
+            <div class="w-16 sm:w-24 lg:w-28 xl:w-32 2xl:w-40 h-[230px] sm:h-[300px] lg:h-[340px] xl:h-[330px] 2xl:h-[400px] rounded-xl sm:rounded-2xl overflow-hidden shadow-md flex flex-col">
               {#if bar.pelancongan.percentage > 0}
                 <div 
                   class="flex items-center justify-center"
-                  style="height: {(bar.pelancongan.percentage / 100) * (window.innerWidth < 640 ? 300 : window.innerWidth < 1024 ? 350 : 420)}px; background: linear-gradient(to bottom, var(--color-primary), rgba(148, 35, 146, 0.8));"
+                  style="height: {(bar.pelancongan.percentage / 100) * (window.innerWidth < 640 ? 230 : window.innerWidth < 1024 ? 300 : window.innerWidth < 1280 ? 340 : window.innerWidth < 1536 ? 330 : 400)}px; background: linear-gradient(to bottom, var(--color-primary), rgba(148, 35, 146, 0.8));"
                 >
-                  <span class="text-white text-xs sm:text-sm font-semibold">Pelancongan</span>
+                  <span class="text-white text-[10px] sm:text-xs md:text-sm font-semibold">Pelancongan</span>
                 </div>
               {/if}
               {#if bar.umrah.percentage > 0}
                 <div 
                   class="bg-gradient-to-t from-[#FFF212] to-[#FFF212]/80 flex items-center justify-center"
-                  style="height: {(bar.umrah.percentage / 100) * (window.innerWidth < 640 ? 300 : window.innerWidth < 1024 ? 350 : 420)}px;"
+                  style="height: {(bar.umrah.percentage / 100) * (window.innerWidth < 640 ? 230 : window.innerWidth < 1024 ? 300 : window.innerWidth < 1280 ? 340 : window.innerWidth < 1536 ? 330 : 400)}px;"
                 >
-                  <span class="text-black text-xs sm:text-sm font-semibold">umrah</span>
+                  <span class="text-black text-[10px] sm:text-xs md:text-sm font-semibold">umrah</span>
                 </div>
               {/if}
               {#if bar.pelancongan.percentage === 0 && bar.umrah.percentage === 0}
@@ -273,11 +273,11 @@
                 </div>
               {/if}
             </div>
-            <div class="mt-2 sm:mt-4 flex gap-2 sm:gap-3">
+            <div class="mt-2 sm:mt-3 flex gap-2 sm:gap-3">
               <span class="rounded-full text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1 shadow-sm" style="background-color: rgba(148, 35, 146, 0.2); color: var(--color-primary);">{bar.pelancongan.percentage}%</span>
               <span class="rounded-full bg-[#FFF212]/20 text-black text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1 shadow-sm">{bar.umrah.percentage}%</span>
             </div>
-            <span class="mt-2 sm:mt-3 rounded-full bg-slate-100 text-slate-600 text-xs font-medium px-2 py-1 sm:px-3 sm:py-1">{bar.date}</span>
+            <span class="mt-1 sm:mt-2 rounded-full bg-slate-100 text-slate-600 text-xs font-medium px-2 py-1 sm:px-3 sm:py-1">{bar.date}</span>
           </div>
         {/each}
       </div>

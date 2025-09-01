@@ -3,7 +3,7 @@
   import { supabase } from '$lib/supabase.js';
   import { onMount } from 'svelte';
   
-  // State untuk form input paket destinasi
+  // State untuk form input pakej destinasi
   let packageData = {
     destination_id: null,
     start_date: '',
@@ -115,7 +115,7 @@
         throw error;
       }
 
-      message = 'Paket destinasi berhasil dibuat!';
+      message = 'Pakej destinasi berhasil dibuat!';
       
       // Reset form setelah submit
       packageData = {
@@ -128,8 +128,8 @@
       searchQuery = '';
       
     } catch (error) {
-      console.error('Error membuat paket destinasi:', error);
-      message = 'Gagal membuat paket destinasi: ' + error.message;
+      console.error('Error membuat pakej destinasi:', error);
+      message = 'Gagal membuat pakej destinasi: ' + error.message;
     } finally {
       loading = false;
     }
@@ -142,7 +142,7 @@
     <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
       <MapPin class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-yellow-600" />
     </div>
-    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Tambah Paket Destinasi</h2>
+            <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Tambah Pakej Destinasi</h2>
   </div>
 
   <!-- Message -->
@@ -292,10 +292,10 @@
       {#if loading}
         <div class="flex items-center justify-center gap-1.5 sm:gap-2">
           <div class="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span class="text-xs sm:text-sm">Membuat Paket...</span>
+                      <span class="text-xs sm:text-sm">Membuat Pakej...</span>
         </div>
       {:else}
-        <span class="text-xs sm:text-sm">Buat Paket Destinasi</span>
+                    <span class="text-xs sm:text-sm">Buat Pakej Destinasi</span>
       {/if}
     </button>
   </form>

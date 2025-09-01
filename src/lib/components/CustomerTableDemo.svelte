@@ -16,7 +16,7 @@
     <h2 class="text-xl font-semibold text-gray-900 mb-4">Fitur yang Tersedia:</h2>
     <ul class="space-y-2 text-gray-700">
       <li>✅ <strong>Filter Status:</strong> Confirmed, Pending, Cancelled</li>
-      <li>✅ <strong>Filter Paket:</strong> Umrah, Pelancongan</li>
+              <li>✅ <strong>Filter Pakej:</strong> Umrah, Pelancongan</li>
       <li>✅ <strong>Filter Cabang:</strong> Berbagai lokasi kantor</li>
       <li>✅ <strong>Pencarian:</strong> Berdasarkan nama, email, atau telepon</li>
       <li>✅ <strong>Pagination:</strong> Navigasi halaman yang mudah</li>

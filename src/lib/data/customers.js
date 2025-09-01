@@ -137,13 +137,13 @@ export async function fetchCustomersData() {
 
     // Transform data untuk kompatibilitas dengan komponen yang ada
     return bookingsData.map(booking => {
-      // Tentukan apakah ini paket Umrah atau Pelancongan
+      // Tentukan apakah ini pakej Umrah atau Pelancongan
       const packageName = packageTypesMap.get(booking.package_id);
       const destinationName = destinationsMap.get(booking.destination_id);
       const isUmrah = packageName === 'Umrah' || 
                      (destinationName && (destinationName.toLowerCase().includes('makkah') || destinationName.toLowerCase().includes('madinah')));
       
-      // Tampilkan musim umrah jika paket umrah, destinasi jika paket pelancongan
+      // Tampilkan musim umrah jika pakej umrah, destinasi jika pakej pelancongan
       let seasonDestination = '-';
       if (isUmrah) {
         const umrahSeasonName = umrahSeasonsMap.get(booking.umrah_season_id);
@@ -288,7 +288,7 @@ export async function fetchCustomersDataByBranch(branchName) {
 
     // Transform data untuk kompatibilitas dengan komponen yang ada
     return bookingsData.map(booking => {
-      // Tentukan apakah ini paket Umrah atau Pelancongan
+      // Tentukan apakah ini pakej Umrah atau Pelancongan
       const packageName = packageTypesMap.get(booking.package_id);
       const destinationName = destinationsMap.get(booking.destination_id);
       const isUmrah = packageName === 'Umrah' || 
@@ -350,5 +350,144 @@ export async function fetchCustomersDataByBranch(branchName) {
   } catch (error) {
     console.error('Error in fetchCustomersDataByBranch:', error);
     return [];
+  }
+}
+
+// Fungsi untuk mengambil data pelanggan dari Supabase dengan pagination
+export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters = {}) {
+  try {
+    console.log(`Fetching customers page ${page} with limit ${limit} and filters:`, filters);
+    
+    // Hitung offset untuk pagination
+    const offset = (page - 1) * limit;
+    
+    // Base query dengan join yang tepat
+    let query = supabase
+      .from('bookings')
+      .select(`
+        id,
+        gelaran,
+        nama,
+        nokp,
+        telefon,
+        email,
+        alamat,
+        poskod,
+        negeri,
+        bandar,
+        bilangan,
+        total_price,
+        jenis_pelancongan,
+        age,
+        birth_date,
+        created_at,
+        updated_at,
+        is_from_inquiry,
+        branch_id,
+        package_id,
+        destination_id,
+        umrah_season_id,
+        umrah_category_id,
+        consultant_id,
+        branches(name),
+        package_types(name),
+        destinations(name),
+        umrah_seasons(name),
+        umrah_categories(name),
+        sales_consultant(name)
+      `, { count: 'exact' });
+    
+    // Apply filters
+    if (filters.search) {
+      query = query.or(`nama.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+    }
+    
+    if (filters.package) {
+      query = query.eq('package_types.name', filters.package);
+    }
+    
+    if (filters.branch) {
+      query = query.eq('branches.name', filters.branch);
+    }
+    
+    if (filters.inquiry !== '') {
+      const isFromInquiry = filters.inquiry === 'true';
+      query = query.eq('is_from_inquiry', isFromInquiry);
+    }
+    
+    // Apply pagination dan ordering
+    const { data, error, count } = await query
+      .range(offset, offset + limit - 1)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching customers from Supabase:', error);
+      throw error;
+    }
+
+    console.log(`Raw data from Supabase page ${page}:`, data);
+    console.log(`Total count: ${count}, Page data: ${data?.length || 0}`);
+
+    // Transform data untuk kompatibilitas dengan komponen yang ada
+    const transformedData = data.map(booking => {
+      // Tentukan package type
+      const packageName = booking.package_types?.name || 'Tidak Diketahui';
+      
+      // Tentukan musim/destinasi berdasarkan jenis package
+      let seasonDestination = '-';
+      if (packageName === 'Umrah') {
+        // Untuk Umrah, gunakan musim umrah atau kategori umrah
+        seasonDestination = booking.umrah_seasons?.name || 
+                          booking.umrah_categories?.name || 
+                          'Umrah Standard';
+      } else {
+        // Untuk Pelancongan, gunakan nama destinasi
+        seasonDestination = booking.destinations?.name || '-';
+      }
+
+      // Format tanggal lahir
+      let formattedBirthDate = '-';
+      if (booking.birth_date) {
+        formattedBirthDate = new Date(booking.birth_date).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+      }
+
+      return {
+        id: booking.id,
+        name: `${booking.gelaran || ''} ${booking.nama}`.trim(),
+        email: booking.email || '-',
+        phone: booking.telefon || '-',
+        address: `${booking.alamat || ''}, ${booking.poskod || ''} ${booking.bandar || ''}, ${booking.negeri || ''}`.replace(/^[, ]+|[, ]+$/g, '') || '-',
+        branch: booking.branches?.name || 'Tidak Diketahui',
+        package: packageName,
+        seasonDestination: seasonDestination,
+        category: seasonDestination, // Untuk backward compatibility
+        price: booking.bilangan ? `${booking.bilangan} pax` : '-',
+        total_price: booking.total_price || '-',
+        date: new Date(booking.created_at).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }),
+        avatar: getInitials(booking.nama || 'NA'),
+        consultant: booking.sales_consultant?.name || '-',
+        nokp: booking.nokp || '-',
+        jenis_pelancongan: booking.jenis_pelancongan || '-',
+        age: booking.age || '-',
+        birth_date: formattedBirthDate,
+        from_inquiry: booking.is_from_inquiry || false
+      };
+    });
+
+    return {
+      data: transformedData,
+      totalCount: count || 0
+    };
+  } catch (error) {
+    console.error('Error in fetchCustomersDataPaginated:', error);
+    throw error;
   }
 }

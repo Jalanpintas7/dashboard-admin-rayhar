@@ -54,7 +54,7 @@
       airlines = data || [];
     } catch (err) {
       console.error('Error fetching airlines:', err);
-      error = 'Gagal memuat data airline';
+      error = 'Gagal memuat data penerbangan';
       airlines = [];
     } finally {
       loadingAirlines = false;
@@ -106,11 +106,11 @@
       // Refresh data
       await fetchAirlines();
       closeEditModal();
-      showToast('success', 'Airline berhasil diperbarui!');
+      showToast('success', 'Penerbangan berhasil diperbarui!');
     } catch (err) {
       console.error('Error updating airline:', err);
-      error = 'Gagal mengupdate airline';
-      showToast('error', 'Gagal memperbarui airline');
+      error = 'Gagal mengupdate penerbangan';
+      showToast('error', 'Gagal memperbarui penerbangan');
     } finally {
       editLoading = false;
     }
@@ -144,11 +144,11 @@
       // Refresh data
       await fetchAirlines();
       closeDeleteModal();
-      showToast('success', 'Airline berhasil dihapus!');
+      showToast('success', 'Penerbangan berhasil dihapus!');
     } catch (err) {
       console.error('Error deleting airline:', err);
-      error = 'Gagal menghapus airline';
-      showToast('error', 'Gagal menghapus airline');
+      error = 'Gagal menghapus penerbangan';
+      showToast('error', 'Gagal menghapus penerbangan');
     } finally {
       deleteLoading = false;
     }
@@ -160,10 +160,10 @@
     <!-- Header Halaman -->
     <div class="mb-4 sm:mb-6">
       <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 mb-1 sm:mb-2">
-        Manajemen Airline
+        Manajemen Penerbangan
       </h1>
       <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-        Kelola data airline
+        Kelola data penerbangan
       </p>
     </div>
 
@@ -183,7 +183,7 @@
                 <path d="M3 3h18v18H3zM9 9h6v6H9z"/>
               </svg>
             </div>
-            <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Daftar Airline</h2>
+            <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Daftar Penerbangan</h2>
           </div>
 
           {#if error}
@@ -204,7 +204,7 @@
             </div>
           {:else if airlines.length === 0}
             <div class="text-center py-6 sm:py-8 text-slate-500">
-              <p class="text-xs sm:text-sm">Belum ada data airline</p>
+              <p class="text-xs sm:text-sm">Belum ada data penerbangan</p>
             </div>
           {:else}
             <div class="overflow-x-auto">
@@ -212,7 +212,7 @@
                 <thead>
                   <tr class="border-b border-slate-200">
                     <th class="text-left py-2 sm:py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-slate-700">No</th>
-                    <th class="text-left py-2 sm:py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-slate-700">Nama Airline</th>
+                    <th class="text-left py-2 sm:py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-slate-700">Nama Penerbangan</th>
                     <th class="text-left py-2 sm:py-3 px-3 sm:px-4 font-semibold text-xs sm:text-sm text-slate-700">Aksi</th>
                   </tr>
                 </thead>
@@ -262,7 +262,7 @@
     <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-md w-full border border-white/50">
         <div class="flex items-center justify-between mb-4 p-6 border-b border-gray-200">
-          <h3 class="text-lg font-bold text-slate-800">Edit Airline</h3>
+          <h3 class="text-lg font-bold text-slate-800">Edit Penerbangan</h3>
           <button
             on:click={closeEditModal}
             class="text-slate-400 hover:text-slate-600 transition-colors"
@@ -276,7 +276,7 @@
         <form on:submit|preventDefault={handleEditSubmit} class="space-y-4 p-6">
           <div>
             <label for="editName" class="block text-sm font-medium text-slate-700 mb-2">
-              Nama Airline *
+              Nama Penerbangan *
             </label>
             <input
               id="editName"
@@ -321,7 +321,7 @@
           
           <h3 class="text-lg font-bold text-slate-800 mb-2">Konfirmasi Hapus</h3>
           <p class="text-slate-600 mb-6">
-            Apakah Anda yakin ingin menghapus airline <strong>"{deletingAirline?.name}"</strong>? 
+            Apakah Anda yakin ingin menghapus penerbangan <strong>"{deletingAirline?.name}"</strong>? 
             Tindakan ini tidak dapat dibatalkan.
           </p>
 

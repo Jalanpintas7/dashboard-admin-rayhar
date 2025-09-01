@@ -27,11 +27,11 @@
   const menuItemsData = [
     { name: 'Dashboard', icon: 'home', href: '/', isActive: false },
     { name: 'Pelanggan', icon: 'users', href: '/Pelanggan', isActive: false },
-    { name: 'Input Musim & Kategori', icon: 'calendar', href: '/InputMusim&Kategori', isActive: false },
+    { name: 'Input Umrah', icon: 'calendar', href: '/InputUmrah', isActive: false },
     { name: 'Data Umrah', icon: 'mosque', href: '/DataUmrah', isActive: false },
     { name: 'Input Destinasi', icon: 'map-pin', href: '/InputDestinasi', isActive: false },
     { name: 'Data Destinasi', icon: 'database', href: '/DataDestinasi', isActive: false },
-    { name: 'Input Airline', icon: 'plane', href: '/InputAirline', isActive: false }
+    { name: 'Input Penerbangan', icon: 'plane', href: '/InputAirline', isActive: false }
 
   ];
   
@@ -194,7 +194,7 @@
 <!-- Desktop Sidebar -->
 <aside class="
   hidden lg:block
-  w-full max-w-[300px]
+  w-full lg:max-w-[280px] 2xl:max-w-[300px]
   bg-white/80 border border-white 
   rounded-[28px] shadow-soft
   overflow-hidden
@@ -203,24 +203,24 @@
   flex flex-col
 ">
   <!-- Inner background dengan gradient halus -->
-  <div class="bg-gradient-to-b from-white/60 to-white/30 p-6 flex flex-col flex-1">
+  <div class="bg-gradient-to-b from-white/60 to-white/30 lg:p-4 xl:p-6 flex flex-col flex-1">
     <!-- Logo + Brand -->
-    <div class="flex items-center gap-4 mb-8">
+    <div class="flex items-center lg:gap-3 xl:gap-4 lg:mb-6 xl:mb-8">
       <!-- Logo Rayhar -->
-      <img src={logoSrc} alt="Rayhar Logo" width="100" />
+      <img src={logoSrc} alt="Rayhar Logo" class="lg:w-20 xl:w-[100px]" />
       <div>
-        <div class="text-3xl font-extrabold tracking-tight text-slate-800">Rayhar</div>
-        <div class="text-sm -mt-0.5 text-slate-400">Admin Dashboard</div>
+        <div class="lg:text-2xl xl:text-3xl font-extrabold tracking-tight text-slate-800">Rayhar</div>
+        <div class="lg:text-xs xl:text-sm -mt-0.5 text-slate-400">Admin Dashboard</div>
       </div>
     </div>
 
     <!-- Navigation Menu -->
-    <nav class="space-y-3 flex-1">
+    <nav class="lg:space-y-2 xl:space-y-3 flex-1">
       {#each menuItems as item}
         <a 
           href={item.href}
           class="
-            group flex items-center gap-4 rounded-2xl px-5 py-4
+            group flex items-center lg:gap-3 xl:gap-4 rounded-2xl lg:px-3 lg:py-3 xl:px-5 xl:py-4
             {item.isActive 
               ? 'border border-purple-200 bg-purple-100/70 shadow-innerSoft' 
               : 'text-slate-500 hover:bg-slate-50'
@@ -228,32 +228,32 @@
           "
         >
           <span class="
-            grid h-8 w-8 place-items-center rounded-full shadow-soft
+            grid lg:h-7 lg:w-7 xl:h-8 xl:w-8 place-items-center rounded-full shadow-soft
             {item.isActive 
               ? 'bg-white text-purple-600' 
               : 'border border-slate-200 bg-white'
             }
           ">
             {#if item.icon === 'home'}
-              <Home class="h-4 w-4" />
+              <Home class="lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
             {:else if item.icon === 'users'}
-              <Users class="h-4 w-4" />
+              <Users class="lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
             {:else if item.icon === 'settings'}
-              <Settings class="h-4 w-4" />
+              <Settings class="lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
             {:else if item.icon === 'calendar'}
-              <Calendar class="h-4 w-4" />
+              <Calendar class="lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
             {:else if item.icon === 'mosque'}
-              <Building2 class="h-4 w-4" />
+              <Building2 class="lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
             {:else if item.icon === 'map-pin'}
-              <MapPin class="h-4 w-4" />
+              <MapPin class="lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
             {:else if item.icon === 'database'}
-              <Database class="h-4 w-4" />
+              <Database class="lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
             {:else if item.icon === 'plane'}
-              <Plane class="h-4 w-4" />
+              <Plane class="lg:h-3 lg:w-3 xl:h-4 xl:w-4" />
             {/if}
           </span>
           <span class="
-            text-base font-medium
+            lg:text-sm xl:text-base font-medium
             {item.isActive ? 'text-purple-700' : ''}
           ">{item.name}</span>
         </a>
@@ -265,8 +265,8 @@
 
     <!-- Footer -->
     <footer class="pt-3 pb-2">
-      <div class="text-sm font-semibold text-slate-700">Rayhar Admin Dashboard</div>
-      <div class="text-xs text-slate-400">© 2024 All Rights Reserved</div>
+      <div class="lg:text-xs xl:text-sm font-semibold text-slate-700">Rayhar Admin Dashboard</div>
+      <div class="lg:text-[10px] xl:text-xs text-slate-400">© 2024 All Rights Reserved</div>
     </footer>
   </div>
 </aside>

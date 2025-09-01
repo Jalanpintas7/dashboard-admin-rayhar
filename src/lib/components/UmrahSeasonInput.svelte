@@ -66,7 +66,7 @@
         <path d="M3 10h18"/>
       </svg>
     </div>
-    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Tambah Musim Umrah Baru</h2>
+    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Tambah Musim Umrah</h2>
   </div>
 
   <!-- Message Display -->

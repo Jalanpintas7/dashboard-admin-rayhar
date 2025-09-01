@@ -74,10 +74,10 @@
 
 <svelte:window on:click={handleClickOutside} />
 
-<div class="bg-white/90 backdrop-blur-sm rounded-card shadow-soft border border-white/80 p-3 sm:p-4 lg:p-5 xl:p-7">
+<div class="bg-white/90 backdrop-blur-sm rounded-card shadow-soft border border-white/80 p-3 sm:p-4 lg:p-5 xl:p-5 2xl:p-7 h-[440px] sm:h-[550px] lg:h-[620px] xl:h-[540px] 2xl:h-[650px] overflow-hidden flex flex-col min-w-0">
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6 gap-3 lg:gap-4">
-    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-900">Top Inquiry</h2>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-5 gap-3 lg:gap-4">
+    <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate">Top Inquiry</h2>
     
     <!-- Dropdown (custom styled) -->
     <div class="relative self-end sm:self-auto">
@@ -123,7 +123,7 @@
   </div>
 
   <!-- Content -->
-  <div class="space-y-2 sm:space-y-2 lg:space-y-3 xl:space-y-4">
+  <div class="flex-1 overflow-y-auto pr-1 space-y-2 lg:space-y-2.5 xl:space-y-3">
     {#if loading}
       <!-- Loading state -->
       <div class="flex items-center justify-center py-6 sm:py-8">
@@ -150,32 +150,37 @@
       <!-- Inquiry list -->
       {#each topInquiries as inquiry}
         <div class="
-          bg-section
-          p-2 sm:p-2 lg:p-3 xl:p-4 
+          bg-white
+          p-2 lg:p-2.5 xl:p-3 
           transition-all duration-200
-          rounded-xl sm:rounded-2xl
+          rounded-xl
+          hover:shadow-md
+          cursor-pointer
+          border border-gray-100
+          shadow-sm
+          min-w-0
         ">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2 lg:space-x-3 xl:space-x-4">
+          <div class="flex items-center justify-between min-w-0">
+            <div class="flex items-center space-x-2 lg:space-x-2.5 xl:space-x-3 min-w-0 flex-1">
               <div class="
-                w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 xl:w-10 xl:h-10
+                w-7 h-7 lg:w-8 lg:h-8 xl:w-9 xl:h-9
                 bg-indigo-100 
                 rounded-full 
                 flex items-center justify-center
                 text-indigo-700
                 font-semibold
-                text-xs lg:text-sm
+                text-xs lg:text-xs
                 flex-shrink-0
               ">
                 {inquiry.rank}
               </div>
-              <div class="min-w-0 flex-1">
-                <h3 class="text-slate-900 font-medium text-sm sm:text-base lg:text-lg truncate">{inquiry.name}</h3>
+              <div class="min-w-0 flex-1 overflow-hidden">
+                <h3 class="text-slate-900 font-bold text-xs sm:text-sm lg:text-sm xl:text-sm truncate">{inquiry.name}</h3>
               </div>
             </div>
-            <div class="text-right flex-shrink-0">
-              <p class="text-slate-900 font-bold text-sm sm:text-base lg:text-lg">{inquiry.totalInquiries}</p>
-              <p class="text-slate-500 text-sm sm:text-base">leads</p>
+            <div class="text-right flex-shrink-0 ml-2">
+              <p class="text-slate-900 font-bold text-sm sm:text-base lg:text-base xl:text-base">{inquiry.totalInquiries}</p>
+              <p class="text-slate-500 text-xs sm:text-sm truncate">leads</p>
             </div>
           </div>
         </div>

@@ -13,7 +13,7 @@ Dashboard admin modern untuk mengelola bisnis travel dan umrah dengan antarmuka 
 ### 👥 Pelanggan
 - Tabel data pelanggan lengkap
 - Informasi detail: nama, email, telepon, cabang
-- Data paket dan kategori perjalanan
+- Data pakej dan kategori perjalanan
 - Status pemesanan (Confirmed, Pending, Cancelled)
 - Harga dan tanggal pemesanan
 - Pagination dan fitur pencarian
@@ -71,8 +71,8 @@ src/
 - **Dashboard**: Halaman utama dengan ringkasan data
 - **Pelanggan**: Kelola data pelanggan dan pemesanan
 - **Pengaturan**: Konfigurasi sistem
-- **Input Musim & Kategori**: Manajemen kategori paket
-- **Data Umrah**: Data khusus paket umrah
+- **Input Musim & Kategori**: Manajemen kategori pakej
+- **Data Umrah**: Data khusus pakej umrah
 - **Destinasi**: Manajemen lokasi tujuan
 - **Data Destinasi**: Detail informasi destinasi
 
@@ -82,10 +82,10 @@ Tabel pelanggan menampilkan informasi lengkap tentang:
 
 - **PELANGGAN**: Nama, email, dan nomor telepon dengan avatar inisial
 - **CAWANGAN**: Cabang kantor
-- **PAKEJ**: Jenis paket (Umrah/Pelancongan) dengan warna yang berbeda
-- **KATEGORI**: Detail paket perjalanan
+- **PAKEJ**: Jenis pakej (Umrah/Pelancongan) dengan warna yang berbeda
+- **KATEGORI**: Detail pakej perjalanan
 - **STATUS**: Status pemesanan dengan indikator warna
-- **HARGA**: Harga paket dalam RM
+- **HARGA**: Harga pakej dalam RM
 - **TARIKH**: Tanggal pemesanan
 
 ## Responsivitas

@@ -105,20 +105,26 @@
 
         <!-- Login Button -->
         <div>
-                     <button
-             type="submit"
-             disabled={isLoading || $loading}
-             class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
-             style="background-color: {themeColors.primary}; --tw-ring-color: {themeColors.primary};"
-           >
+          <button
+            type="submit"
+            disabled={isLoading || $loading}
+            class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transform"
+            style="background-color: {themeColors.primary}; --tw-ring-color: {themeColors.primary};"
+          >
             {#if isLoading || $loading}
-              <Loader2 class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-              Memproses...
+              <!-- Circular Progress Indicator -->
+              <div class="flex items-center space-x-3">
+                <div class="relative">
+                  <div class="w-5 h-5 border-2 border-white border-opacity-30 rounded-full"></div>
+                  <div class="absolute top-0 left-0 w-5 h-5 border-2 border-transparent border-t-white rounded-full animate-spin"></div>
+                </div>
+                <span class="text-white font-medium">Memproses...</span>
+              </div>
             {:else}
-              <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+              <span class="absolute left-0 inset-y-0 flex items-center pl-3 transition-transform duration-200 group-hover:translate-x-1">
                 <LogIn class="h-5 w-5 text-white group-hover:text-white" />
               </span>
-              Masuk
+              <span class="transition-all duration-200 group-hover:translate-x-1">Masuk</span>
             {/if}
           </button>
         </div>

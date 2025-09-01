@@ -19,16 +19,16 @@
     airline: '',
     flightName: '',
     deskripsi: '',
-    // Harga berdasarkan tipe bilik (untuk paket non-cruise)
+    // Harga berdasarkan tipe bilik (untuk pakej non-cruise)
     hargaDouble: 0,
     hargaTriple: 0,
     hargaQuadruple: 0,
     hargaQuintuple: 0,
-    // Harga untuk anak dan infant (untuk paket non-cruise)
+    // Harga untuk anak dan infant (untuk pakej non-cruise)
     hargaCWB: 0,    // Child With Bed
     hargaCNB: 0,    // Child No Bed
     hargaInfant: 0,  // Infant
-    // Harga berdasarkan deck (untuk paket cruise)
+    // Harga berdasarkan deck (untuk pakej cruise)
     lowDeckInterior: 0,
     lowDeckSeaview: 0,
     lowDeckBalcony: 0,
@@ -67,7 +67,7 @@
   $: selectedKategori = categories.find(c => c.id === packageData.kategoriId);
   $: selectedAirline = airlines.find(a => a.id === packageData.airline);
 
-  // Check if this is a cruise package
+  // Check if this is a cruise pakej
   $: isCruisePackage = selectedMusim?.name === 'Umrah Cruise' && 
     (selectedKategori?.name === 'PELAYARAN' || selectedKategori?.name === 'UMRAH + PELAYARAN');
 
@@ -77,7 +77,7 @@
 
   async function handleSubmit() {
     if (!packageData.namaPaket.trim()) {
-      showMessage('Nama paket harus diisi', 'error');
+      showMessage('Nama pakej harus diisi', 'error');
       return;
     }
 
@@ -101,7 +101,7 @@
       return;
     }
 
-    // Validasi airline hanya untuk paket non-cruise
+    // Validasi airline hanya untuk pakej non-cruise
     if (!isCruisePackage && !packageData.airline) {
       showMessage('Pilih maskapai penerbangan', 'error');
       return;
@@ -121,7 +121,7 @@
       };
 
       if (isCruisePackage) {
-        // Untuk paket cruise, gunakan harga berdasarkan deck
+        // Untuk pakej cruise, gunakan harga berdasarkan deck
         packageDataForDB = {
           ...packageDataForDB,
           low_deck_interior: packageData.lowDeckInterior || 0,
@@ -132,7 +132,7 @@
           high_deck_balcony: packageData.highDeckBalcony || 0
         };
       } else {
-        // Untuk paket non-cruise, gunakan harga berdasarkan tipe bilik dan anak/infant
+        // Untuk pakej non-cruise, gunakan harga berdasarkan tipe bilik dan anak/infant
         packageDataForDB = {
           ...packageDataForDB,
           airline_id: packageData.airline,
@@ -151,8 +151,8 @@
       // Simpan ke database menggunakan Supabase
       const result = await createUmrahPackage(packageDataForDB);
 
-      console.log('Paket umrah berhasil dibuat:', result);
-      showMessage('Paket umrah berhasil dibuat!', 'success');
+      console.log('Pakej umrah berhasil dibuat:', result);
+      showMessage('Pakej umrah berhasil dibuat!', 'success');
 
       // Reset form setelah submit berhasil
       packageData = {
@@ -183,8 +183,8 @@
       };
 
     } catch (error) {
-      console.error('Error saat membuat paket umrah:', error);
-      showMessage('Gagal membuat paket umrah. Silakan coba lagi.', 'error');
+      console.error('Error saat membuat pakej umrah:', error);
+      showMessage('Gagal membuat pakej umrah. Silakan coba lagi.', 'error');
     } finally {
       isSubmitting = false;
     }
@@ -219,7 +219,7 @@
     <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-green-100 rounded-xl flex items-center justify-center">
       <Building2 class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-green-600" />
     </div>
-    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Buat Paket Umrah Baru</h2>
+    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Buat Pakej Umrah</h2>
   </div>
 
   <!-- Error Display -->
@@ -246,17 +246,17 @@
     </div>
   {:else}
     <form on:submit|preventDefault={handleSubmit} class="space-y-3 sm:space-y-4 lg:space-y-6">
-      <!-- Nama Paket -->
+      <!-- Nama Pakej -->
       <div>
         <label for="namaPaket" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-          Nama Paket *
+          Nama Pakej *
         </label>
         <input
           id="namaPaket"
           type="text"
           bind:value={packageData.namaPaket}
           required
-          placeholder="Contoh: Paket Umrah Ramadhan Premium 2024"
+                      placeholder="Contoh: Pakej Umrah Ramadhan Premium 2024"
           class="w-full px-3 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
         />
       </div>
@@ -331,7 +331,7 @@
         </div>
       </div>
 
-      <!-- Airline dan Flight Name (hanya untuk paket non-cruise) -->
+              <!-- Airline dan Flight Name (hanya untuk pakej non-cruise) -->
       {#if !isCruisePackage}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div>
@@ -368,7 +368,7 @@
         </div>
       {/if}
 
-      <!-- Harga berdasarkan deck (untuk paket cruise) -->
+              <!-- Harga berdasarkan deck (untuk pakej cruise) -->
       {#if isCruisePackage}
         <div>
           <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Berdasarkan Deck dan Tipe Bilik:</h4>
@@ -488,7 +488,7 @@
           </div>
         </div>
       {:else}
-        <!-- Harga Bilik (untuk paket non-cruise) -->
+        <!-- Harga Bilik (untuk pakej non-cruise) -->
         <div>
           <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Berdasarkan Tipe Bilik:</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -562,7 +562,7 @@
           </div>
         </div>
 
-        <!-- Harga Anak dan Infant (untuk paket non-cruise) -->
+        <!-- Harga Anak dan Infant (untuk pakej non-cruise) -->
         <div>
           <h4 class="font-medium text-slate-800 mb-3 sm:mb-4 text-sm sm:text-base">Harga Anak dan Infant:</h4>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
@@ -632,7 +632,7 @@
             <span class="text-xs sm:text-sm">Menyimpan...</span>
           </div>
         {:else}
-          <span class="text-xs sm:text-sm">Buat Paket Umrah</span>
+          <span class="text-xs sm:text-sm">Buat Pakej Umrah</span>
         {/if}
       </button>
     </form>

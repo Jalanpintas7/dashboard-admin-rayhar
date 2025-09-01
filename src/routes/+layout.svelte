@@ -65,7 +65,7 @@
       flex
     ">
       <!-- Sidebar - Fixed/Sticky -->
-      <div class="hidden lg:block w-[320px] flex-shrink-0">
+      <div class="hidden lg:block lg:w-[280px] xl:w-[280px] 2xl:w-[320px] flex-shrink-0">
         <Sidebar />
       </div>
       

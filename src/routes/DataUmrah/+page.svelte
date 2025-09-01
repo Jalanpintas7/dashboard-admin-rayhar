@@ -30,7 +30,8 @@
   let filteredPackages = [];
   
   // Loading state
-  let isLoading = false;
+  let isLoading = true;
+  let error = null;
 
   // Load data awal
   async function loadData() {
@@ -105,7 +106,7 @@
     <!-- Header Halaman -->
     <div class="mb-4 sm:mb-6">
       <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 mb-1 sm:mb-2">Data Umrah</h1>
-      <p class="text-sm sm:text-base text-slate-600 leading-relaxed">Kelola data musim, kategori, dan paket umrah yang tersedia</p>
+              <p class="text-sm sm:text-base text-slate-600 leading-relaxed">Kelola data musim, kategori, dan pakej umrah yang tersedia</p>
     </div>
 
     <!-- Data Table dengan Pencarian -->
@@ -123,7 +124,7 @@
                 id="searchTerm"
                 type="text"
                 bind:value={searchTerm}
-                placeholder="Cari musim, kategori, atau paket umrah..."
+                placeholder="Cari musim, kategori, atau pakej umrah..."
                 class="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
               />
             </div>
