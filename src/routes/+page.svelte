@@ -32,7 +32,7 @@
           <p class="text-base text-gray-600">Welcome to your admin dashboard</p>
         </div>
         
-        <!-- Profile Dropdown - Hanya tampil di desktop -->
+        <!-- Profile Dropdown - Hanya tampil di desktop | Mobile dropdown fixed -->
         <div class="hidden lg:flex">
           <ProfileDropdown />
         </div>

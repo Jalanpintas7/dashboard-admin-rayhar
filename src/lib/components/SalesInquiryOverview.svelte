@@ -197,39 +197,39 @@
 
 <!-- CARD WRAPPER -->
 <section class="rounded-2xl sm:rounded-3xl bg-white/90 border border-white shadow-card p-4 sm:p-6 xl:p-5 2xl:p-6 h-[440px] sm:h-[550px] lg:h-[620px] xl:h-[540px] 2xl:h-[650px] overflow-hidden">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-    <div>
+  <div class="flex flex-row items-center justify-between gap-2 sm:gap-3 lg:gap-4">
+    <div class="flex-1">
       <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate">Sales & Inquiry Overview</h2>
     </div>
     
     <!-- Dropdown (custom styled) -->
-    <div class="relative self-end sm:self-auto">
+    <div class="relative flex-shrink-0">
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 sm:px-3.5 sm:py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 active:scale-[0.99] transition"
+        class="inline-flex items-center gap-1 rounded-lg sm:rounded-xl border border-slate-200 px-2 py-1 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 active:scale-[0.99] transition min-w-0"
         aria-haspopup="menu"
         aria-expanded={isMenuOpen}
         on:click={toggleMenu}
       >
-        <span class="truncate">{selectedFilter}</span>
-        <svg class="size-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <span class="truncate max-w-[90px] sm:max-w-none">{selectedFilter}</span>
+        <svg class="size-3 text-slate-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/>
         </svg>
       </button>
 
       <div
-        class="absolute right-0 z-10 mt-2 w-44 origin-top-right rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5 transition {isMenuOpen ? 'visible opacity-100 scale-100' : 'invisible opacity-0 scale-95'}"
+        class="absolute right-0 z-10 mt-2 w-32 sm:w-44 origin-top-right rounded-lg sm:rounded-xl border border-slate-200 bg-white p-1 sm:p-1.5 shadow-lg ring-1 ring-black/5 transition {isMenuOpen ? 'visible opacity-100 scale-100' : 'invisible opacity-0 scale-95'}"
         role="menu"
       >
         <!-- menu item -->
         <button 
-          class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
+          class="w-full text-left px-2 py-1.5 sm:px-3 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
           on:click={() => selectFilter('Total Sales')}
         >
           Total Sales
         </button>
         <button 
-          class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
+          class="w-full text-left px-2 py-1.5 sm:px-3 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
           on:click={() => selectFilter('Total Inquiry')}
         >
           Total Inquiry

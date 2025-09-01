@@ -410,7 +410,7 @@ export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters 
       query = query.eq('branches.name', filters.branch);
     }
     
-    if (filters.inquiry !== '') {
+    if (filters.inquiry !== '' && filters.inquiry !== undefined) {
       const isFromInquiry = filters.inquiry === 'true';
       query = query.eq('is_from_inquiry', isFromInquiry);
     }

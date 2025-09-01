@@ -26,14 +26,15 @@
       </p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+    <!-- Grid 2 Kolom untuk Card Musim dan Kategori -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-6">
       <!-- Form Input Musim -->
-      <div>
+      <div class="w-full">
         <UmrahSeasonInput />
       </div>
 
       <!-- Form Input Kategori -->
-      <div>
+      <div class="w-full">
         <UmrahCategoryInput />
       </div>
     </div>

@@ -236,12 +236,12 @@
           <div class="flex items-center gap-1 text-sm sm:text-base lg:text-xs xl:text-sm 2xl:text-base font-medium text-emerald-600">
             {#if card.title === 'Bookings Umrah' || card.title === 'Bookings Outbound'}
               <!-- Percentage untuk Umrah dan Outbound -->
-              <Star class="w-3 h-3 sm:w-3 sm:h-3 lg:w-2.5 lg:h-2.5 xl:w-3 xl:h-3 2xl:w-4 2xl:h-4" />
+              <Star class="w-4 h-4 sm:w-3 sm:h-3 lg:w-2.5 lg:h-2.5 xl:w-3 xl:h-3 2xl:w-4 2xl:h-4" />
               <span class="text-purple-600">{card.change}</span>
               <span class="text-slate-500 font-normal">{card.subtitle}</span>
             {:else}
               <!-- panah naik untuk card lainnya -->
-              <ArrowUp class="w-3 h-3 sm:w-3 sm:h-3 lg:w-2.5 lg:h-2.5 xl:w-3 xl:h-3 2xl:w-4 2xl:h-4" />
+              <ArrowUp class="w-4 h-4 sm:w-3 sm:h-3 lg:w-2.5 lg:h-2.5 xl:w-3 xl:h-3 2xl:w-4 2xl:h-4" />
               <span>{card.change}</span>
               <span class="text-slate-500 font-normal">{card.subtitle}</span>
             {/if}
@@ -250,15 +250,15 @@
 
         <!-- Right Graphic -->
         <div class="relative flex items-center justify-center h-full">
-          <div class="w-6 h-6 sm:w-8 sm:h-8 lg:w-8 lg:h-8 xl:w-9 xl:h-9 2xl:w-10 2xl:h-10 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-soft backdrop-blur-sm" style="background-color: var(--color-primary);">
+          <div class="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 xl:w-9 xl:h-9 2xl:w-10 2xl:h-10 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-soft backdrop-blur-sm" style="background-color: var(--color-primary);">
             {#if card.icon === 'person'}
-              <Users class="w-3 h-3 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 2xl:w-5 2xl:h-5 text-white" />
+              <Users class="w-4 h-4 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 2xl:w-5 2xl:h-5 text-white" />
             {:else if card.icon === 'location'}
-              <MapPin class="w-3 h-3 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 2xl:w-5 2xl:h-5 text-white" />
+              <MapPin class="w-4 h-4 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 2xl:w-5 2xl:h-5 text-white" />
             {:else if card.icon === 'airplane'}
-              <Plane class="w-3 h-3 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 2xl:w-5 2xl:h-5 text-white" />
+              <Plane class="w-4 h-4 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 2xl:w-5 2xl:h-5 text-white" />
             {:else if card.icon === 'trending-up'}
-              <TrendingUp class="w-3 h-3 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 2xl:w-5 2xl:h-5 text-white" />
+              <TrendingUp class="w-4 h-4 sm:w-4 sm:h-4 lg:w-3.5 lg:h-3.5 xl:w-4 xl:h-4 2xl:w-5 2xl:h-5 text-white" />
             {/if}
           </div>
         </div>

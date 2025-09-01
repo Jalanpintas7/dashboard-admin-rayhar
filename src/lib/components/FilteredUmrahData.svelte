@@ -772,19 +772,19 @@
   <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
     <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/50">
       <!-- Header Modal -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-xl flex items-center justify-center {modalType === 'season' ? 'bg-purple-100' : modalType === 'category' ? 'bg-yellow-100' : 'bg-green-100'}">
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center {modalType === 'season' ? 'bg-purple-100' : modalType === 'category' ? 'bg-yellow-100' : 'bg-green-100'}">
             {#if modalType === 'season'}
-              <Calendar class="w-6 h-6 text-purple-600" />
+              <Calendar class="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             {:else if modalType === 'category'}
-              <Package class="w-6 h-6 text-yellow-600" />
+              <Package class="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
             {:else}
-              <Globe class="w-6 h-6 text-green-600" />
+              <Globe class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
             {/if}
           </div>
           <div>
-            <h2 class="text-2xl font-bold text-gray-900">
+            <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
               {#if modalType === 'season'}
                 {selectedItem.name}
               {:else if modalType === 'category'}
@@ -793,53 +793,53 @@
                 {selectedItem.umrah_seasons?.name || 'N/A'} - {selectedItem.umrah_categories?.name || 'N/A'}
               {/if}
             </h2>
-            <p class="text-gray-500">
+            <p class="text-xs sm:text-sm text-gray-500">
               Detail {modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Pakej'} Umrah
             </p>
           </div>
         </div>
         <button
           on:click={closeModals}
-          class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <X class="w-6 h-6 text-gray-500" />
+          <X class="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
         </button>
       </div>
 
       <!-- Content Modal -->
-      <div class="p-6 space-y-6">
+      <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {#if modalType === 'season'}
           <!-- Detail Musim -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Calendar class="w-5 h-5 text-purple-600" />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div class="space-y-3 sm:space-y-4">
+              <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Calendar class="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                 Informasi Musim
               </h3>
               
               <div class="space-y-3">
                 <div>
-                  <p class="text-sm text-gray-500">Nama Musim</p>
-                  <p class="text-lg font-semibold text-gray-900">{selectedItem.name}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Nama Musim</p>
+                  <p class="text-base sm:text-lg font-semibold text-gray-900">{selectedItem.name}</p>
                 </div>
               </div>
             </div>
 
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FileText class="w-5 h-5 text-blue-600" />
+            <div class="space-y-3 sm:space-y-4">
+              <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FileText class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 Informasi Sistem
               </h3>
               
               <div class="space-y-3">
                 <div>
-                  <p class="text-sm text-gray-500">Dibuat Pada</p>
-                  <p class="text-gray-900">{formatDate(selectedItem.created_at)}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Dibuat Pada</p>
+                  <p class="text-sm sm:text-base text-gray-900">{formatDate(selectedItem.created_at)}</p>
                 </div>
                 
                 <div>
-                  <p class="text-sm text-gray-500">Diperbarui Pada</p>
-                  <p class="text-gray-900">Belum pernah diperbarui</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Diperbarui Pada</p>
+                  <p class="text-sm sm:text-base text-gray-900">Belum pernah diperbarui</p>
                 </div>
               </div>
             </div>
@@ -847,41 +847,38 @@
 
         {:else if modalType === 'category'}
           <!-- Detail Kategori -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Package class="w-5 h-5 text-yellow-600" />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div class="space-y-3 sm:space-y-4">
+              <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Package class="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
                 Informasi Kategori
               </h3>
               
               <div class="space-y-3">
                 <div>
-                  <p class="text-sm text-gray-500">Nama Kategori</p>
-                  <p class="text-lg font-semibold text-gray-900">{selectedItem.name}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Nama Kategori</p>
+                  <p class="text-base sm:text-lg font-semibold text-gray-900">{selectedItem.name}</p>
                 </div>
                 
-                <div>
-                  <p class="text-sm text-gray-500">ID</p>
-                  <p class="text-gray-900 font-mono">{selectedItem.id}</p>
-                </div>
+
               </div>
             </div>
 
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <FileText class="w-5 h-5 text-blue-600" />
+            <div class="space-y-3 sm:space-y-4">
+              <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FileText class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 Informasi Sistem
               </h3>
               
               <div class="space-y-3">
                 <div>
-                  <p class="text-sm text-gray-500">Dibuat Pada</p>
-                  <p class="text-gray-900">{formatDate(selectedItem.created_at)}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Dibuat Pada</p>
+                  <p class="text-sm sm:text-base text-gray-900">{formatDate(selectedItem.created_at)}</p>
                 </div>
                 
                 <div>
-                  <p class="text-sm text-gray-500">Diperbarui Pada</p>
-                  <p class="text-gray-900">Belum pernah diperbarui</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Diperbarui Pada</p>
+                  <p class="text-sm sm:text-base text-gray-900">Belum pernah diperbarui</p>
                 </div>
               </div>
             </div>
@@ -889,43 +886,43 @@
 
         {:else}
           <!-- Detail Pakej -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Globe class="w-5 h-5 text-green-600" />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div class="space-y-3 sm:space-y-4">
+              <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Globe class="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                 Informasi Pakej
               </h3>
               
               <div class="space-y-3">
                 <div>
-                  <p class="text-sm text-gray-500">Nama Pakej</p>
-                  <p class="text-lg font-semibold text-gray-900">
+                  <p class="text-xs sm:text-sm text-gray-500">Nama Pakej</p>
+                  <p class="text-base sm:text-lg font-semibold text-gray-900">
                     {selectedItem.umrah_seasons?.name || 'N/A'} - {selectedItem.umrah_categories?.name || 'N/A'}
                   </p>
                 </div>
                 
                 <div>
-                  <p class="text-sm text-gray-500">Maskapai</p>
-                  <p class="text-gray-900">{selectedItem.airlines?.name || 'N/A'}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Maskapai</p>
+                  <p class="text-sm sm:text-base text-gray-900">{selectedItem.airlines?.name || 'N/A'}</p>
                 </div>
               </div>
             </div>
 
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Calendar class="w-5 h-5 text-blue-600" />
+            <div class="space-y-3 sm:space-y-4">
+              <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Calendar class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 Periode Perjalanan
               </h3>
               
               <div class="space-y-3">
                 <div>
-                  <p class="text-sm text-gray-500">Tanggal Mulai</p>
-                  <p class="text-gray-900">{formatDate(selectedItem.start_date)}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Tanggal Mulai</p>
+                  <p class="text-sm sm:text-base text-gray-900">{formatDate(selectedItem.start_date)}</p>
                 </div>
                 
                 <div>
-                  <p class="text-sm text-gray-500">Tanggal Selesai</p>
-                  <p class="text-gray-900">{formatDate(selectedItem.end_date)}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Tanggal Selesai</p>
+                  <p class="text-sm sm:text-base text-gray-900">{formatDate(selectedItem.end_date)}</p>
                 </div>
               </div>
             </div>
@@ -934,62 +931,62 @@
           <!-- Harga Pakej - dengan pengkondisian untuk cruise -->
           {#if selectedItem.umrah_categories?.name === 'PELAYARAN' || selectedItem.umrah_categories?.name === 'UMRAH + PELAYARAN'}
             <!-- Harga Deck untuk Cruise -->
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <DollarSign class="w-5 h-5 text-blue-600" />
+            <div class="space-y-3 sm:space-y-4">
+              <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <DollarSign class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 Harga Deck Cruise
               </h3>
               
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="grid grid-cols-1 gap-4">
                 <!-- Low Deck -->
-                <div class="space-y-4">
-                  <h4 class="text-md font-semibold text-gray-800 border-b border-gray-200 pb-2">Low Deck</h4>
-                  <div class="grid grid-cols-1 gap-3">
+                <div class="space-y-3">
+                  <h4 class="text-base sm:text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Low Deck</h4>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {#if selectedItem.low_deck_interior}
                       <div class="bg-blue-50 p-3 rounded-lg">
-                        <p class="text-sm text-gray-600">Interior</p>
-                        <p class="text-lg font-semibold text-blue-700">{formatCurrency(selectedItem.low_deck_interior)}</p>
+                        <p class="text-xs sm:text-sm text-gray-600">Interior</p>
+                        <p class="text-sm sm:text-lg font-semibold text-blue-700">{formatCurrency(selectedItem.low_deck_interior)}</p>
                       </div>
                     {/if}
                     
                     {#if selectedItem.low_deck_seaview}
                       <div class="bg-green-50 p-3 rounded-lg">
-                        <p class="text-sm text-gray-600">Sea View</p>
-                        <p class="text-lg font-semibold text-green-700">{formatCurrency(selectedItem.low_deck_seaview)}</p>
+                        <p class="text-xs sm:text-sm text-gray-600">Sea View</p>
+                        <p class="text-sm sm:text-lg font-semibold text-green-700">{formatCurrency(selectedItem.low_deck_seaview)}</p>
                       </div>
                     {/if}
                     
                     {#if selectedItem.low_deck_balcony}
                       <div class="bg-purple-50 p-3 rounded-lg">
-                        <p class="text-sm text-gray-600">Balcony</p>
-                        <p class="text-lg font-semibold text-purple-700">{formatCurrency(selectedItem.low_deck_balcony)}</p>
+                        <p class="text-xs sm:text-sm text-gray-600">Balcony</p>
+                        <p class="text-sm sm:text-lg font-semibold text-purple-700">{formatCurrency(selectedItem.low_deck_balcony)}</p>
                       </div>
                     {/if}
                   </div>
                 </div>
                 
                 <!-- High Deck -->
-                <div class="space-y-4">
-                  <h4 class="text-md font-semibold text-gray-800 border-b border-gray-200 pb-2">High Deck</h4>
-                  <div class="grid grid-cols-1 gap-3">
+                <div class="space-y-3">
+                  <h4 class="text-base sm:text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">High Deck</h4>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {#if selectedItem.high_deck_interior}
                       <div class="bg-blue-50 p-3 rounded-lg">
-                        <p class="text-sm text-gray-600">Interior</p>
-                        <p class="text-lg font-semibold text-blue-700">{formatCurrency(selectedItem.high_deck_interior)}</p>
+                        <p class="text-xs sm:text-sm text-gray-600">Interior</p>
+                        <p class="text-sm sm:text-lg font-semibold text-blue-700">{formatCurrency(selectedItem.high_deck_interior)}</p>
                       </div>
                     {/if}
                     
                     {#if selectedItem.high_deck_seaview}
                       <div class="bg-green-50 p-3 rounded-lg">
-                        <p class="text-sm text-gray-600">Sea View</p>
-                        <p class="text-lg font-semibold text-green-700">{formatCurrency(selectedItem.high_deck_seaview)}</p>
+                        <p class="text-xs sm:text-sm text-gray-600">Sea View</p>
+                        <p class="text-sm sm:text-lg font-semibold text-green-700">{formatCurrency(selectedItem.high_deck_seaview)}</p>
                       </div>
                     {/if}
                     
                     {#if selectedItem.high_deck_balcony}
                       <div class="bg-purple-50 p-3 rounded-lg">
                         <p class="text-sm text-gray-600">Balcony</p>
-                        <p class="text-lg font-semibold text-purple-700">{formatCurrency(selectedItem.high_deck_balcony)}</p>
+                        <p class="text-sm sm:text-lg font-semibold text-purple-700">{formatCurrency(selectedItem.high_deck_balcony)}</p>
                       </div>
                     {/if}
                   </div>
@@ -998,9 +995,9 @@
             </div>
           {:else}
             <!-- Harga Bilik untuk Pakej Umrah Biasa -->
-            <div class="space-y-4">
-              <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <DollarSign class="w-5 h-5 text-green-600" />
+            <div class="space-y-3 sm:space-y-4">
+              <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <DollarSign class="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                 Harga Pakej
               </h3>
               
@@ -1037,9 +1034,9 @@
           {/if}
 
           <!-- Harga Kategori Khusus -->
-          <div class="space-y-4">
-            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <DollarSign class="w-5 h-5 text-orange-600" />
+          <div class="space-y-3 sm:space-y-4">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <DollarSign class="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
               Harga Kategori Khusus
             </h3>
             
@@ -1070,10 +1067,10 @@
       </div>
 
       <!-- Footer Modal -->
-      <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+      <div class="flex justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
         <button
           on:click={closeModals}
-          class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          class="px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
         >
           Tutup
         </button>
@@ -1107,37 +1104,37 @@
   <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
     <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/50">
       <!-- Header Modal -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-xl flex items-center justify-center {modalType === 'season' ? 'bg-purple-100' : modalType === 'category' ? 'bg-yellow-100' : 'bg-green-100'}">
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center {modalType === 'season' ? 'bg-purple-100' : modalType === 'category' ? 'bg-yellow-100' : 'bg-green-100'}">
             {#if modalType === 'season'}
-              <Calendar class="w-6 h-6 text-purple-600" />
+              <Calendar class="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             {:else if modalType === 'category'}
-              <Package class="w-6 h-6 text-yellow-600" />
+              <Package class="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
             {:else}
-              <Globe class="w-6 h-6 text-green-600" />
+              <Globe class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
             {/if}
           </div>
           <div>
-            <h2 class="text-2xl font-bold text-gray-900">
+            <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
               Edit {modalType === 'season' ? 'Musim' : modalType === 'category' ? 'Kategori' : 'Pakej'} Umrah
             </h2>
-            <p class="text-gray-500">
+            <p class="text-xs sm:text-sm text-gray-500">
               Perbarui informasi {modalType === 'season' ? 'musim' : modalType === 'category' ? 'kategori' : 'pakej'}
             </p>
           </div>
         </div>
         <button
           on:click={closeModals}
-          class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <X class="w-6 h-6 text-gray-500" />
+          <X class="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
         </button>
       </div>
 
       <!-- Content Modal -->
-      <div class="p-6 space-y-6">
-        <form on:submit|preventDefault={saveEdit} class="space-y-6">
+      <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <form on:submit|preventDefault={saveEdit} class="space-y-4 sm:space-y-6">
           {#if modalType === 'season' || modalType === 'category'}
             <!-- Form untuk Musim dan Kategori -->
             <div class="space-y-4">
@@ -1292,17 +1289,17 @@
       </div>
 
       <!-- Footer Modal -->
-      <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+      <div class="flex justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
         <button
           on:click={closeModals}
-          class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          class="px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
         >
           Batal
         </button>
         <button
           on:click={saveEdit}
           disabled={isLoading}
-          class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed flex items-center gap-2"
+          class="px-4 sm:px-6 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {#if isLoading}
             <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1321,40 +1318,40 @@
   <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
     <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-md w-full border border-white/50">
       <!-- Header Modal -->
-      <div class="flex items-center justify-center p-6 border-b border-gray-200">
-        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-          <AlertTriangle class="w-8 h-8 text-red-600" />
+      <div class="flex items-center justify-center p-4 sm:p-6 border-b border-gray-200">
+        <div class="w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full flex items-center justify-center">
+          <AlertTriangle class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
         </div>
       </div>
 
       <!-- Content Modal -->
-      <div class="p-6 text-center">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+      <div class="p-4 sm:p-6 text-center">
+        <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2">
           Konfirmasi Hapus
         </h3>
-        <p class="text-gray-500 mb-6">
+        <p class="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
           Apakah Anda yakin ingin menghapus {modalType === 'season' ? 'musim' : modalType === 'category' ? 'kategori' : 'pakej'} 
           <span class="font-semibold text-gray-900">
             "{#if modalType === 'season' || modalType === 'category'}{selectedItem.name}{:else}{selectedItem.umrah_seasons?.name || 'N/A'} - {selectedItem.umrah_categories?.name || 'N/A'}{/if}"
           </span>?
         </p>
-        <p class="text-sm text-red-600 mb-6">
+        <p class="text-xs sm:text-sm text-red-600 mb-4 sm:mb-6">
           Tindakan ini tidak dapat dibatalkan dan akan menghapus data secara permanen.
         </p>
       </div>
 
       <!-- Footer Modal -->
-      <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+      <div class="flex justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
         <button
           on:click={closeModals}
-          class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          class="px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
         >
           Batal
         </button>
         <button
           on:click={confirmDelete}
           disabled={isLoading}
-          class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-400 disabled:cursor-not-allowed flex items-center gap-2"
+          class="px-4 sm:px-6 py-2 text-sm sm:text-base bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-400 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {#if isLoading}
             <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

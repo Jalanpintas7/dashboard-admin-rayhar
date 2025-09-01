@@ -392,89 +392,88 @@
   <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
     <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/50">
       <!-- Header Modal -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-            <span class="text-lg font-bold text-purple-600">
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+            <span class="text-base sm:text-lg font-bold text-purple-600">
               {selectedCustomer.avatar}
             </span>
           </div>
           <div>
-            <h2 class="text-2xl font-bold text-gray-900">{selectedCustomer.name}</h2>
-            <p class="text-gray-500">Detail Lengkap Pelanggan</p>
+            <h2 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{selectedCustomer.name}</h2>
+            <p class="text-xs sm:text-sm text-gray-500">Detail Lengkap Pelanggan</p>
           </div>
         </div>
         <button
           on:click={closeDetailModal}
-          class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          class="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <X class="w-6 h-6 text-gray-500" />
+          <X class="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
         </button>
       </div>
 
       <!-- Content Modal -->
-      <div class="p-6 space-y-6">
+      <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
         <!-- Informasi Pribadi -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="space-y-4">
-            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <User class="w-5 h-5 text-purple-600" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div class="space-y-3 sm:space-y-4">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <User class="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               Informasi Pribadi
             </h3>
             
             <div class="space-y-3">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 sm:gap-3">
                 <Mail class="w-4 h-4 text-gray-400" />
                 <div>
-                  <p class="text-sm text-gray-500">Email</p>
-                  <p class="text-gray-900">{selectedCustomer.email || '-'}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Email</p>
+                  <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.email || '-'}</p>
                 </div>
               </div>
               
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 sm:gap-3">
                 <Phone class="w-4 h-4 text-gray-400" />
                 <div>
-                  <p class="text-sm text-gray-500">Telepon</p>
-                  <p class="text-gray-900">{selectedCustomer.phone || '-'}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Telepon</p>
+                  <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.phone || '-'}</p>
                 </div>
               </div>
               
               {#if selectedCustomer.nokp}
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 sm:gap-3">
                   <Hash class="w-4 h-4 text-gray-400" />
                   <div>
-                    <p class="text-sm text-gray-500">No. KP</p>
-                    <p class="text-gray-900">{selectedCustomer.nokp}</p>
+                    <p class="text-xs sm:text-sm text-gray-500">No. KP</p>
+                    <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.nokp}</p>
                   </div>
                 </div>
               {/if}
               
               {#if selectedCustomer.age && selectedCustomer.age !== '-'}
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 sm:gap-3">
                   <User class="w-4 h-4 text-gray-400" />
                   <div>
-                    <p class="text-sm text-gray-500">Umur</p>
-                    <p class="text-gray-900">{selectedCustomer.age} tahun</p>
+                    <p class="text-xs sm:text-sm text-gray-500">Umur</p>
+                    <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.age} tahun</p>
                   </div>
                 </div>
               {/if}
               
               {#if selectedCustomer.birth_date && selectedCustomer.birth_date !== '-'}
-                <div class="flex items-center gap-3">
-                  <Calendar class="w-4 h-4 text-gray-400" />
+                <div class="flex items-center gap-2 sm:gap-3">
                   <div>
-                    <p class="text-sm text-gray-500">Tanggal Lahir</p>
-                    <p class="text-gray-900">{selectedCustomer.birth_date}</p>
+                    <p class="text-xs sm:text-sm text-gray-500">Tanggal Lahir</p>
+                    <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.birth_date}</p>
                   </div>
                 </div>
               {/if}
               
               {#if selectedCustomer.address && selectedCustomer.address !== '-'}
-                <div class="flex items-start gap-3">
+                <div class="flex items-start gap-2 sm:gap-3">
                   <MapPin class="w-4 h-4 text-gray-400 mt-1" />
                   <div>
-                    <p class="text-sm text-gray-500">Alamat</p>
-                    <p class="text-gray-900">{selectedCustomer.address}</p>
+                    <p class="text-xs sm:text-sm text-gray-500">Alamat</p>
+                    <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.address}</p>
                   </div>
                 </div>
               {/if}
@@ -482,52 +481,52 @@
           </div>
 
           <!-- Informasi Perjalanan -->
-          <div class="space-y-4">
-            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Globe class="w-5 h-5 text-blue-600" />
+          <div class="space-y-3 sm:space-y-4">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Globe class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               Informasi Perjalanan
             </h3>
             
             <div class="space-y-3">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 sm:gap-3">
                 <Building class="w-4 h-4 text-gray-400" />
                 <div>
-                  <p class="text-sm text-gray-500">Cawangan</p>
-                  <p class="text-gray-900">{selectedCustomer.branch}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Cawangan</p>
+                  <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.branch}</p>
                 </div>
               </div>
               
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 sm:gap-3">
                 <Package class="w-4 h-4 text-gray-400" />
                 <div>
-                  <p class="text-sm text-gray-500">Jenis Pakej</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Jenis Pakej</p>
                   <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border {getPackageColor(selectedCustomer.package)}">
                     {selectedCustomer.package}
                   </span>
                 </div>
               </div>
               
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 sm:gap-3">
                 <Globe class="w-4 h-4 text-gray-400" />
                 <div>
-                  <p class="text-sm text-gray-500">Musim/Destinasi</p>
-                  <p class="text-gray-900">{selectedCustomer.seasonDestination || '-'}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Musim/Destinasi</p>
+                  <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.seasonDestination || '-'}</p>
                 </div>
               </div>
               
-                             <div class="flex items-center gap-3">
+                             <div class="flex items-center gap-2 sm:gap-3">
                  <Calendar class="w-4 h-4 text-gray-400" />
                  <div>
-                   <p class="text-sm text-gray-500">Tarikh Daftar</p>
-                   <p class="text-gray-900">{selectedCustomer.date}</p>
+                   <p class="text-xs sm:text-sm text-gray-500">Tarikh Daftar</p>
+                   <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.date}</p>
                  </div>
                </div>
                
-               <div class="flex items-center gap-3">
+               <div class="flex items-center gap-2 sm:gap-3">
                  <Hash class="w-4 h-4 text-gray-400" />
                  <div>
-                   <p class="text-sm text-gray-500">Dari Inquiry</p>
-                   <span class="text-sm font-medium">
+                   <p class="text-xs sm:text-sm text-gray-500">Dari Inquiry</p>
+                   <span class="text-xs sm:text-sm font-medium">
                      {#if selectedCustomer.from_inquiry}
                        <span class="text-green-600">✓ Ya</span>
                      {:else}
@@ -541,55 +540,55 @@
          </div>
 
         <!-- Harga dan Informasi Tambahan -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="space-y-4">
-            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <FileText class="w-5 h-5 text-green-600" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div class="space-y-3 sm:space-y-4">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <FileText class="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
               Harga
             </h3>
             
             <div class="space-y-3">
               {#if selectedCustomer.price && selectedCustomer.price !== '-'}
                 <div>
-                  <p class="text-sm text-gray-500">Bilangan</p>
-                  <p class="text-lg font-semibold text-gray-900">{selectedCustomer.price}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Bilangan</p>
+                  <p class="text-base sm:text-lg font-semibold text-gray-900">{selectedCustomer.price}</p>
                 </div>
               {/if}
               
               {#if selectedCustomer.total_price && selectedCustomer.total_price !== '-'}
                 <div>
-                  <p class="text-sm text-gray-500">Total Harga</p>
-                  <p class="text-2xl font-bold text-green-600">RM {parseFloat(selectedCustomer.total_price).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Total Harga</p>
+                  <p class="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">RM {parseFloat(selectedCustomer.total_price).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
               {/if}
             </div>
           </div>
 
           <!-- Informasi Tambahan -->
-          <div class="space-y-4">
-            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <User class="w-5 h-5 text-orange-600" />
+          <div class="space-y-3 sm:space-y-4">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <User class="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
               Informasi Tambahan
             </h3>
             
             <div class="space-y-3">
               {#if selectedCustomer.consultant && selectedCustomer.consultant !== '-'}
                 <div>
-                  <p class="text-sm text-gray-500">Sales Consultant</p>
-                  <p class="text-gray-900">{selectedCustomer.consultant}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Sales Consultant</p>
+                  <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.consultant}</p>
                 </div>
               {/if}
               
               {#if selectedCustomer.jenis_pelancongan && selectedCustomer.jenis_pelancongan !== '-'}
                 <div>
-                  <p class="text-sm text-gray-500">Jenis Pelancongan</p>
-                  <p class="text-gray-900">{selectedCustomer.jenis_pelancongan}</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Jenis Pelancongan</p>
+                  <p class="text-sm sm:text-base text-gray-900">{selectedCustomer.jenis_pelancongan}</p>
                 </div>
               {/if}
               
               {#if selectedCustomer.package}
                 <div>
-                  <p class="text-sm text-gray-500">Jenis Pakej</p>
+                  <p class="text-xs sm:text-sm text-gray-500">Jenis Pakej</p>
                   <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border {getPackageColor(selectedCustomer.package)}">
                     {selectedCustomer.package}
                   </span>
@@ -601,10 +600,10 @@
       </div>
 
       <!-- Footer Modal -->
-      <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+      <div class="flex justify-end gap-3 p-4 sm:p-6 border-t border-gray-200">
         <button
           on:click={closeDetailModal}
-          class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          class="px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
         >
           Tutup
         </button>

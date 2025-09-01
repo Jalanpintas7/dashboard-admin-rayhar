@@ -96,7 +96,7 @@
   
   <!-- Dropdown Menu -->
   {#if isOpen}
-    <div class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+    <div class="absolute right-0 mt-2 w-48 sm:w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
       <!-- Profile Header -->
       <div class="p-4 rounded-t-xl" style="background-color: {themeColors.primary};">
         <div class="flex items-center space-x-3">
