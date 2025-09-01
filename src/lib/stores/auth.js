@@ -123,9 +123,14 @@ export const signOut = async () => {
     
     if (authError) throw authError;
     
+    // Reset stores terlebih dahulu
     user.set(null);
     userRole.set(null);
     redirectPath.set(null);
+    
+    // Redirect ke login setelah reset stores menggunakan window.location.href
+    // Ini memastikan redirect yang bersih di Netlify
+    window.location.href = '/login';
     
   } catch (err) {
     error.set(err.message);

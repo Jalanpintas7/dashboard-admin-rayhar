@@ -33,6 +33,20 @@
   // Initialize Supabase auth on mount
   onMount(() => {
     initializeAuth();
+    
+    // Handle routing errors untuk Netlify
+    window.addEventListener('error', (e) => {
+      if (e.message.includes('not found') || e.message.includes('404')) {
+        goto('/login');
+      }
+    });
+    
+    // Handle unhandled promise rejections
+    window.addEventListener('unhandledrejection', (e) => {
+      if (e.reason && e.reason.message && e.reason.message.includes('not found')) {
+        goto('/login');
+      }
+    });
   });
 </script>
 
