@@ -1,11 +1,15 @@
-import adapter from '@sveltejs/adapter-vercel';
+import adapter from '@sveltejs/adapter-static';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   kit: {
     adapter: adapter({
-      // Konfigurasi untuk Vercel
-      runtime: 'nodejs18.x'
+      // Konfigurasi untuk static export
+      pages: 'build',
+      assets: 'build',
+      fallback: 'index.html',
+      precompress: false,
+      strict: true
     }),
     // Konfigurasi untuk SPA routing
     prerender: {
