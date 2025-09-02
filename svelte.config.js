@@ -2,11 +2,13 @@ import adapter from '@sveltejs/adapter-netlify';
 
 /** @type {import('@sveltejs/adapter-netlify').Config} */
 const config = { 
-  kit: { 
+  kit: {
     adapter: adapter({
-      // Konfigurasi untuk Netlify
+      // Konfigurasi untuk Netlify - SPA mode only
       edge: false,
       split: false,
+      // Nonaktifkan serverless functions untuk SPA
+      functions: false,
       // Pastikan semua route di-handle dengan benar
       fallback: 'index.html'
     }),
