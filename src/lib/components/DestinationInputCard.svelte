@@ -287,14 +287,14 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
       <div>
         <label for="singlePrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-          Harga Single (RM)
+          Single RM
         </label>
         <input
           id="singlePrice"
           type="number"
           bind:value={packageData.single}
           required
-          placeholder="Contoh: 5000000"
+          placeholder="0"
           min="0"
           class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
         />
@@ -302,14 +302,14 @@
       
       <div>
         <label for="doublePrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-          Harga Double (RM)
+          Double RM
         </label>
         <input
           id="doublePrice"
           type="number"
           bind:value={packageData.double}
           required
-          placeholder="Contoh: 4500000"
+          placeholder="0"
           min="0"
           class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
         />
@@ -317,14 +317,14 @@
       
       <div>
         <label for="triplePrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-          Harga Triple (RM)
+          Triple RM
         </label>
         <input
           id="triplePrice"
           type="number"
           bind:value={packageData.triple}
           required
-          placeholder="Contoh: 4000000"
+          placeholder="0"
           min="0"
           class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
         />
@@ -332,14 +332,14 @@
       
       <div>
         <label for="cwbPrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-          Harga CWB (RM)
+          CWB RM
         </label>
         <input
           id="cwbPrice"
           type="number"
           bind:value={packageData.cwb}
           required
-          placeholder="Contoh: 3500000"
+          placeholder="0"
           min="0"
           class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
         />
@@ -347,14 +347,14 @@
       
       <div>
         <label for="cnbPrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-          Harga CNB (RM)
+          CNB RM
         </label>
         <input
           id="cnbPrice"
           type="number"
           bind:value={packageData.cnb}
           required
-          placeholder="Contoh: 3000000"
+          placeholder="0"
           min="0"
           class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
         />
@@ -362,14 +362,14 @@
       
       <div>
         <label for="infantPrice" class="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-2">
-          Harga Infant (RM)
+          Infant RM
         </label>
         <input
           id="infantPrice"
           type="number"
           bind:value={packageData.infant}
           required
-          placeholder="Contoh: 500000"
+          placeholder="0"
           min="0"
           class="w-full px-3 sm:px-4 py-2 sm:py-2.5 lg:py-3 text-sm sm:text-base border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
         />

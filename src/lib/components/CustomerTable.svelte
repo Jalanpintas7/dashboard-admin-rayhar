@@ -2,7 +2,14 @@
   import { onMount } from 'svelte';
   import { fetchCustomersDataPaginated, getInitials, getPackageColor } from '$lib/data/customers.js';
   import { supabase } from '$lib/supabase.js';
-  import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, ChevronLeft, ChevronRight } from 'lucide-svelte';
+  import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-svelte';
+  import { 
+    generateCacheKey, 
+    saveToLocalStorage, 
+    getFromLocalStorage, 
+    invalidateCachePattern,
+    getCacheStats 
+  } from '$lib/cache-utils.js';
   
   // State untuk data
   let customersData = [];
@@ -19,14 +26,37 @@
   let packageFilter = '';
   let branchFilter = '';
   let inquiryFilter = '';
+  let consultantFilter = '';
   
   // State untuk modal detail
   let selectedCustomer = null;
   let showDetailModal = false;
   
+  // State untuk filter options (tidak terpengaruh oleh filter yang aktif)
+  let allPackages = [];
+  let allBranches = [];
+  let allConsultants = [];
+  
+  // Cache system untuk mengoptimalkan fetch
+  let dataCache = new Map(); // Cache untuk data per halaman (memory cache)
+  let filterCache = new Map(); // Cache untuk hasil filter
+  let lastFetchTime = 0;
+  let isInitialLoad = true;
+  let cacheExpiryTime = 10 * 60 * 1000; // 10 menit cache expiry
+  
+  // Cache statistics
+  let cacheStats = null;
+  
+  // Debounce untuk filter
+  let filterTimeout;
+  let refreshInterval;
+  
   // Load data saat komponen dimount
   onMount(async () => {
     console.log('CustomerTable component mounted');
+    
+    // Initialize cache statistics
+    updateCacheStats();
     
     // Test koneksi Supabase
     try {
@@ -40,22 +70,287 @@
         error = 'Gagal terhubung ke database';
       } else {
         console.log('Supabase connection test successful:', data);
+        
+        // Load filter options terlebih dahulu
+        await loadFilterOptions();
+        
+        // Load data dengan cache system
         await loadPageData(1);
+        
+        // Setup auto-refresh yang lebih smart (setiap 10 menit, bukan 5 menit)
+        setupAutoRefresh();
+        
+        // Log cache performance
+        console.log('🚀 Cache system initialized successfully');
+        console.log('📊 Initial cache stats:', cacheStats);
       }
     } catch (err) {
       console.error('Error testing Supabase connection:', err);
       error = 'Gagal terhubung ke database';
     }
+    
+    // Cleanup saat komponen unmount
+    return () => {
+      if (refreshInterval) clearInterval(refreshInterval);
+      if (filterTimeout) clearTimeout(filterTimeout);
+    };
   });
   
-  // Fungsi untuk load data per halaman
+  // Load filter options secara terpisah (tidak terpengaruh oleh filter yang aktif)
+  async function loadFilterOptions() {
+    try {
+      console.log('🔍 Loading filter options...');
+      
+      // Ambil semua package types yang tersedia
+      const { data: packageTypes, error: packageError } = await supabase
+        .from('package_types')
+        .select('name')
+        .order('name');
+      
+      if (packageError) {
+        console.error('Error fetching package types:', packageError);
+      } else {
+        allPackages = packageTypes.map(p => p.name).filter(Boolean);
+        console.log('📦 Available packages:', allPackages);
+      }
+      
+      // Ambil semua branches yang tersedia
+      const { data: branches, error: branchError } = await supabase
+        .from('branches')
+        .select('name')
+        .order('name');
+      
+      if (branchError) {
+        console.error('Error fetching branches:', branchError);
+      } else {
+        allBranches = branches.map(b => b.name).filter(Boolean);
+      }
+      
+      // Tambahkan opsi "Umrah" dan "Outbound" jika tidak ada di package_types
+      if (!allPackages.includes('Umrah')) {
+        allPackages.unshift('Umrah');
+      }
+      if (!allPackages.includes('Outbound')) {
+        allPackages.push('Outbound');
+      }
+      
+      // Hapus pilihan "Haji" dan "Pelancongan" jika ada
+      allPackages = allPackages.filter(pkg => !['Haji', 'Pelancongan'].includes(pkg));
+      
+      // Ambil semua sales consultant yang tersedia
+      const { data: consultants, error: consultantError } = await supabase
+        .from('sales_consultant')
+        .select('name')
+        .order('name');
+      
+      if (consultantError) {
+        console.error('Error fetching sales consultants:', consultantError);
+      } else {
+        allConsultants = consultants.map(c => c.name).filter(Boolean);
+        console.log('👨‍💼 Available consultants:', allConsultants);
+      }
+      
+      console.log('✅ Filter options loaded successfully');
+      console.log('📦 Final allPackages:', allPackages);
+      console.log('🏢 Final allBranches:', allBranches);
+      
+    } catch (err) {
+      console.error('Error loading filter options:', err);
+    }
+  }
+  
+  // Setup auto-refresh yang smart dengan cache validation
+  function setupAutoRefresh() {
+    refreshInterval = setInterval(async () => {
+      // Hanya refresh jika cache sudah expired atau ada perubahan data
+      if (Date.now() - lastFetchTime > cacheExpiryTime) {
+        await checkForDataChanges();
+      }
+    }, 10 * 60 * 1000); // 10 menit
+  }
+  
+  // Update cache statistics
+  function updateCacheStats() {
+    cacheStats = getCacheStats();
+    console.log('📊 Cache Statistics:', cacheStats);
+  }
+  
+  // Clear cache untuk data tertentu
+  async function clearCustomerCache() {
+    // Clear memory cache
+    dataCache.clear();
+    filterCache.clear();
+    
+    // Clear local storage cache untuk customers
+    invalidateCachePattern('customers');
+    
+    console.log('🧹 Customer cache cleared');
+    updateCacheStats();
+    
+    // Reload current page
+    await loadPageData(currentPage, {
+      search: searchTerm,
+      package: packageFilter,
+      branch: branchFilter,
+      inquiry: inquiryFilter,
+      consultant: consultantFilter
+    });
+  }
+  
+  // Force refresh data (bypass cache)
+  async function forceRefreshData() {
+    console.log('🔄 Force refreshing data...');
+    
+    // Clear cache untuk current page
+    const filterString = JSON.stringify({
+      search: searchTerm,
+      package: packageFilter,
+      branch: branchFilter,
+      inquiry: inquiryFilter,
+      consultant: consultantFilter
+    });
+    
+    const localCacheKey = generateCacheKey('customers', `page_${currentPage}_filters_${filterString}`);
+    const memoryCacheKey = `${currentPage}_${filterString}`;
+    
+    // Remove from both caches
+    dataCache.delete(memoryCacheKey);
+    removeFromCache(localCacheKey);
+    
+    // Reload data
+    await loadPageData(currentPage, {
+      search: searchTerm,
+      package: packageFilter,
+      branch: branchFilter,
+      inquiry: inquiryFilter,
+      consultant: consultantFilter
+    });
+  }
+  
+  // Check apakah ada perubahan data baru dengan lebih efisien
+  async function checkForDataChanges() {
+    try {
+      // Hanya cek timestamp terakhir, tidak perlu fetch semua data
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      
+      if (!error && data.length > 0) {
+        const latestUpdate = new Date(data[0].updated_at).getTime();
+        if (latestUpdate > lastFetchTime) {
+          console.log('Data baru terdeteksi, refreshing...');
+          await refreshData();
+        }
+      }
+    } catch (err) {
+      console.error('Error checking for data changes:', err);
+    }
+  }
+  
+  // Refresh data dengan cache invalidation yang lebih smart
+  async function refreshData() {
+    // Clear cache yang expired
+    const now = Date.now();
+    for (const [key, value] of dataCache.entries()) {
+      if (now - value.timestamp > cacheExpiryTime) {
+        dataCache.delete(key);
+      }
+    }
+    
+    // Reload current page
+    await loadPageData(currentPage, {
+      search: searchTerm,
+      package: packageFilter,
+      branch: branchFilter,
+      inquiry: inquiryFilter,
+      consultant: consultantFilter
+    });
+    
+    lastFetchTime = Date.now();
+  }
+  
+  // Fungsi untuk load data per halaman dengan local storage cache
   async function loadPageData(page, filters = {}) {
+    const filterString = JSON.stringify(filters);
+    const localCacheKey = generateCacheKey('customers', `page_${page}_filters_${filterString}`);
+    const memoryCacheKey = `${page}_${filterString}`;
+    
+    console.log(`🔍 Loading data for page ${page} with filters:`, filters);
+    
+    // 1. Check local storage cache first (persistent cache)
+    const localCachedData = getFromLocalStorage(localCacheKey);
+    if (localCachedData && !isInitialLoad) {
+      console.log(`✅ Data loaded from LOCAL STORAGE cache for page: ${page}`);
+      customersData = localCachedData.data;
+      totalCount = localCachedData.totalCount;
+      currentPage = page;
+      loading = false;
+      
+      // Update memory cache juga
+      dataCache.set(memoryCacheKey, {
+        ...localCachedData,
+        timestamp: Date.now()
+      });
+      
+      return;
+    }
+    
+    // 2. Check memory cache (temporary cache)
+    if (dataCache.has(memoryCacheKey) && !isInitialLoad) {
+      const memoryCachedData = dataCache.get(memoryCacheKey);
+      const now = Date.now();
+      
+      if (now - memoryCachedData.timestamp < cacheExpiryTime) {
+        console.log(`✅ Data loaded from MEMORY cache for page: ${page}`);
+        customersData = memoryCachedData.data;
+        totalCount = memoryCachedData.totalCount;
+        currentPage = page;
+        loading = false;
+        return;
+      } else {
+        // Remove expired memory cache
+        dataCache.delete(memoryCacheKey);
+      }
+    }
+    
+    // 3. Cache miss - fetch dari database
+    console.log(`🔄 Cache miss for page ${page}, fetching from database...`);
+    
     try {
       loading = true;
+      const startTime = Date.now();
+      
       const result = await fetchCustomersDataPaginated(page, itemsPerPage, filters);
+      
+      const fetchTime = Date.now() - startTime;
+      console.log(`⚡ Database fetch completed in ${fetchTime}ms`);
+      
+      // Store in both caches
+      const cacheData = {
+        ...result,
+        timestamp: Date.now()
+      };
+      
+      // Memory cache (fast access)
+      dataCache.set(memoryCacheKey, cacheData);
+      
+      // Local storage cache (persistent)
+      saveToLocalStorage(localCacheKey, cacheData, cacheExpiryTime);
+      
+      // Update component state
       customersData = result.data;
       totalCount = result.totalCount;
       currentPage = page;
+      lastFetchTime = Date.now();
+      
+      // Mark as not initial load after first successful fetch
+      if (isInitialLoad) isInitialLoad = false;
+      
+      // Update cache statistics
+      updateCacheStats();
+      
     } catch (err) {
       error = 'Gagal memuat data pelanggan';
       console.error('Error loading customers:', err);
@@ -64,14 +359,19 @@
     }
   }
   
-  // Load data dengan filter
+  // Load data dengan filter yang di-debounce
   async function loadDataWithFilters() {
     const filters = {
       search: searchTerm,
       package: packageFilter,
       branch: branchFilter,
-      inquiry: inquiryFilter
+      inquiry: inquiryFilter,
+      consultant: consultantFilter
     };
+    
+    // Clear cache untuk filter baru
+    filterCache.clear();
+    
     await loadPageData(1, filters);
   }
   
@@ -86,21 +386,39 @@
   // Fungsi untuk halaman berikutnya
   async function nextPage() {
     if (currentPage < totalPages) {
-      await loadPageData(currentPage + 1);
+      await loadPageData(currentPage + 1, {
+        search: searchTerm,
+        package: packageFilter,
+        branch: branchFilter,
+        inquiry: inquiryFilter,
+        consultant: consultantFilter
+      });
     }
   }
   
   // Fungsi untuk halaman sebelumnya
   async function prevPage() {
     if (currentPage > 1) {
-      await loadPageData(currentPage - 1);
+      await loadPageData(currentPage - 1, {
+        search: searchTerm,
+        package: packageFilter,
+        branch: branchFilter,
+        inquiry: inquiryFilter,
+        consultant: consultantFilter
+      });
     }
   }
 
   // Fungsi untuk pergi ke halaman tertentu
   async function goToPage(page) {
     if (page >= 1 && page <= totalPages) {
-      await loadPageData(page);
+      await loadPageData(page, {
+        search: searchTerm,
+        package: packageFilter,
+        branch: branchFilter,
+        inquiry: inquiryFilter,
+        consultant: consultantFilter
+      });
     }
   }
 
@@ -146,6 +464,12 @@
     packageFilter = '';
     branchFilter = '';
     inquiryFilter = '';
+    consultantFilter = '';
+    
+    // Clear cache
+    dataCache.clear();
+    filterCache.clear();
+    
     await loadPageData(1);
   }
   
@@ -248,18 +572,27 @@
   }
   
   // Dapatkan daftar unik untuk filter (dari data yang sudah di-load)
-  $: uniquePackages = [...new Set(customersData.map(c => c.package).filter(Boolean))];
-  $: uniqueBranches = [...new Set(customersData.map(c => c.branch).filter(Boolean))];
+  $: uniquePackages = allPackages.length > 0 ? allPackages : [...new Set(customersData.map(c => c.package).filter(Boolean))];
+  $: uniqueBranches = allBranches.length > 0 ? allBranches : [...new Set(customersData.map(c => c.branch).filter(Boolean))];
   
-  // Watch filter changes dan reload data dengan debounce
-  let filterTimeout;
+  // Debug logging untuk filter options
+  $: {
+    console.log('🔍 Filter options update:');
+    console.log('  - allPackages:', allPackages);
+    console.log('  - allBranches:', allBranches);
+    console.log('  - allConsultants:', allConsultants);
+    console.log('  - uniquePackages:', uniquePackages);
+    console.log('  - uniqueBranches:', uniqueBranches);
+  }
+  
+  // Watch filter changes dan reload data dengan debounce yang dioptimalkan
   $: {
     clearTimeout(filterTimeout);
     filterTimeout = setTimeout(() => {
-      if (searchTerm || packageFilter || branchFilter || inquiryFilter) {
+      if (searchTerm || packageFilter || branchFilter || inquiryFilter || consultantFilter) {
         loadDataWithFilters();
       }
-    }, 300);
+    }, 500); // Increased debounce time for better performance
   }
 </script>
 
@@ -267,6 +600,15 @@
   <!-- Header Tabel -->
   <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100">
     <div class="flex items-center justify-between mb-3 sm:mb-4">
+      <!-- Refresh Button -->
+      <button
+        on:click={refreshData}
+        class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+        title="Refresh data"
+      >
+        <RefreshCw class="w-4 h-4 mr-2" />
+        Refresh
+      </button>
     </div>
     
     <!-- Filter Bar -->
@@ -313,6 +655,17 @@
         <option value="false">Tidak</option>
       </select>
       
+      <!-- Sales Consultant Filter -->
+      <select
+        bind:value={consultantFilter}
+        class="w-full sm:w-40 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+      >
+        <option value="">Semua Consultant</option>
+        {#each allConsultants as consultant}
+          <option value={consultant}>{consultant}</option>
+        {/each}
+      </select>
+      
       <!-- Reset Button -->
       <button
         on:click={resetFilters}
@@ -321,6 +674,45 @@
         Reset
       </button>
     </div>
+    
+    <!-- Cache Control Section - Hidden from UI but functionality preserved -->
+    <!-- 
+    <div class="flex flex-wrap items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+      <div class="flex items-center gap-2 text-sm text-blue-700">
+        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+        <span class="font-medium">Cache System:</span>
+      </div>
+      
+      <div class="text-xs text-blue-600">
+        {#if cacheStats}
+          <span class="font-medium">{cacheStats.validEntries}</span> valid, 
+          <span class="font-medium">{cacheStats.totalSizeKB}KB</span> used
+        {:else}
+          Initializing...
+        {/if}
+      </div>
+      
+      <div class="flex items-center gap-2 ml-auto">
+        <button
+          on:click={forceRefreshData}
+          class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
+          title="Force refresh data (bypass cache)"
+        >
+          <RefreshCw class="w-3 h-3" />
+          Refresh
+        </button>
+        
+        <button
+          on:click={clearCustomerCache}
+          class="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors flex items-center gap-1"
+          title="Clear all customer data cache"
+        >
+          <X class="w-3 h-3" />
+          Clear Cache
+        </button>
+      </div>
+    </div>
+    -->
   </div>
 
   <!-- Loading State -->
@@ -363,6 +755,9 @@
               PELANGGAN
             </th>
             <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              SALES CONSULTANT
+            </th>
+            <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               CAWANGAN
             </th>
             <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -398,6 +793,17 @@
                   <div class="ml-2 sm:ml-4">
                     <div class="text-xs sm:text-sm font-medium text-gray-900">{customer.name}</div>
                   </div>
+                </div>
+              </td>
+              
+              <!-- Kolom SALES CONSULTANT -->
+              <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                <div class="text-xs sm:text-sm text-gray-900">
+                  {#if customer.consultant && customer.consultant !== '-'}
+                    {customer.consultant}
+                  {:else}
+                    <span class="text-gray-400">-</span>
+                  {/if}
                 </div>
               </td>
               

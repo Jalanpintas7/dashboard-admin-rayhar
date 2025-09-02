@@ -1,54 +1,179 @@
 <script>
   import RoleGuard from '$lib/components/RoleGuard.svelte';
-  import { MapPin, X, Trash2, Edit, Search, ChevronLeft, ChevronRight, Eye, AlertTriangle, CheckCircle } from 'lucide-svelte';
+  import { MapPin, X, Trash2, Edit, Search, ChevronLeft, ChevronRight, Eye, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-svelte';
   import { supabase } from '$lib/supabase.js';
   import { onMount } from 'svelte';
+  import { 
+    fetchDestinations, 
+    fetchOutboundPackages, 
+    clearDestinasiCache 
+  } from '$lib/umrah-data-helpers.js';
+  import { getCacheStats } from '$lib/cache-utils.js';
   
-  // Data destinasi dari Supabase
-  let destinations = [];
-  let outboundPackages = [];
-  let loading = true;
-  let error = null;
-
-  let searchTerm = '';
-  
-  // Tab state
+  // State untuk tab yang aktif
   let activeTab = 'destinations';
   
-  // Server-side pagination state
+  // State untuk data
+  let destinations = [];
+  let outboundPackages = [];
+  
+  // State untuk pencarian
+  let searchTerm = '';
+  
+  // State untuk pagination
   let currentPage = 1;
   const itemsPerPage = 10;
   
-  // Total count untuk server-side pagination
-  let totalDestinationsCount = 0;
-  let totalOutboundPackagesCount = 0;
+  // Loading states
+  let isLoading = false;
+  let isLoadingMore = false;
+  let hasMoreData = true;
+  let isInitialLoad = true;
   
-  // Modal edit
+  // Error handling
+  let error = null;
+  
+  // Cache system untuk optimasi performa
+  let dataCache = new Map(); // Memory cache untuk data yang sedang aktif
+  let cacheExpiryTime = 20 * 60 * 1000; // 20 menit untuk data destinasi
+  let lastFetchTime = 0;
+  
+  // Cache statistics
+  let cacheStats = null;
+  
+  // Modal states
+  let showAddModal = false;
   let showEditModal = false;
-  let editingDestination = null;
-  let editName = '';
+  let showDeleteModal = false;
+  let selectedItem = null;
+  let modalType = '';
   
-  // Modal edit outbound package
-  let showEditOutboundModal = false;
-  let editingOutboundPackage = null;
-  let editOutboundForm = {
-    start_date: '',
-    end_date: '',
+  // Form states
+  let addForm = {
+    name: '',
+    description: '',
     price: ''
   };
   
-  // Modal delete confirmation
-  let showDeleteModal = false;
-  let deletingItem = null;
-  let deleteType = ''; // 'destination' or 'outbound'
-
-  // Flag untuk menandai apakah load data awal sudah selesai
-  let initialLoadComplete = false;
+  let editForm = {
+    name: '',
+    description: '',
+    price: ''
+  };
+  
+  // Computed values untuk pagination dengan lazy loading
+  $: totalDestinations = destinations.length;
+  $: totalOutboundPackages = outboundPackages.length;
+  
+  $: totalPagesDestinations = Math.ceil(totalDestinations / itemsPerPage);
+  $: totalPagesOutboundPackages = Math.ceil(totalOutboundPackages / itemsPerPage);
+  
+  $: startIndexDestinations = (currentPage - 1) * itemsPerPage;
+  $: endIndexDestinations = startIndexDestinations + itemsPerPage;
+  $: startIndexOutboundPackages = (currentPage - 1) * itemsPerPage;
+  $: endIndexOutboundPackages = startIndexOutboundPackages + itemsPerPage;
+  
+  // Lazy loading untuk data yang ditampilkan dengan cache
+  $: paginatedDestinations = getPaginatedData('destinations', destinations, startIndexDestinations, endIndexDestinations);
+  $: paginatedOutboundPackages = getPaginatedData('outbound_packages', outboundPackages, startIndexOutboundPackages, endIndexOutboundPackages);
+  
+  // Fallback: jika cache system gagal, gunakan data langsung
+  $: fallbackDestinations = paginatedDestinations?.length > 0 ? paginatedDestinations : (destinations?.slice(startIndexDestinations, endIndexDestinations) || []);
+  $: fallbackOutboundPackages = paginatedOutboundPackages?.length > 0 ? paginatedOutboundPackages : (outboundPackages?.slice(startIndexOutboundPackages, endIndexOutboundPackages) || []);
+  
+  // Use fallback data for display
+  $: displayDestinations = fallbackDestinations;
+  $: displayOutboundPackages = fallbackOutboundPackages;
+  
+  // Reset pagination when tab changes
+  $: if (activeTab) {
+    currentPage = 1;
+    hasMoreData = true;
+  }
+  
+  // Get current total pages based on active tab
+  $: currentTotalPages = activeTab === 'destinations' ? totalPagesDestinations : totalPagesOutboundPackages;
+  
+  // Cache management functions
+  function getPaginatedData(type, data, startIndex, endIndex) {
+    // Safety check - jika data kosong atau undefined, return empty array
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.log(`⚠️ ${type}: Data kosong atau undefined`);
+      return [];
+    }
+    
+    // Safety check - jika index tidak valid, return empty array
+    if (startIndex < 0 || endIndex < 0 || startIndex >= data.length) {
+      console.log(`⚠️ ${type}: Index tidak valid - startIndex: ${startIndex}, endIndex: ${endIndex}, dataLength: ${data.length}`);
+      return [];
+    }
+    
+    const cacheKey = `${type}_${startIndex}_${endIndex}`;
+    
+    // Check memory cache first
+    if (dataCache.has(cacheKey)) {
+      const cached = dataCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < cacheExpiryTime) {
+        console.log(`✅ ${type}: Cache hit for ${startIndex}-${endIndex}`);
+        return cached.data;
+      } else {
+        console.log(`⏰ ${type}: Cache expired for ${startIndex}-${endIndex}`);
+        dataCache.delete(cacheKey);
+      }
+    }
+    
+    // Get data and cache it
+    const paginatedData = data.slice(startIndex, endIndex);
+    console.log(`🔄 ${type}: Cache miss, slicing data ${startIndex}-${endIndex}, result: ${paginatedData.length} items`);
+    
+    dataCache.set(cacheKey, {
+      data: paginatedData,
+      timestamp: Date.now()
+    });
+    
+    return paginatedData;
+  }
+  
+  // Update cache statistics
+  function updateCacheStats() {
+    cacheStats = getCacheStats();
+    console.log('📊 Destinasi Data Cache Statistics:', cacheStats);
+  }
+  
+  // Clear cache untuk data tertentu
+  async function clearDestinasiDataCache() {
+    // Clear memory cache
+    dataCache.clear();
+    
+    // Clear local storage cache untuk destinasi data
+    clearDestinasiCache();
+    
+    console.log('🧹 Destinasi data cache cleared');
+    updateCacheStats();
+    
+    // Force refresh data
+    await loadData();
+  }
+  
+  // Force refresh data (bypass cache)
+  async function forceRefreshDestinasiData() {
+    console.log('🔄 Force refreshing destinasi data...');
+    
+    // Clear cache untuk current tab
+    const cacheKey = `${activeTab}_${startIndexDestinations}_${endIndexDestinations}`;
+    dataCache.delete(cacheKey);
+    
+    // Clear local storage cache
+    clearDestinasiCache();
+    
+    // Refresh data
+    await loadData();
+  }
 
   // Load destinations dengan server-side pagination
   async function loadDestinations(page = 1, search = '') {
     try {
-      loading = true;
+      isLoading = true;
       error = null;
       console.log(`🔄 Loading destinations page ${page} with search: "${search}"`);
       
@@ -76,23 +201,25 @@
       }
 
       destinations = data || [];
-      totalDestinationsCount = count || 0;
       currentPage = page;
       
-      console.log(`✅ Destinations loaded: ${destinations.length} items, total count: ${totalDestinationsCount}`);
+      console.log(`✅ Destinations loaded: ${destinations.length} items, total count: ${count || 0}`);
     } catch (err) {
       error = err.message;
       console.error('❌ Error loading destinations:', err);
+      
+      // Fallback: set empty array jika error
+      destinations = [];
     } finally {
-      loading = false;
-      console.log('🏁 Loading completed. Loading state:', loading);
+      isLoading = false;
+      console.log('�� Loading completed. Loading state:', isLoading);
     }
   }
 
   // Load outbound packages dengan server-side pagination
   async function loadOutboundPackages(page = 1, search = '') {
     try {
-      loading = true;
+      isLoading = true;
       error = null;
       console.log(`🔄 Loading outbound packages page ${page} with search: "${search}"`);
       
@@ -125,26 +252,74 @@
       }
 
       outboundPackages = data || [];
-      totalOutboundPackagesCount = count || 0;
       currentPage = page;
       
-      console.log(`✅ Outbound packages loaded: ${outboundPackages.length} items, total count: ${totalOutboundPackagesCount}`);
+      console.log(`✅ Outbound packages loaded: ${outboundPackages.length} items, total count: ${count || 0}`);
     } catch (err) {
       error = err.message;
       console.error('❌ Error loading outbound packages:', err);
+      
+      // Fallback: set empty array jika error
+      outboundPackages = [];
     } finally {
-      loading = false;
-      console.log('🏁 Loading completed. Loading state:', loading);
+      isLoading = false;
+      console.log('🏁 Loading completed. Loading state:', isLoading);
     }
   }
 
-  // Load data berdasarkan tab aktif
+  // Load data dengan cache system
   async function loadData(page = 1, search = '') {
     console.log(`🔄 Loading data for tab: ${activeTab}, page: ${page}, search: "${search}"`);
-    if (activeTab === 'destinations') {
-      await loadDestinations(page, search);
+    
+    // Jika ini adalah initial load, gunakan cache system
+    if (isInitialLoad) {
+      isLoading = true;
+      error = null;
+      try {
+        console.log('🔄 Loading destinasi data with cache system...');
+        const startTime = Date.now();
+        
+        const [destinationsData, outboundData] = await Promise.all([
+          fetchDestinations(),
+          fetchOutboundPackages()
+        ]);
+
+        const loadTime = Date.now() - startTime;
+        console.log(`⚡ Data loaded in ${loadTime}ms`);
+
+        // Simpan data
+        destinations = destinationsData || [];
+        outboundPackages = outboundData || [];
+        
+        // Update cache statistics
+        updateCacheStats();
+        
+        console.log('📊 Data loaded successfully:', {
+          destinations: destinations?.length || 0,
+          outboundPackages: outboundPackages?.length || 0,
+          destinationsSample: destinations?.slice(0, 2),
+          outboundSample: outboundPackages?.slice(0, 2)
+        });
+        
+        isInitialLoad = false;
+        
+      } catch (err) {
+        error = err.message;
+        console.error('Error loading data:', err);
+        
+        // Fallback: set empty arrays jika error
+        destinations = [];
+        outboundPackages = [];
+      } finally {
+        isLoading = false;
+      }
     } else {
-      await loadOutboundPackages(page, search);
+      // Untuk pagination dan search, gunakan fungsi yang sudah ada
+      if (activeTab === 'destinations') {
+        await loadDestinations(page, search);
+      } else {
+        await loadOutboundPackages(page, search);
+      }
     }
   }
 
@@ -202,32 +377,32 @@
 
   // Buka modal edit
   function openEditModal(destination) {
-    editingDestination = destination;
-    editName = destination.name;
+    selectedItem = destination;
+    editForm.name = destination.name;
     showEditModal = true;
   }
 
   // Tutup modal edit
   function closeEditModal() {
     showEditModal = false;
-    editingDestination = null;
-    editName = '';
+    selectedItem = null;
+    editForm.name = '';
   }
 
   // Show delete confirmation modal
   function showDeleteConfirmation(type, item) {
-    deleteType = type;
-    deletingItem = item;
+    modalType = type;
+    selectedItem = item;
     showDeleteModal = true;
   }
 
   // Confirm delete action
   async function confirmDelete() {
     try {
-      if (deleteType === 'destination') {
-        await deleteDestination(deletingItem.id);
-      } else if (deleteType === 'outbound') {
-        await deleteOutboundPackage(deletingItem.id);
+      if (modalType === 'destination') {
+        await deleteDestination(selectedItem.id);
+      } else if (modalType === 'outbound') {
+        await deleteOutboundPackage(selectedItem.id);
       }
       
       // Close modal after delete
@@ -240,8 +415,8 @@
   // Close delete modal
   function closeDeleteModal() {
     showDeleteModal = false;
-    deletingItem = null;
-    deleteType = '';
+    selectedItem = null;
+    modalType = '';
   }
 
   // Update destinasi
@@ -249,8 +424,8 @@
     try {
       const { error: updateError } = await supabase
         .from('destinations')
-        .update({ name: editName })
-        .eq('id', editingDestination.id);
+        .update({ name: editForm.name })
+        .eq('id', selectedItem.id);
 
       if (updateError) {
         throw updateError;
@@ -274,24 +449,20 @@
 
   // Buka modal edit outbound package
   function openEditOutboundModal(outboundPackage) {
-    editingOutboundPackage = outboundPackage;
-    editOutboundForm = {
-      start_date: outboundPackage.start_date || '',
-      end_date: outboundPackage.end_date || '',
-      price: outboundPackage.price || ''
-    };
-    showEditOutboundModal = true;
+    selectedItem = outboundPackage;
+    editForm.start_date = outboundPackage.start_date || '';
+    editForm.end_date = outboundPackage.end_date || '';
+    editForm.price = outboundPackage.price || '';
+    showEditModal = true;
   }
 
   // Tutup modal edit outbound package
   function closeEditOutboundModal() {
-    showEditOutboundModal = false;
-    editingOutboundPackage = null;
-    editOutboundForm = {
-      start_date: '',
-      end_date: '',
-      price: ''
-    };
+    showEditModal = false;
+    selectedItem = null;
+    editForm.start_date = '';
+    editForm.end_date = '';
+    editForm.price = '';
   }
 
   // Update outbound package
@@ -300,11 +471,11 @@
       const { error: updateError } = await supabase
         .from('outbound_dates')
         .update({
-          start_date: editOutboundForm.start_date,
-          end_date: editOutboundForm.end_date,
-          price: editOutboundForm.price
+          start_date: editForm.start_date,
+          end_date: editForm.end_date,
+          price: editForm.price
         })
-        .eq('id', editingOutboundPackage.id);
+        .eq('id', selectedItem.id);
 
       if (updateError) {
         throw updateError;
@@ -328,52 +499,35 @@
 
   // Load data saat komponen mount
   onMount(async () => {
-    console.log('🚀 Component mounted, loading initial data...');
+    console.log('🚀 DataDestinasi component mounted with cache system');
     
-    // Load kedua data sekaligus di awal untuk mendapatkan total count yang benar
-    try {
-      loading = true;
-      error = null;
-      
-      const [destinationsResult, outboundResult] = await Promise.all([
-        supabase
-          .from('destinations')
-          .select('*', { count: 'exact' })
-          .order('created_at', { ascending: false })
-          .range(0, itemsPerPage - 1),
-        supabase
-          .from('outbound_dates')
-          .select(`*, destinations(name)`, { count: 'exact' })
-          .order('created_at', { ascending: false })
-          .range(0, itemsPerPage - 1)
-      ]);
-      
-      if (destinationsResult.error) throw destinationsResult.error;
-      if (outboundResult.error) throw outboundResult.error;
-      
-      // Set data dan total count
-      destinations = destinationsResult.data || [];
-      outboundPackages = outboundResult.data || [];
-      totalDestinationsCount = destinationsResult.count || 0;
-      totalOutboundPackagesCount = outboundResult.count || 0;
-      
-      console.log(`✅ Initial data loaded: Destinations ${destinations.length}/${totalDestinationsCount}, Outbound ${outboundPackages.length}/${totalOutboundPackagesCount}`);
-      
-    } catch (err) {
-      error = err.message;
-      console.error('❌ Error loading initial data:', err);
-    } finally {
-      loading = false;
-      initialLoadComplete = true;
-    }
+    // Load data dengan cache system
+    await loadData();
+    
+    // Log cache performance
+    console.log('📊 Initial cache stats:', cacheStats);
+    console.log('⚡ Cache expiry time:', cacheExpiryTime / 1000, 'seconds');
   });
+  
+  // Debug data loading
+  $: {
+    console.log('🔍 Destinasi Data Debug:', {
+      destinationsLength: destinations?.length || 0,
+      outboundPackagesLength: outboundPackages?.length || 0,
+      displayDestinationsLength: displayDestinations?.length || 0,
+      displayOutboundPackagesLength: displayOutboundPackages?.length || 0,
+      isInitialLoad,
+      isLoading,
+      error
+    });
+  }
 
   // Handle search dengan debounce
   let searchTimeout;
   
   // Manual search handler
   function handleSearch() {
-    if (initialLoadComplete && searchTerm.trim() !== '') {
+    if (isInitialLoad && searchTerm.trim() !== '') {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
         loadData(1, searchTerm);
@@ -386,7 +540,7 @@
   
   // Manual handler untuk tab change
   function handleTabChange(tab) {
-    if (tab !== activeTab && initialLoadComplete) {
+    if (tab !== activeTab && !isInitialLoad) {
       activeTab = tab;
       currentPage = 1;
       loadData(1, searchTerm);
@@ -394,15 +548,15 @@
   }
 
   // Hitung statistik
-  $: totalDestinations = totalDestinationsCount;
-  $: totalOutboundPackages = totalOutboundPackagesCount;
+  // $: totalDestinations = totalDestinationsCount; // Removed as per new_code
+  // $: totalOutboundPackages = totalOutboundPackagesCount; // Removed as per new_code
 
   // Computed values untuk pagination
-  $: totalPagesDestinations = Math.ceil(totalDestinationsCount / itemsPerPage);
-  $: totalPagesOutboundPackages = Math.ceil(totalOutboundPackagesCount / itemsPerPage);
+  // $: totalPagesDestinations = Math.ceil(totalDestinationsCount / itemsPerPage); // Removed as per new_code
+  // $: totalPagesOutboundPackages = Math.ceil(totalOutboundPackagesCount / itemsPerPage); // Removed as per new_code
   
   // Get current total pages berdasarkan active tab
-  $: currentTotalPages = activeTab === 'destinations' ? totalPagesDestinations : totalPagesOutboundPackages;
+  // $: currentTotalPages = activeTab === 'destinations' ? totalPagesDestinations : totalPagesOutboundPackages; // Removed as per new_code
 
   // Pagination functions
   async function goToPage(page) {
@@ -559,17 +713,63 @@
               />
             </div>
           </div>
+          
+          <!-- Cache Control Section - Hidden from UI but functionality preserved -->
+          <!-- 
+          <div class="flex flex-wrap items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center gap-2 text-sm text-blue-700">
+              <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span class="font-medium">Destinasi Cache:</span>
+            </div>
+            
+            <div class="text-xs text-blue-600">
+              {#if cacheStats}
+                <span class="font-medium">{cacheStats.validEntries}</span> valid, 
+                <span class="font-medium">{cacheStats.totalSizeKB}KB</span> used
+              {:else}
+                Initializing...
+              {/if}
+            </div>
+            
+            <div class="flex items-center gap-2 ml-auto">
+              <button
+                on:click={forceRefreshDestinasiData}
+                class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
+                title="Force refresh all data (bypass cache)"
+              >
+                <RefreshCw class="w-3 h-3" />
+                Refresh All
+              </button>
+              
+              <button
+                on:click={clearDestinasiDataCache}
+                class="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors flex items-center gap-1"
+                title="Clear all cache"
+              >
+                <X class="w-3 h-3" />
+                Clear Cache
+              </button>
+            </div>
+          </div>
+          -->
         </div>
 
         <!-- Hasil Pencarian -->
-        {#if loading}
+        {#if isLoading}
           <div class="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl">
             <div class="flex items-center gap-1.5 sm:gap-2">
               <div class="w-3 h-3 sm:w-4 sm:h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
               <p class="text-blue-800 text-xs sm:text-sm">Memuat data...</p>
             </div>
           </div>
-        {:else if (activeTab === 'destinations' && destinations.length === 0) || (activeTab === 'outbound' && outboundPackages.length === 0)}
+        {:else if error}
+          <div class="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-lg sm:rounded-xl">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <AlertTriangle class="w-3 h-3 sm:w-4 sm:h-4 text-red-600" />
+              <p class="text-red-800 text-xs sm:text-sm">Error: {error}</p>
+            </div>
+          </div>
+        {:else if (activeTab === 'destinations' && paginatedDestinations.length === 0) || (activeTab === 'outbound' && paginatedOutboundPackages.length === 0)}
           <div class="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl">
             <div class="flex items-center gap-1.5 sm:gap-2">
               <svg class="w-3 h-3 sm:w-4 sm:h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -588,25 +788,25 @@
             class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 {activeTab === 'destinations' ? 'border-green-500 text-green-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}"
             on:click={() => handleTabChange('destinations')}
           >
-            Destinasi ({totalDestinationsCount})
+            Destinasi ({totalDestinations})
           </button>
           <button
             class="py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 {activeTab === 'outbound' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}"
             on:click={() => handleTabChange('outbound')}
           >
-            Pakej Outbound ({totalOutboundPackagesCount})
+            Pakej Outbound ({totalOutboundPackages})
           </button>
         </nav>
       </div>
 
       <!-- Tab Content -->
       <div class="p-3 sm:p-6">
-        {#if loading}
+        {#if isLoading}
           <div class="flex items-center justify-center py-6 sm:py-8 lg:py-12">
             <div class="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 border-b-2 border-yellow-500"></div>
             <span class="ml-2 sm:ml-3 text-xs sm:text-sm text-slate-600">Memuat data...</span>
           </div>
-        {:else if activeTab === 'destinations' && destinations.length === 0}
+        {:else if activeTab === 'destinations' && displayDestinations.length === 0}
           <div class="text-center py-6 sm:py-8 lg:py-12">
             <div class="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 lg:mb-4">
               <MapPin class="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-slate-400" />
@@ -614,7 +814,7 @@
             <h3 class="text-sm sm:text-base lg:text-lg font-medium text-slate-900 mb-1 sm:mb-2">Tidak ada data destinasi</h3>
             <p class="text-xs sm:text-sm text-slate-500">Coba ubah filter pencarian Anda</p>
           </div>
-        {:else if activeTab === 'outbound' && outboundPackages.length === 0}
+        {:else if activeTab === 'outbound' && displayOutboundPackages.length === 0}
           <div class="text-center py-6 sm:py-8 lg:py-12">
             <div class="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 lg:mb-4">
               <MapPin class="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-slate-400" />
@@ -635,7 +835,7 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-slate-200">
-                  {#each destinations as destination}
+                                      {#each displayDestinations as destination}
                     <tr class="hover:bg-slate-50">
                       <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <div class="flex items-center">
@@ -678,7 +878,7 @@
             {#if totalPagesDestinations > 1}
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-4 border-t border-slate-200">
                 <div class="flex items-center text-xs sm:text-sm text-slate-700">
-                  <span>Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalDestinationsCount)} dari {totalDestinationsCount} data</span>
+                  <span>Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalDestinations)} dari {totalDestinations} data</span>
                 </div>
                 <div class="flex items-center justify-center sm:justify-end space-x-1.5 sm:space-x-2">
                   <button
@@ -727,7 +927,7 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-slate-200">
-                  {#each outboundPackages as outboundPackage}
+                                      {#each displayOutboundPackages as outboundPackage}
                     <tr class="hover:bg-slate-50">
                       <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <div class="flex items-center">
@@ -778,7 +978,7 @@
             {#if totalPagesOutboundPackages > 1}
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-4 border-t border-slate-200">
                 <div class="flex items-center text-xs sm:text-sm text-slate-700">
-                  <span>Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalOutboundPackagesCount)} dari {totalOutboundPackagesCount} data</span>
+                  <span>Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalOutboundPackages)} dari {totalOutboundPackages} data</span>
                 </div>
                 <div class="flex items-center justify-center sm:justify-end space-x-1.5 sm:space-x-2">
                   <button
@@ -842,7 +1042,7 @@
             <input
               id="editName"
               type="text"
-              bind:value={editName}
+              bind:value={editForm.name}
               class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-colors duration-200"
               placeholder="Masukkan nama destinasi"
             />
@@ -869,7 +1069,7 @@
   {/if}
 
   <!-- Modal Edit Outbound Package -->
-  {#if showEditOutboundModal}
+  {#if showEditModal}
     <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-xl shadow-2xl max-w-md w-full border border-slate-200">
         <!-- Header -->
@@ -892,7 +1092,7 @@
             <input
               id="editStartDate"
               type="date"
-              bind:value={editOutboundForm.start_date}
+              bind:value={editForm.start_date}
               class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
             />
           </div>
@@ -904,7 +1104,7 @@
             <input
               id="editEndDate"
               type="date"
-              bind:value={editOutboundForm.end_date}
+              bind:value={editForm.end_date}
               class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
             />
           </div>
@@ -916,7 +1116,7 @@
             <input
               id="editPrice"
               type="text"
-              bind:value={editOutboundForm.price}
+              bind:value={editForm.price}
               class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
               placeholder="Masukkan harga pakej"
             />
@@ -943,7 +1143,7 @@
   {/if}
 
   <!-- Modal Konfirmasi Hapus -->
-  {#if showDeleteModal && deletingItem}
+  {#if showDeleteModal && selectedItem}
     <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-md w-full border border-white/50">
         <!-- Header Modal -->
@@ -961,9 +1161,9 @@
             Konfirmasi Hapus
           </h3>
           <p class="text-gray-500 mb-6">
-            Apakah Anda yakin ingin menghapus {deleteType === 'destination' ? 'destinasi' : 'pakej outbound'} 
+            Apakah Anda yakin ingin menghapus {modalType === 'destination' ? 'destinasi' : 'pakej outbound'} 
             <span class="font-semibold text-gray-900">
-              "{deleteType === 'destination' ? deletingItem.name : `${deletingItem.destinations?.name || 'N/A'} - ${formatDate(deletingItem.start_date)}`}"
+              "{modalType === 'destination' ? selectedItem.name : `${selectedItem.destinations?.name || 'N/A'} - ${formatDate(selectedItem.start_date)}`}"
             </span>?
           </p>
           <p class="text-sm text-red-600 mb-6">

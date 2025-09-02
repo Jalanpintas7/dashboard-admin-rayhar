@@ -10,8 +10,8 @@
   const authPages = ['/login', '/register', '/forgot-password', '/reset-password'];
   const noSidebarPages = ['/login', '/register', '/forgot-password', '/reset-password', '/DashboardBranch', '/DashboardBranch/'];
   
-  $: isAuthPage = authPages.includes($page.url.pathname);
-  $: isNoSidebarPage = noSidebarPages.includes($page.url.pathname);
+  $: isAuthPage = authPages.includes($page?.url?.pathname);
+  $: isNoSidebarPage = noSidebarPages.includes($page?.url?.pathname);
   
   // Watch untuk redirect ke login jika tidak ada user
   $: if (!$loading && !$user && !isAuthPage) {

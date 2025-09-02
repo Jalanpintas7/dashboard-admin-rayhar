@@ -17,7 +17,7 @@
   }
   
   // Redirect admin branch ke dashboard mereka sendiri
-  $: if ($userRole === 'admin_branch' && $page.url.pathname === '/') {
+  $: if ($userRole === 'admin_branch' && $page?.url?.pathname === '/') {
     goto('/DashboardBranch');
   }
 </script>

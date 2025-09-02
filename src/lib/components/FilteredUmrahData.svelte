@@ -1,8 +1,15 @@
 <script>
   import { onMount } from 'svelte';
   import { formatCurrency, formatDate } from '$lib/umrah-data-helpers.js';
-  import { Edit, Eye, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Calendar, Package, Globe, FileText, DollarSign, CheckCircle } from 'lucide-svelte';
+  import { Edit, Eye, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Calendar, Package, Globe, FileText, DollarSign, CheckCircle, RefreshCw } from 'lucide-svelte';
   import { supabase } from '$lib/supabase.js';
+  import { 
+    generateCacheKey, 
+    saveToLocalStorage, 
+    getFromLocalStorage, 
+    invalidateCachePattern,
+    getCacheStats 
+  } from '$lib/cache-utils.js';
 
   export let seasons = [];
   export let categories = [];
@@ -15,6 +22,19 @@
   // Pagination state
   let currentPage = 1;
   const itemsPerPage = 10;
+  
+  // Cache system untuk optimasi performa
+  let dataCache = new Map(); // Memory cache untuk data yang sedang aktif
+  let cacheExpiryTime = 15 * 60 * 1000; // 15 menit untuk data umrah
+  let lastFetchTime = 0;
+  
+  // Cache statistics
+  let cacheStats = null;
+  
+  // Loading states
+  let isLoadingMore = false;
+  let hasMoreData = true;
+  let isInitialLoad = true;
 
   // Modal state
   let showDetailModal = false;
@@ -40,7 +60,7 @@
     umrah_category_id: ''
   };
 
-  // Computed values for pagination
+  // Computed values for pagination dengan lazy loading
   $: totalSeasons = seasons.length;
   $: totalCategories = categories.length;
   $: totalPackages = packages.length;
@@ -56,19 +76,160 @@
   $: startIndexPackages = (currentPage - 1) * itemsPerPage;
   $: endIndexPackages = startIndexPackages + itemsPerPage;
   
-  $: paginatedSeasons = seasons.slice(startIndexSeasons, endIndexSeasons);
-  $: paginatedCategories = categories.slice(startIndexCategories, endIndexCategories);
-  $: paginatedPackages = packages.slice(startIndexPackages, endIndexPackages);
-
+  // Lazy loading untuk data yang ditampilkan dengan cache
+  // Temporary disable cache untuk debugging
+  const USE_CACHE = false; // Set false untuk disable cache sementara
+  
+  $: paginatedSeasons = USE_CACHE ? getPaginatedData('seasons', seasons, startIndexSeasons, endIndexSeasons) : [];
+  $: paginatedCategories = USE_CACHE ? getPaginatedData('categories', categories, startIndexCategories, endIndexCategories) : [];
+  $: paginatedPackages = USE_CACHE ? getPaginatedData('packages', packages, startIndexPackages, endIndexPackages) : [];
+  
+  // Fallback: jika cache system gagal, gunakan data langsung
+  $: fallbackSeasons = paginatedSeasons?.length > 0 ? paginatedSeasons : (seasons?.slice(startIndexSeasons, endIndexSeasons) || []);
+  $: fallbackCategories = paginatedCategories?.length > 0 ? paginatedCategories : (categories?.slice(startIndexCategories, endIndexCategories) || []);
+  $: fallbackPackages = paginatedPackages?.length > 0 ? paginatedPackages : (packages?.slice(startIndexPackages, endIndexPackages) || []);
+  
+  // Use fallback data for display
+  $: displaySeasons = fallbackSeasons;
+  $: displayCategories = fallbackCategories;
+  $: displayPackages = fallbackPackages;
+  
+  // Debug pagination data flow
+  $: {
+    console.log('🔍 Pagination Debug:', {
+      activeTab,
+      currentPage,
+      itemsPerPage,
+      startIndexSeasons,
+      endIndexSeasons,
+      totalSeasons,
+      paginatedSeasonsLength: paginatedSeasons?.length || 0,
+      seasonsLength: seasons?.length || 0
+    });
+  }
+  
   // Reset pagination when tab changes
   $: if (activeTab) {
     currentPage = 1;
+    hasMoreData = true;
+  }
+  
+  // Debug data received from parent
+  $: {
+    console.log('📥 Data received from parent:', {
+      activeTab,
+      seasonsCount: seasons?.length || 0,
+      categoriesCount: categories?.length || 0,
+      packagesCount: packages?.length || 0,
+      seasons: seasons?.slice(0, 3), // Show first 3 items
+      categories: categories?.slice(0, 3),
+      packages: packages?.slice(0, 3)
+    });
   }
 
   // Get current total pages based on active tab
   $: currentTotalPages = activeTab === 'seasons' ? totalPagesSeasons : 
                         activeTab === 'categories' ? totalPagesCategories : 
                         totalPagesPackages;
+  
+  // Cache management functions
+  function getPaginatedData(type, data, startIndex, endIndex) {
+    // Safety check - jika data kosong atau undefined, return empty array
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      console.log(`⚠️ ${type}: Data kosong atau undefined`);
+      return [];
+    }
+    
+    // Safety check - jika index tidak valid, return empty array
+    if (startIndex < 0 || endIndex < 0 || startIndex >= data.length) {
+      console.log(`⚠️ ${type}: Index tidak valid - startIndex: ${startIndex}, endIndex: ${endIndex}, dataLength: ${data.length}`);
+      return [];
+    }
+    
+    const cacheKey = `${type}_${startIndex}_${endIndex}`;
+    
+    // Check memory cache first
+    if (dataCache.has(cacheKey)) {
+      const cached = dataCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < cacheExpiryTime) {
+        console.log(`✅ ${type}: Cache hit for ${startIndex}-${endIndex}`);
+        return cached.data;
+      } else {
+        console.log(`⏰ ${type}: Cache expired for ${startIndex}-${endIndex}`);
+        dataCache.delete(cacheKey);
+      }
+    }
+    
+    // Get data and cache it
+    const paginatedData = data.slice(startIndex, endIndex);
+    console.log(`🔄 ${type}: Cache miss, slicing data ${startIndex}-${endIndex}, result: ${paginatedData.length} items`);
+    
+    dataCache.set(cacheKey, {
+      data: paginatedData,
+      timestamp: Date.now()
+    });
+    
+    return paginatedData;
+  }
+  
+  // Update cache statistics
+  function updateCacheStats() {
+    cacheStats = getCacheStats();
+    console.log('📊 Umrah Data Cache Statistics:', cacheStats);
+  }
+  
+  // Clear cache untuk data tertentu
+  async function clearUmrahDataCache() {
+    // Clear memory cache
+    dataCache.clear();
+    
+    // Clear local storage cache untuk umrah data
+    invalidateCachePattern('umrah');
+    
+    console.log('🧹 Umrah data cache cleared');
+    updateCacheStats();
+    
+    // Force refresh data
+    await refreshUmrahData();
+  }
+  
+  // Force refresh data (bypass cache)
+  async function forceRefreshUmrahData() {
+    console.log('🔄 Force refreshing umrah data...');
+    
+    // Clear cache untuk current tab
+    const cacheKey = `${activeTab}_${startIndexSeasons}_${endIndexSeasons}`;
+    dataCache.delete(cacheKey);
+    
+    // Clear local storage cache
+    invalidateCachePattern('umrah');
+    
+    // Refresh data
+    await refreshUmrahData();
+  }
+  
+  // Refresh umrah data
+  async function refreshUmrahData() {
+    // Dispatch custom event untuk refresh data dari parent component
+    window.dispatchEvent(new CustomEvent('refreshUmrahData'));
+  }
+  
+  // Initialize cache system on mount
+  onMount(() => {
+    console.log('🚀 FilteredUmrahData component mounted with cache system');
+    
+    // Initialize cache statistics
+    updateCacheStats();
+    
+    // Mark as not initial load after first render
+    setTimeout(() => {
+      isInitialLoad = false;
+    }, 100);
+    
+    // Log cache performance
+    console.log('📊 Initial cache stats:', cacheStats);
+    console.log('⚡ Cache expiry time:', cacheExpiryTime / 1000, 'seconds');
+  });
 
   // Function to handle edit
   function handleEdit(type, id) {
@@ -416,6 +577,45 @@
         Pakej ({packages.length})
       </button>
     </nav>
+    
+    <!-- Cache Control Section - Hidden from UI but functionality preserved -->
+    <!-- 
+    <div class="flex flex-wrap items-center gap-2 p-3 bg-green-50 border-t border-green-200">
+      <div class="flex items-center gap-2 text-sm text-green-700">
+        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+        <span class="font-medium">Umrah Data Cache:</span>
+      </div>
+      
+      <div class="text-xs text-green-600">
+        {#if cacheStats}
+          <span class="font-medium">{cacheStats.validEntries}</span> valid, 
+          <span class="font-medium">{cacheStats.totalSizeKB}KB</span> used
+        {:else}
+          Initializing...
+        {/if}
+      </div>
+      
+      <div class="flex items-center gap-2 ml-auto">
+        <button
+          on:click={forceRefreshUmrahData}
+          class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors flex items-center gap-1"
+          title="Force refresh data (bypass cache)"
+        >
+          <RefreshCw class="w-3 h-3" />
+          Refresh
+        </button>
+        
+        <button
+          on:click={clearUmrahDataCache}
+          class="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors flex items-center gap-1"
+          title="Clear all umrah data cache"
+        >
+          <X class="w-3 h-3" />
+          Clear Cache
+        </button>
+      </div>
+    </div>
+    -->
   </div>
 
   <!-- Tab Content -->
@@ -468,7 +668,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-slate-200">
-              {#each paginatedSeasons as season}
+              {#each displaySeasons as season}
                 <tr class="hover:bg-slate-50">
                   <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <div class="flex items-center">
@@ -568,7 +768,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-slate-200">
-              {#each paginatedCategories as category}
+              {#each displayCategories as category}
                 <tr class="hover:bg-slate-50">
                   <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <div class="flex items-center">
@@ -668,7 +868,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-slate-200">
-              {#each paginatedPackages as umrahPackage}
+              {#each displayPackages as umrahPackage}
                 <tr class="hover:bg-slate-50">
                   <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <div class="flex items-center">

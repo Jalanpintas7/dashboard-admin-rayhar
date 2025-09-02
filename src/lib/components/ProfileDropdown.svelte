@@ -84,11 +84,11 @@
 <div class="profile-dropdown relative">
   <!-- Profile Button -->
   <button
-    on:click={toggleDropdown}
+    onclick={toggleDropdown}
     class="w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 shadow-lg"
     style="background-color: {themeColors.primary};"
-    on:mouseenter={(e) => e.target.style.backgroundColor = '#7C3AED'}
-    on:mouseleave={(e) => e.target.style.backgroundColor = themeColors.primary}
+    onmouseenter={(e) => e.target.style.backgroundColor = '#7C3AED'}
+    onmouseleave={(e) => e.target.style.backgroundColor = themeColors.primary}
     aria-label="Profile menu"
   >
     <User class="w-5 h-5 text-white" />
@@ -117,11 +117,11 @@
       <!-- Logout Button -->
       <div class="p-4">
         <button
-          on:click={handleLogout}
+          onclick={handleLogout}
           class="w-full flex items-center justify-center px-4 py-3 text-white rounded-lg transition-colors duration-150 text-sm font-medium"
           style="background-color: {themeColors.primary};"
-          on:mouseenter={(e) => e.target.style.backgroundColor = '#7C3AED'}
-          on:mouseleave={(e) => e.target.style.backgroundColor = themeColors.primary}
+          onmouseenter={(e) => e.target.style.backgroundColor = '#7C3AED'}
+          onmouseleave={(e) => e.target.style.backgroundColor = themeColors.primary}
         >
           <LogOut class="w-4 h-4 mr-2" />
           Logout

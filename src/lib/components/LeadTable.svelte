@@ -1,9 +1,10 @@
 <script>
   import { onMount } from 'svelte';
-  import { getInitials, fetchLeadsDataPaginated } from '$lib/data/leads.js';
-  import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, TrendingUp, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-svelte';
+  import { getInitials, fetchLeadsDataWithCache, clearLeadsCache } from '$lib/data/leads.js';
+  import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, TrendingUp, Search, Filter, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-svelte';
   import { user } from '$lib/stores/auth.js';
   import { supabase } from '$lib/supabase.js';
+  import { getCacheStats } from '$lib/cache-utils.js';
   
   let leadsData = [];
   let loading = true;
@@ -17,35 +18,185 @@
   let itemsPerPage = 10;
   let totalCount = 0; // Total data dari Supabase
   
+  // Cache system untuk mengoptimalkan fetch
+  let dataCache = new Map(); // Memory cache untuk data per halaman
+  let filterCache = new Map(); // Memory cache untuk hasil filter
+  let lastFetchTime = 0;
+  let isInitialLoad = true;
+  
+  // Cache statistics
+  let cacheStats = null;
+  
+  // Debounce untuk filter
+  let filterTimeout;
+  let refreshInterval;
+  
   onMount(async () => {
+    console.log('🚀 LeadTable component mounted with advanced cache system');
+    
     await loadPageData(1);
+    
+    // Setup auto-refresh setiap 5 menit (hanya jika ada perubahan)
+    setupAutoRefresh();
+    
+    // Log cache performance
+    console.log('📊 Initial cache stats:', cacheStats);
+    
+    // Cleanup saat komponen unmount
+    return () => {
+      if (refreshInterval) clearInterval(refreshInterval);
+      if (filterTimeout) clearTimeout(filterTimeout);
+    };
   });
   
-  // Fungsi untuk load data per halaman
-  async function loadPageData(page, filters = {}) {
+  // Setup auto-refresh yang smart
+  function setupAutoRefresh() {
+    refreshInterval = setInterval(async () => {
+      // Hanya refresh jika ada perubahan data
+      await checkForDataChanges();
+    }, 5 * 60 * 1000); // 5 menit
+  }
+  
+  // Check apakah ada perubahan data baru
+  async function checkForDataChanges() {
     try {
-      loading = true;
-      const result = await fetchLeadsDataPaginated(page, itemsPerPage, filters);
-      leadsData = result.data;
-      totalCount = result.totalCount;
-      currentPage = page;
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      
+      if (!error && data.length > 0) {
+        const latestUpdate = new Date(data[0].updated_at).getTime();
+        if (latestUpdate > lastFetchTime) {
+          console.log('Data baru terdeteksi, refreshing...');
+          await refreshData();
+        }
+      }
     } catch (err) {
-      error = 'Gagal memuat data lead';
-      console.error('Error loading leads:', err);
-    } finally {
-      loading = false;
+      console.error('Error checking for data changes:', err);
     }
   }
   
-  // Load data dengan filter
+  // Update cache statistics
+  function updateCacheStats() {
+    cacheStats = getCacheStats();
+    console.log('📊 Leads Data Cache Statistics:', cacheStats);
+  }
+  
+  // Clear leads cache
+  async function clearLeadsDataCache() {
+    // Clear memory cache
+    dataCache.clear();
+    filterCache.clear();
+    
+    // Clear local storage cache untuk leads data
+    clearLeadsCache();
+    
+    console.log('🧹 Leads data cache cleared');
+    updateCacheStats();
+    
+    // Force refresh data
+    await loadPageData(currentPage, {
+      search: searchTerm
+    });
+  }
+  
+  // Force refresh data (bypass cache)
+  async function forceRefreshLeadsData() {
+    console.log('🔄 Force refreshing leads data...');
+    
+    // Clear cache untuk current page
+    const cacheKey = `${currentPage}_${JSON.stringify({ search: searchTerm })}`;
+    dataCache.delete(cacheKey);
+    
+    // Clear local storage cache
+    clearLeadsCache();
+    
+    // Refresh data
+    await loadPageData(currentPage, {
+      search: searchTerm
+    });
+  }
+  
+  // Refresh data dengan cache invalidation
+  async function refreshData() {
+    // Clear cache
+    dataCache.clear();
+    filterCache.clear();
+    
+    // Reload current page
+    await loadPageData(currentPage, {
+      search: searchTerm
+    });
+    
+    lastFetchTime = Date.now();
+  }
+  
+  // Fungsi untuk load data per halaman dengan cache
+  async function loadPageData(page, filters = {}) {
+    const cacheKey = `${page}_${JSON.stringify(filters)}`;
+    
+    // Check memory cache terlebih dahulu
+    if (dataCache.has(cacheKey) && !isInitialLoad) {
+      const cachedData = dataCache.get(cacheKey);
+      leadsData = cachedData.data;
+      totalCount = cachedData.totalCount;
+      currentPage = page;
+      loading = false;
+      console.log('✅ Data loaded from memory cache for page:', page);
+      return;
+    }
+    
+    try {
+      loading = true;
+      error = null;
+      
+      console.log('🔄 Loading leads data with cache system...');
+      const startTime = Date.now();
+      
+      const result = await fetchLeadsDataWithCache(page, itemsPerPage, filters);
+
+      const loadTime = Date.now() - startTime;
+      console.log(`⚡ Data loaded in ${loadTime}ms`);
+
+      leadsData = result.data;
+      totalCount = result.totalCount;
+      currentPage = page;
+      
+      // Cache data untuk halaman ini di memory
+      dataCache.set(cacheKey, {
+        data: result.data,
+        totalCount: result.totalCount,
+        timestamp: Date.now()
+      });
+      
+      lastFetchTime = Date.now();
+      
+      // Update cache statistics
+      updateCacheStats();
+      
+      console.log(`✅ Data loaded for page ${page}:`, result.data.length, 'items');
+    } catch (err) {
+      error = err.message || 'Gagal memuat data lead';
+      console.error('Error loading leads:', err);
+    } finally {
+      loading = false;
+      if (isInitialLoad) isInitialLoad = false;
+    }
+  }
+  
+  // Load data dengan filter yang di-debounce
   async function loadDataWithFilters() {
     const filters = {
       search: searchTerm
     };
+    
+    // Clear cache untuk filter baru
+    filterCache.clear();
+    
     await loadPageData(1, filters);
   }
-  
-
   
   function showLeadDetail(lead) {
     selectedLead = lead;
@@ -78,21 +229,27 @@
   // Fungsi untuk halaman berikutnya
   async function nextPage() {
     if (currentPage < totalPages) {
-      await loadPageData(currentPage + 1);
+      await loadPageData(currentPage + 1, {
+        search: searchTerm
+      });
     }
   }
   
   // Fungsi untuk halaman sebelumnya
   async function prevPage() {
     if (currentPage > 1) {
-      await loadPageData(currentPage - 1);
+      await loadPageData(currentPage - 1, {
+        search: searchTerm
+      });
     }
   }
 
   // Fungsi untuk pergi ke halaman tertentu
   async function goToPage(page) {
     if (page >= 1 && page <= totalPages) {
-      await loadPageData(page);
+      await loadPageData(page, {
+        search: searchTerm
+      });
     }
   }
 
@@ -132,15 +289,25 @@
     return pages;
   }
   
-  // Watch filter changes dan reload data dengan debounce
-  let filterTimeout;
+  // Reset filter dan clear cache
+  async function resetFilters() {
+    searchTerm = '';
+    
+    // Clear cache
+    dataCache.clear();
+    filterCache.clear();
+    
+    await loadPageData(1);
+  }
+  
+  // Watch filter changes dan reload data dengan debounce yang dioptimalkan
   $: {
     clearTimeout(filterTimeout);
     filterTimeout = setTimeout(() => {
       if (searchTerm) {
         loadDataWithFilters();
       }
-    }, 300);
+    }, 500); // Increased debounce time for better performance
   }
 </script>
 
@@ -153,17 +320,70 @@
         <p class="text-sm text-gray-600">Kelola data lead dan prospek pelanggan</p>
       </div>
       
-      <!-- Search Bar -->
-      <div class="relative">
-        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Cari lead..."
-          bind:value={searchTerm}
-          class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
-        />
+      <div class="flex items-center gap-3">
+        <!-- Refresh Button -->
+        <button
+          on:click={refreshData}
+          class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          title="Refresh data"
+        >
+          <RefreshCw class="w-4 h-4 mr-2" />
+          Refresh
+        </button>
+        
+        <!-- Search Bar -->
+        <div class="relative">
+          <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Cari lead..."
+            bind:value={searchTerm}
+            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
+          />
+        </div>
       </div>
     </div>
+    
+    <!-- Cache Control Section - Hidden from UI but functionality preserved -->
+    <!-- 
+    <div class="px-4 sm:px-6 py-2 border-b border-gray-100 bg-blue-50">
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2 text-sm text-blue-700">
+          <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <span class="font-medium">Leads Cache:</span>
+        </div>
+        
+        <div class="text-xs text-blue-600">
+          {#if cacheStats}
+            <span class="font-medium">{cacheStats.validEntries}</span> valid, 
+            <span class="font-medium">{cacheStats.totalSizeKB}KB</span> used
+          {:else}
+            Initializing...
+          {/if}
+        </div>
+        
+        <div class="flex items-center gap-2 ml-auto">
+          <button
+            on:click={forceRefreshLeadsData}
+            class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
+            title="Force refresh all data (bypass cache)"
+          >
+            <RefreshCw class="w-3 h-3" />
+            Refresh All
+          </button>
+          
+          <button
+            on:click={clearLeadsDataCache}
+            class="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors flex items-center gap-1"
+            title="Clear all cache"
+          >
+            <X class="w-3 h-3" />
+            Clear Cache
+          </button>
+        </div>
+      </div>
+    </div>
+    -->
   </div>
 
   {#if loading}
@@ -289,12 +509,7 @@
       </div>
     {/if}
     
-    <!-- Summary -->
-    <div class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t border-gray-100">
-      <div class="text-sm text-gray-600">
-        Menampilkan {filteredLeads.length} dari {totalCount} lead
-      </div>
-    </div>
+
   {/if}
 </div>
 

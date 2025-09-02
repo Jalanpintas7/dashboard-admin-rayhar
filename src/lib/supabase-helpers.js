@@ -384,6 +384,138 @@ export const getTopSalesConsultants = async (limit = 5) => {
   return topConsultants;
 };
 
+// ===== TOP SALES CONSULTANT BY CATEGORY =====
+export const getTopSalesConsultantsByCategory = async (category = 'umrah', limit = 5) => {
+  let query = supabase
+    .from('bookings')
+    .select(`
+      consultant_id,
+      total_price,
+      created_at,
+      umrah_season_id,
+      umrah_category_id,
+      destination_id,
+      outbound_date_id
+    `)
+    .not('consultant_id', 'is', null);
+
+  // Filter berdasarkan kategori paket
+  if (category === 'umrah') {
+    // Filter untuk paket umrah (yang memiliki umrah_season_id atau umrah_category_id)
+    query = query.or('umrah_season_id.not.is.null,umrah_category_id.not.is.null');
+  } else if (category === 'pelancongan') {
+    // Filter untuk paket pelancongan (yang memiliki destination_id atau outbound_date_id)
+    query = query.or('destination_id.not.is.null,outbound_date_id.not.is.null');
+  }
+
+  const { data: bookings, error } = await query;
+
+  if (error) throw error;
+
+  // Get unique consultant IDs
+  const consultantIds = [...new Set(bookings.map(b => b.consultant_id))];
+  
+  // Get consultant details with branch information
+  const { data: consultants, error: consultantError } = await supabase
+    .from('sales_consultant')
+    .select('id, name, email, whatsapp_number, sales_consultant_number')
+    .in('id', consultantIds);
+
+  if (consultantError) throw consultantError;
+
+  // Create consultant lookup
+  const consultantLookup = {};
+  consultants.forEach(consultant => {
+    consultantLookup[consultant.id] = consultant;
+  });
+
+  // Group by sales consultant and calculate statistics
+  const consultantStats = {};
+  
+  // Get branch information for each consultant
+  const branchStats = {};
+  bookings.forEach(booking => {
+    const consultantId = booking.consultant_id;
+    const branchId = booking.branch_id;
+    
+    if (!branchStats[consultantId]) {
+      branchStats[consultantId] = new Set();
+    }
+    branchStats[consultantId].add(branchId);
+  });
+  
+  // Get branch names
+  const branchIds = [...new Set(bookings.map(b => b.branch_id).filter(id => id))];
+  const { data: branches, error: branchError } = await supabase
+    .from('branches')
+    .select('id, name')
+    .in('id', branchIds);
+  
+  if (branchError) throw branchError;
+  
+  const branchLookup = {};
+  branches.forEach(branch => {
+    branchLookup[branch.id] = branch.name;
+  });
+  
+  bookings.forEach(booking => {
+    const consultantId = booking.consultant_id;
+    const consultant = consultantLookup[consultantId];
+    
+    if (!consultant) return; // Skip if consultant not found
+    
+    if (!consultantStats[consultantId]) {
+      consultantStats[consultantId] = {
+        id: consultantId,
+        name: consultant.name || 'Unknown',
+        email: consultant.email || '',
+        whatsapp: consultant.whatsapp_number || '',
+        salesConsultantNumber: consultant.sales_consultant_number || '',
+        totalBookings: 0,
+        recentBookings: 0,
+        totalRevenue: 0,
+        recentRevenue: 0,
+        branches: new Set(),
+        categoryBookings: 0
+      };
+    }
+    
+    consultantStats[consultantId].totalBookings += 1;
+    consultantStats[consultantId].categoryBookings += 1;
+    
+    // Add revenue calculation
+    const bookingPrice = parseFloat(booking.total_price) || 0;
+    consultantStats[consultantId].totalRevenue += bookingPrice;
+    
+    // Add branch information
+    if (booking.branch_id && branchLookup[booking.branch_id]) {
+      consultantStats[consultantId].branches.add(branchLookup[booking.branch_id]);
+    }
+    
+    // Check if booking is recent (last 30 days)
+    const bookingDate = new Date(booking.created_at);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    if (bookingDate >= thirtyDaysAgo) {
+      consultantStats[consultantId].recentBookings += 1;
+      consultantStats[consultantId].recentRevenue += bookingPrice;
+    }
+  });
+
+  // Convert to array and sort by category bookings
+  const topConsultants = Object.values(consultantStats)
+    .sort((a, b) => b.categoryBookings - a.categoryBookings)
+    .slice(0, limit)
+    .map(consultant => ({
+      ...consultant,
+      // Convert branches Set to array and join with comma
+      branches: Array.from(consultant.branches).join(', ')
+    }));
+
+  return topConsultants;
+};
+
 // ===== TOP PACKAGES BY BRANCH =====
 export const getTopPackagesByBranch = async (branchId, filter = 'keseluruhan', limit = 5) => {
   let query = supabase

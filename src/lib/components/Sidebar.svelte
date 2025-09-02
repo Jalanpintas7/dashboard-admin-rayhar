@@ -21,7 +21,7 @@
   } from 'lucide-svelte';
   
   // Props untuk sidebar
-  export let isCollapsed = false;
+  export const isCollapsed = false;
   
   // Menu items dengan ikon yang tepat sesuai gambar
   const menuItemsData = [
@@ -38,7 +38,7 @@
   // Reactive statement untuk menu items dengan status aktif berdasarkan URL
   $: menuItems = menuItemsData.map(item => ({
     ...item,
-    isActive: $page.url.pathname === item.href
+    isActive: $page?.url?.pathname === item.href
   }));
   
   // Toggle sidebar untuk mobile
@@ -70,7 +70,7 @@
 <!-- Mobile Toggle Button -->
 <div class="lg:hidden fixed top-4 right-4 z-50">
   <button 
-    on:click={toggleMobile}
+    onclick={toggleMobile}
     class="p-2 bg-[#942392] text-white rounded-lg shadow-lg hover:bg-[#7a1d7a] transition-colors"
     aria-label="Toggle mobile menu"
   >
@@ -82,7 +82,11 @@
 {#if isMobileOpen}
   <div 
     class="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-    on:click={closeMobile}
+    onclick={closeMobile}
+    onkeydown={(e) => e.key === 'Escape' && closeMobile()}
+    role="button"
+    tabindex="0"
+    aria-label="Close mobile menu"
   ></div>
 {/if}
 
@@ -98,7 +102,7 @@
     <div class="flex items-center justify-between">
       <!-- Close Button -->
       <button
-        on:click={closeMobile}
+        onclick={closeMobile}
         class="p-2 rounded-lg hover:bg-slate-100 transition-colors"
         aria-label="Close mobile menu"
       >
@@ -124,7 +128,7 @@
       {#each menuItems as item}
         <a 
           href={item.href}
-          on:click={closeMobile}
+          onclick={closeMobile}
           class="
             group flex items-center gap-3 rounded-xl px-4 py-3
             {item.isActive 
@@ -181,7 +185,7 @@
         </div>
       </div>
       <button
-        on:click={handleLogout}
+        onclick={handleLogout}
         class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
       >
         <LogOut class="w-4 h-4" />

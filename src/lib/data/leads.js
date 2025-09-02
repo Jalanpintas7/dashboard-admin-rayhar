@@ -1,4 +1,8 @@
 import { formatDateMalaysia } from '../date-helpers.js';
+import { generateCacheKey, saveToLocalStorage, getFromLocalStorage, invalidateCachePattern } from '../cache-utils.js';
+
+// Cache expiry untuk leads data (10 menit karena leads data sering berubah)
+const LEADS_CACHE_EXPIRY = 10 * 60 * 1000;
 
 // Data sample lead untuk Rayhar Admin Dashboard (fallback jika Supabase tidak tersedia)
 export const leadsData = [
@@ -509,4 +513,50 @@ export async function fetchLeadsDataPaginated(page = 1, limit = 10, filters = {}
       totalCount: leadsData.length
     };
   }
+}
+
+// ===== LEADS DATA CACHING =====
+
+// Fungsi untuk mengambil data leads dengan cache
+export async function fetchLeadsDataWithCache(page = 1, limit = 10, filters = {}) {
+  const cacheKey = generateCacheKey('leads', `${page}_${limit}_${JSON.stringify(filters)}`);
+  
+  // Check cache first
+  const cachedData = getFromLocalStorage(cacheKey);
+  if (cachedData) {
+    console.log('✅ Leads data loaded from cache');
+    return cachedData;
+  }
+  
+  // Cache miss, fetch from database
+  console.log('🔄 Fetching leads data from database...');
+  
+  try {
+    const result = await fetchLeadsDataPaginated(page, limit, filters);
+    
+    // Save to cache
+    saveToLocalStorage(cacheKey, result, LEADS_CACHE_EXPIRY);
+    console.log(`✅ Leads data cached (${result.data?.length || 0} items)`);
+    
+    return result;
+  } catch (error) {
+    console.error('Error fetching leads data:', error);
+    return {
+      data: [],
+      totalCount: 0
+    };
+  }
+}
+
+// Fungsi untuk clear semua cache leads
+export function clearLeadsCache() {
+  console.log('🧹 Clearing all leads data cache...');
+  invalidateCachePattern('leads');
+}
+
+// Fungsi untuk invalidate cache leads berdasarkan filter
+export function invalidateLeadsCacheByFilter(filters = {}) {
+  const filterKey = JSON.stringify(filters);
+  console.log('🧹 Invalidating leads cache for filter:', filterKey);
+  invalidateCachePattern(`leads_*_${filterKey}`);
 }

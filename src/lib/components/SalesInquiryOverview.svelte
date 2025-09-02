@@ -5,6 +5,7 @@
   // Data untuk diagram batang - akan diisi dari Supabase
   let barChartData = [];
   let isLoading = true;
+  let totalRevenue = 0; // Total pendapatan RM
 
   // Filter options
   let isMenuOpen = false;
@@ -53,10 +54,10 @@
       let data, error;
       
       if (selectedFilter === 'Total Sales') {
-        // Query untuk data bookings
+        // Query untuk data bookings dengan total_price
         const result = await supabase
           .from('bookings')
-          .select('created_at, umrah_category_id')
+          .select('created_at, umrah_category_id, total_price')
           .gte('created_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());
         data = result.data;
         error = result.error;
@@ -78,19 +79,32 @@
       // Proses data untuk mendapatkan statistik harian
       const dailyStats = processData(data);
       
+      // Hitung total pendapatan jika Total Sales
+      if (selectedFilter === 'Total Sales') {
+        totalRevenue = data.reduce((sum, item) => {
+          return sum + (item.total_price || 0);
+        }, 0);
+      } else {
+        totalRevenue = 0; // Reset untuk leads
+      }
+      
       // Buat data untuk chart
       barChartData = dailyStats.map(stat => ({
         pelancongan: { percentage: stat.pelanconganPercentage },
         umrah: { percentage: stat.umrahPercentage },
         date: stat.date,
         pelanconganCount: stat.pelanconganCount,
-        umrahCount: stat.umrahCount
+        umrahCount: stat.umrahCount,
+        totalCount: stat.totalCount,
+        pelanconganRevenue: stat.pelanconganRevenue,
+        umrahRevenue: stat.umrahRevenue
       }));
 
     } catch (error) {
       console.error('Error:', error);
       // Jika error, gunakan data test 50%
       barChartData = getTestData();
+      totalRevenue = 15000; // Test revenue
     } finally {
       isLoading = false;
     }
@@ -110,7 +124,10 @@
         umrah: { percentage: 50 },
         date: formatDate(targetDate),
         pelanconganCount: 5,
-        umrahCount: 5
+        umrahCount: 5,
+        totalCount: 10,
+        pelanconganRevenue: 5000 + (i * 1000),
+        umrahRevenue: 6000 + (i * 1000)
       });
     }
     
@@ -134,16 +151,29 @@
         return itemDate === dateStr;
       });
 
-      let pelanconganCount, umrahCount;
+      let pelanconganCount, umrahCount, pelanconganRevenue, umrahRevenue;
       
       if (selectedFilter === 'Total Sales') {
         // Untuk bookings: umrah_category_id ada = umrah, null = pelancongan
-        pelanconganCount = dayData.filter(item => !item.umrah_category_id).length;
-        umrahCount = dayData.filter(item => item.umrah_category_id).length;
+        const pelanconganData = dayData.filter(item => !item.umrah_category_id);
+        const umrahData = dayData.filter(item => item.umrah_category_id);
+        
+        pelanconganCount = pelanconganData.length;
+        umrahCount = umrahData.length;
+        
+        // Hitung revenue per jenis paket
+        pelanconganRevenue = pelanconganData.reduce((sum, item) => {
+          return sum + (item.total_price || 0);
+        }, 0);
+        umrahRevenue = umrahData.reduce((sum, item) => {
+          return sum + (item.total_price || 0);
+        }, 0);
       } else {
         // Untuk leads: category_id ada = umrah, null = pelancongan
         pelanconganCount = dayData.filter(item => !item.category_id).length;
         umrahCount = dayData.filter(item => item.category_id).length;
+        pelanconganRevenue = 0; // Tidak ada revenue untuk leads
+        umrahRevenue = 0;
       }
 
       const totalCount = pelanconganCount + umrahCount;
@@ -157,7 +187,10 @@
         pelanconganCount,
         umrahCount,
         pelanconganPercentage,
-        umrahPercentage
+        umrahPercentage,
+        totalCount,
+        pelanconganRevenue,
+        umrahRevenue
       });
     }
 
@@ -197,6 +230,16 @@
       isMenuOpen = false;
     }
   }
+
+  // Format currency RM
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat('ms-MY', {
+      style: 'currency',
+      currency: 'MYR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  }
 </script>
 
 <svelte:window on:click={handleClickOutside} />
@@ -206,6 +249,14 @@
   <div class="flex flex-row items-center justify-between gap-2 sm:gap-3 lg:gap-4">
     <div class="flex-1">
       <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate">Sales & Inquiry Overview</h2>
+      
+      <!-- Revenue Display -->
+      {#if selectedFilter === 'Total Sales' && totalRevenue > 0}
+        <div class="mt-1 flex items-center gap-2">
+          <span class="text-xs sm:text-sm text-slate-600">Total Revenue:</span>
+          <span class="text-sm sm:text-base font-bold text-green-600">{formatCurrency(totalRevenue)}</span>
+        </div>
+      {/if}
     </div>
     
     <!-- Dropdown (custom styled) -->
@@ -262,7 +313,13 @@
                   class="flex items-center justify-center"
                   style="height: {(bar.pelancongan.percentage / 100) * (window.innerWidth < 640 ? 230 : window.innerWidth < 1024 ? 300 : window.innerWidth < 1280 ? 340 : window.innerWidth < 1536 ? 330 : 400)}px; background: linear-gradient(to bottom, var(--color-primary), rgba(148, 35, 146, 0.8));"
                 >
-                  <span class="text-white text-[10px] sm:text-xs md:text-sm font-semibold">Pelancongan</span>
+                  <div class="text-center text-white">
+                    <div class="text-[10px] sm:text-xs md:text-sm font-semibold">Pelancongan</div>
+                    <div class="text-[8px] sm:text-[10px] md:text-xs">{bar.pelanconganCount}</div>
+                    {#if selectedFilter === 'Total Sales' && bar.pelanconganRevenue > 0}
+                      <div class="text-[8px] sm:text-[10px] md:text-xs font-bold mt-1">{formatCurrency(bar.pelanconganRevenue)}</div>
+                    {/if}
+                  </div>
                 </div>
               {/if}
               {#if bar.umrah.percentage > 0}
@@ -270,7 +327,13 @@
                   class="bg-gradient-to-t from-[#FFF212] to-[#FFF212]/80 flex items-center justify-center"
                   style="height: {(bar.umrah.percentage / 100) * (window.innerWidth < 640 ? 230 : window.innerWidth < 1024 ? 300 : window.innerWidth < 1280 ? 340 : window.innerWidth < 1536 ? 330 : 400)}px;"
                 >
-                  <span class="text-black text-[10px] sm:text-xs md:text-sm font-semibold">umrah</span>
+                  <div class="text-center text-black">
+                    <div class="text-[10px] sm:text-xs md:text-sm font-semibold">Umrah</div>
+                    <div class="text-[8px] sm:text-[10px] md:text-xs">{bar.umrahCount}</div>
+                    {#if selectedFilter === 'Total Sales' && bar.umrahRevenue > 0}
+                      <div class="text-[8px] sm:text-[10px] md:text-xs font-bold mt-1">{formatCurrency(bar.umrahRevenue)}</div>
+                    {/if}
+                  </div>
                 </div>
               {/if}
               {#if bar.pelancongan.percentage === 0 && bar.umrah.percentage === 0}
@@ -279,9 +342,11 @@
                 </div>
               {/if}
             </div>
+            
+            <!-- Percentage and Date Display -->
             <div class="mt-2 sm:mt-3 flex gap-2 sm:gap-3">
               <span class="rounded-full text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1 shadow-sm" style="background-color: rgba(148, 35, 146, 0.2); color: var(--color-primary);">{bar.pelancongan.percentage}%</span>
-              <span class="rounded-full bg-[#FFF212]/20 text-black text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1 shadow-sm">{bar.umrah.percentage}%</span>
+              <span class="text-xs font-semibold px-2 py-1 sm:px-3 sm:py-1 shadow-sm rounded-full bg-[#FFF212]/20 text-black">{bar.umrah.percentage}%</span>
             </div>
             <span class="mt-1 sm:mt-2 rounded-full bg-slate-100 text-slate-600 text-xs font-medium px-2 py-1 sm:px-3 sm:py-1">{bar.date}</span>
           </div>

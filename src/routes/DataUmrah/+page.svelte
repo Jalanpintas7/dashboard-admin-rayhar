@@ -4,12 +4,14 @@
   import RoleGuard from '$lib/components/RoleGuard.svelte';
   import { user, loading } from '$lib/stores/auth.js';
   import { goto } from '$app/navigation';
-  import { Search } from 'lucide-svelte';
+  import { Search, RefreshCw, X } from 'lucide-svelte';
   import { 
     fetchUmrahSeasons, 
     fetchUmrahCategories, 
-    fetchUmrahPackages 
+    fetchUmrahPackages,
+    clearUmrahCache
   } from '$lib/umrah-data-helpers.js';
+  import { getCacheStats } from '$lib/cache-utils.js';
   
   // Redirect ke login jika tidak ada user (hanya jika di halaman ini)
   $: if (!$loading && !$user) {
@@ -32,26 +34,73 @@
   // Loading state
   let isLoading = true;
   let error = null;
-
-  // Load data awal
+  
+  // Cache statistics
+  let cacheStats = null;
+  
+  // Load data awal dengan cache system
   async function loadData() {
     isLoading = true;
     try {
+      console.log('🔄 Loading umrah data with cache system...');
+      const startTime = Date.now();
+      
       const [seasonsData, categoriesData, packagesData] = await Promise.all([
         fetchUmrahSeasons(),
         fetchUmrahCategories(),
         fetchUmrahPackages()
       ]);
 
+      const loadTime = Date.now() - startTime;
+      console.log(`⚡ Data loaded in ${loadTime}ms`);
+
       // Simpan data asli
       allSeasons = seasonsData;
       allCategories = categoriesData;
       allPackages = packagesData;
+      
+      // Debug data loading
+      console.log('📊 Data loaded successfully:', {
+        seasons: seasonsData?.length || 0,
+        categories: categoriesData?.length || 0,
+        packages: packagesData?.length || 0,
+        seasonsSample: seasonsData?.slice(0, 2),
+        categoriesSample: categoriesData?.slice(0, 2),
+        packagesSample: packagesData?.slice(0, 2)
+      });
+      
+      // Update cache statistics
+      updateCacheStats();
+      
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       isLoading = false;
     }
+  }
+  
+  // Update cache statistics
+  function updateCacheStats() {
+    cacheStats = getCacheStats();
+    console.log('📊 Umrah page cache stats:', cacheStats);
+  }
+  
+  // Force refresh all data (bypass cache)
+  async function forceRefreshAllData() {
+    console.log('🔄 Force refreshing all umrah data...');
+    
+    // Clear all umrah cache
+    clearUmrahCache();
+    
+    // Reload data
+    await loadData();
+  }
+  
+  // Clear all cache
+  function clearAllCache() {
+    console.log('🧹 Clearing all cache...');
+    clearUmrahCache();
+    updateCacheStats();
   }
 
   // Reactive filtering - data akan difilter secara otomatis saat searchTerm berubah
@@ -81,6 +130,17 @@
          umrahPackage.sektor?.toLowerCase().includes(searchTerm.toLowerCase()));
       
       return matchesSearch;
+    });
+    
+    // Debug filtering
+    console.log('🔍 Filtering results:', {
+      searchTerm,
+      allSeasonsLength: allSeasons?.length || 0,
+      allCategoriesLength: allCategories?.length || 0,
+      allPackagesLength: allPackages?.length || 0,
+      filteredSeasonsLength: filteredSeasons?.length || 0,
+      filteredCategoriesLength: filteredCategories?.length || 0,
+      filteredPackagesLength: filteredPackages?.length || 0
     });
   }
 
@@ -129,6 +189,45 @@
               />
             </div>
           </div>
+          
+          <!-- Cache Control Section - Hidden from UI but functionality preserved -->
+          <!-- 
+          <div class="flex flex-wrap items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center gap-2 text-sm text-green-700">
+              <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span class="font-medium">Cache System:</span>
+            </div>
+            
+            <div class="text-xs text-green-600">
+              {#if cacheStats}
+                <span class="font-medium">{cacheStats.validEntries}</span> valid, 
+                <span class="font-medium">{cacheStats.totalSizeKB}KB</span> used
+              {:else}
+                Initializing...
+              {/if}
+            </div>
+            
+            <div class="flex items-center gap-2 ml-auto">
+              <button
+                on:click={forceRefreshAllData}
+                class="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors flex items-center gap-1"
+                title="Force refresh all data (bypass cache)"
+              >
+                <RefreshCw class="w-3 h-3" />
+                Refresh All
+              </button>
+              
+              <button
+                on:click={clearAllCache}
+                class="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors flex items-center gap-1"
+                title="Clear all cache"
+              >
+                <X class="w-3 h-3" />
+                Clear Cache
+              </button>
+            </div>
+          </div>
+          -->
 
 
         </div>

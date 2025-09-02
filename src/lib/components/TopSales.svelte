@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { getTopSalesConsultants, getBranchIdByUser } from '$lib/supabase-helpers.js';
+  import { getTopSalesConsultantsByCategory, getBranchIdByUser } from '$lib/supabase-helpers.js';
   import { user } from '$lib/stores/auth.js';
   
   let topSalesData = [];
@@ -8,41 +8,44 @@
   let error = null;
   let selectedConsultant = null;
   let showDetailModal = false;
+  let activeTab = 'umrah'; // 'umrah' atau 'pelancongan'
   
   const loadTopSalesData = async () => {
     try {
       loading = true;
       error = null;
       
-      // Get top sales consultants data (global - semua branch)
-      const consultants = await getTopSalesConsultants(5);
+      // Get top sales consultants data berdasarkan kategori yang aktif
+      const consultants = await getTopSalesConsultantsByCategory(activeTab, 5);
       
-             // Transform data untuk komponen
-       topSalesData = consultants.map(consultant => ({
-         id: consultant.id,
-         name: consultant.name,
-         total: consultant.totalRevenue,
-         recent: consultant.recentRevenue,
-         totalBookings: consultant.totalBookings,
-         recentBookings: consultant.recentBookings,
-         email: consultant.email,
-         whatsapp: consultant.whatsapp,
-         salesConsultantNumber: consultant.salesConsultantNumber,
-         branches: consultant.branches,
-         profileImage: `https://ui-avatars.com/api/?name=${encodeURIComponent(consultant.name)}&background=10b981&color=fff&size=40`
-       }));
+      // Transform data untuk komponen
+      topSalesData = consultants.map(consultant => ({
+        id: consultant.id,
+        name: consultant.name,
+        total: consultant.totalRevenue,
+        recent: consultant.recentRevenue,
+        totalBookings: consultant.totalBookings,
+        recentBookings: consultant.recentBookings,
+        email: consultant.email,
+        whatsapp: consultant.whatsapp,
+        salesConsultantNumber: consultant.salesConsultantNumber,
+        branches: consultant.branches,
+        profileImage: `https://ui-avatars.com/api/?name=${encodeURIComponent(consultant.name)}&background=10b981&color=fff&size=40`,
+        categoryBookings: consultant.categoryBookings
+      }));
+      
     } catch (err) {
       console.error('Error loading top sales data:', err);
       error = err.message;
-             // Fallback ke data dummy jika ada error
-       topSalesData = [
-         { 
-           name: 'Data tidak tersedia', 
-           total: 0,
-           recent: 0,
-           profileImage: '/api/placeholder/40/40'
-         }
-       ];
+      // Fallback ke data dummy jika ada error
+      topSalesData = [
+        { 
+          name: 'Data tidak tersedia', 
+          total: 0,
+          recent: 0,
+          profileImage: '/api/placeholder/40/40'
+        }
+      ];
     } finally {
       loading = false;
     }
@@ -56,6 +59,12 @@
   const closeDetailModal = () => {
     showDetailModal = false;
     selectedConsultant = null;
+  };
+  
+  const switchTab = async (tab) => {
+    activeTab = tab;
+    // Reload data berdasarkan tab yang dipilih
+    await loadTopSalesData();
   };
   
   onMount(() => {
@@ -92,9 +101,25 @@
   overflow-hidden
   flex flex-col
 ">
-  <!-- Header -->
-  <div class="flex items-center justify-between mb-3 sm:mb-4 lg:mb-5">
-    <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate">Top Sales Consultant</h2>
+  <!-- Header dengan Tab Navigation -->
+  <div class="mb-2 sm:mb-3">
+    <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate mb-2">Top Sales Consultant</h2>
+    
+    <!-- Tab Navigation -->
+    <div class="flex bg-gray-100 rounded-lg p-0.5">
+      <button
+        class="flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all duration-200 {activeTab === 'umrah' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}"
+        on:click={() => switchTab('umrah')}
+      >
+        Top Sales Umrah
+      </button>
+      <button
+        class="flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all duration-200 {activeTab === 'pelancongan' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}"
+        on:click={() => switchTab('pelancongan')}
+      >
+        Top Sales Pelancongan
+      </button>
+    </div>
   </div>
   
   <!-- Loading State -->
@@ -114,12 +139,12 @@
     </div>
   {:else}
     <!-- Content dengan responsive design yang lebih baik -->
-    <div class="flex-1 overflow-y-auto pr-1 space-y-2 lg:space-y-2.5 xl:space-y-3">
+    <div class="flex-1 overflow-y-auto pr-1 space-y-1.5 lg:space-y-2">
       {#each topSalesData as item, index}
         <div 
           class="
             bg-white
-            p-2 lg:p-2.5 xl:p-3 
+            p-1.5 lg:p-2 xl:p-2.5 
             transition-all duration-200
             rounded-xl
             hover:shadow-md
@@ -132,16 +157,16 @@
           on:click={() => showConsultantDetail(item)}
         >
           <div class="flex items-center justify-between min-w-0">
-            <div class="flex items-center space-x-2 lg:space-x-2.5 xl:space-x-3 min-w-0 flex-1">
+            <div class="flex items-center space-x-1.5 lg:space-x-2 min-w-0 flex-1">
               <!-- Profile Picture - Circular -->
               <div class="
-                w-7 h-7 lg:w-8 lg:h-8 xl:w-9 xl:h-9
+                w-6 h-6 lg:w-7 lg:h-7 xl:w-8 xl:h-8
                 bg-gradient-to-br from-green-400 to-green-600
                 rounded-full
                 flex items-center justify-center
                 text-white
                 font-semibold
-                text-xs lg:text-xs
+                text-xs
                 shadow-md
                 overflow-hidden
                 flex-shrink-0
@@ -160,21 +185,21 @@
                 </div>
               </div>
               
-              <!-- Name and Total Bookings -->
+              <!-- Name and Category Bookings -->
               <div class="min-w-0 flex-1 overflow-hidden">
-                <h3 class="text-slate-900 font-bold text-xs sm:text-sm lg:text-sm xl:text-sm truncate">{item.name}</h3>
-                <p class="text-slate-500 text-[11px] sm:text-xs truncate">
-                  {item.totalBookings} Total Bookings
+                <h3 class="text-slate-900 font-bold text-xs lg:text-sm truncate">{item.name}</h3>
+                <p class="text-slate-500 text-[10px] lg:text-xs truncate">
+                  {item.categoryBookings} {activeTab === 'umrah' ? 'Umrah' : 'Pelancongan'} Bookings
                 </p>
               </div>
             </div>
             
             <!-- Total Revenue -->
             <div class="text-right flex-shrink-0 ml-2">
-              <p class="text-slate-900 font-bold text-sm sm:text-base lg:text-base xl:text-base">
-                RM {item.total.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <p class="text-slate-900 font-bold text-xs lg:text-sm">
+                RM {item.total.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </p>
-              <p class="text-slate-500 text-xs sm:text-sm truncate">Total Revenue</p>
+              <p class="text-slate-500 text-[10px] lg:text-xs truncate">Total Revenue</p>
             </div>
           </div>
         </div>
@@ -259,15 +284,17 @@
         <!-- Total Revenue -->
         <div class="bg-green-50 p-3 sm:p-4 rounded-lg text-center">
           <p class="text-xl sm:text-2xl font-bold text-green-600">
-            RM {selectedConsultant.total.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            RM {selectedConsultant.total.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </p>
           <p class="text-xs sm:text-sm text-green-700">Total Revenue</p>
         </div>
         
-        <!-- Total Bookings -->
+        <!-- Category Specific Bookings -->
         <div class="bg-blue-50 p-3 sm:p-4 rounded-lg text-center">
-          <p class="text-lg sm:text-xl font-bold text-blue-600">{selectedConsultant.totalBookings}</p>
-          <p class="text-xs sm:text-sm text-blue-700">Total Bookings</p>
+          <p class="text-lg sm:text-xl font-bold text-blue-600">
+            {selectedConsultant.categoryBookings}
+          </p>
+          <p class="text-xs sm:text-sm text-blue-700">{activeTab === 'umrah' ? 'Umrah' : 'Pelancongan'} Bookings</p>
         </div>
       </div>
       
