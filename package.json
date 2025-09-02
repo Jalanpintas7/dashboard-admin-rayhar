@@ -8,9 +8,9 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
-		"build:netlify": "npm run build && echo 'Build completed successfully for Netlify deployment'",
-		"deploy:preview": "npm run build && netlify deploy --dir=build",
-		"deploy:prod": "npm run build && netlify deploy --prod --dir=build"
+		"build:netlify": "npm run build && copy build\\_redirects .svelte-kit\\output\\client\\_redirects && copy build\\_headers .svelte-kit\\output\\client\\_headers && echo 'Build completed successfully for Netlify deployment'",
+		"deploy:preview": "npm run build:netlify && netlify deploy --dir=.svelte-kit/output/client",
+		"deploy:prod": "npm run build:netlify && netlify deploy --prod --dir=.svelte-kit/output/client"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-netlify": "^5.0.0",
