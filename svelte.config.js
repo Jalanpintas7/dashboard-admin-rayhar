@@ -6,8 +6,14 @@ const config = {
     adapter: adapter({
       // Konfigurasi untuk Netlify
       edge: false,
-      split: false
-    }) 
+      split: false,
+      // Pastikan semua route di-handle dengan benar
+      fallback: 'index.html'
+    }),
+    // Konfigurasi untuk prerendering
+    prerender: {
+      handleHttpError: 'warn'
+    }
   } 
 };
 

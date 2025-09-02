@@ -139,12 +139,13 @@
     </div>
   {:else}
     <!-- Content dengan responsive design yang lebih baik -->
-    <div class="flex-1 overflow-y-auto pr-1 space-y-1.5 lg:space-y-2">
+    <div class="flex-1 overflow-y-auto pr-1 flex flex-col">
       {#each topSalesData as item, index}
-        <div 
+        <div
           class="
-            bg-white
-            p-1.5 lg:p-2 xl:p-2.5 
+                        bg-white
+            p-2 lg:p-3 xl:p-4
+            py-3 lg:py-4 xl:py-5
             transition-all duration-200
             rounded-xl
             hover:shadow-md
@@ -152,11 +153,14 @@
             border border-gray-100
             shadow-sm
             min-w-0
-          " 
+            flex-1
+            mb-1.5 lg:mb-2
+            last:mb-0
+          "
           style="background-color: #ffffff !important;"
           on:click={() => showConsultantDetail(item)}
         >
-          <div class="flex items-center justify-between min-w-0">
+          <div class="flex items-center justify-between min-w-0 h-full">
             <div class="flex items-center space-x-1.5 lg:space-x-2 min-w-0 flex-1">
               <!-- Profile Picture - Circular -->
               <div class="

@@ -1,4 +1,7 @@
+# Redirect semua route ke index.html untuk SPA routing
 /*    /index.html   200
+
+# Redirect spesifik untuk route yang ada
 /login    /index.html   200
 /register    /index.html   200
 /forgot-password    /index.html   200

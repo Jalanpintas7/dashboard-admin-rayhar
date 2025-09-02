@@ -264,7 +264,7 @@
           <!-- Informasi Perjalanan -->
           <div class="space-y-4">
             <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Globe class="w-5 h-5 text-blue-600" />
+              <Globe class="w-5 h-5 text-[rgb(148,35,146)]" />
               Informasi Perjalanan
             </h3>
             

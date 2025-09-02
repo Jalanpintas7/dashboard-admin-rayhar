@@ -7,7 +7,10 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''"
+		"prepare": "svelte-kit sync || echo ''",
+		"build:netlify": "npm run build && echo 'Build completed successfully for Netlify deployment'",
+		"deploy:preview": "npm run build && netlify deploy --dir=build",
+		"deploy:prod": "npm run build && netlify deploy --prod --dir=build"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-netlify": "^5.0.0",

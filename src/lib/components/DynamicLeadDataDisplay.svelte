@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { supabase } from '$lib/supabase.js';
   import { formatDateMalaysia } from '$lib/date-helpers.js';
-  import { Loader2, AlertTriangle, Users, TrendingUp } from 'lucide-svelte';
+  import { Loader2, AlertTriangle, Users, TrendingUp, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText } from 'lucide-svelte';
   
   // Props untuk menerima nama branch
   export let branchName = '';
@@ -10,10 +10,26 @@
   let leadData = [];
   let loading = true;
   let error = null;
+
+  // State untuk modal detail
+  let selectedLead = null;
+  let showDetailModal = false;
   
   // Reactive statement untuk reload data ketika branch berubah
   $: if (branchName) {
     loadLeadData();
+  }
+
+  // Fungsi untuk menampilkan modal detail
+  function showLeadDetail(lead) {
+    selectedLead = lead;
+    showDetailModal = true;
+  }
+
+  // Fungsi untuk menutup modal
+  function closeDetailModal() {
+    showDetailModal = false;
+    selectedLead = null;
   }
   
   async function loadLeadData() {
@@ -40,10 +56,17 @@
       
       console.log('Branch info:', branchInfo);
       
-      // Kemudian, ambil leads berdasarkan branch_id
+      // Kemudian, ambil leads berdasarkan branch_id dengan JOIN untuk mendapatkan nama interest
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads')
-        .select('*')
+        .select(`
+          *,
+          umrah_categories(name),
+          destinations(name),
+          package_types(name),
+          umrah_seasons(name),
+          sales_consultant(name)
+        `)
         .eq('branch_id', branchInfo.id)
         .order('created_at', { ascending: false });
       
@@ -57,25 +80,37 @@
       
       // Transform data untuk display
       leadData = leadsData.map(lead => {
+        // Tentukan interest berdasarkan data yang tersedia
+        let interest = '-';
+        if (lead.umrah_categories?.name) {
+          interest = lead.umrah_categories.name;
+        } else if (lead.destinations?.name) {
+          interest = lead.destinations.name;
+        } else if (lead.package_types?.name) {
+          interest = lead.package_types.name;
+        } else if (lead.umrah_seasons?.name) {
+          interest = lead.umrah_seasons.name;
+        }
+
         return {
           id: lead.id,
           name: lead.full_name || lead.title || 'Nama tidak tersedia',
           email: '-', // Email tidak ada di tabel leads
           phone: lead.phone || '-',
           branch: branchName, // Gunakan branch name yang diberikan
-          interest: lead.category || '-',
+          interest: interest,
           date: formatDateMalaysia(lead.created_at),
           avatar: (lead.full_name || lead.title || 'NA').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2),
           address: '-', // Address tidak ada di tabel leads
-          source: lead.category || '-',
+          source: interest,
           budget: '-', // Budget tidak ada di tabel leads
           timeline: '-', // Timeline tidak ada di tabel leads
-          consultant: '-', // Consultant tidak ada di tabel leads
+          consultant: lead.sales_consultant?.name || '-', // Ambil dari JOIN
           notes: '-', // Notes tidak ada di tabel leads
           // Tambahan field untuk detail
-          seasonDestination: lead.category || '-',
-          packageType: '-',
-          destination: '-',
+          seasonDestination: interest,
+          packageType: lead.package_types?.name || '-',
+          destination: lead.destinations?.name || '-',
           outboundDate: '-'
         };
       });
@@ -94,16 +129,17 @@
 <div class="space-y-4">
   {#if loading}
     <div class="text-center py-8">
-      <Loader2 class="mx-auto h-8 w-8 animate-spin text-blue-600" />
+      <Loader2 class="mx-auto h-8 w-8 animate-spin text-[rgb(148,35,146)]" />
       <p class="mt-2 text-sm text-gray-600">Memuat data leads...</p>
     </div>
   {:else if error}
     <div class="text-center py-8">
       <AlertTriangle class="mx-auto h-8 w-8 text-red-600" />
       <p class="mt-2 text-sm text-red-600">{error}</p>
-      <button 
+      <button
         on:click={loadLeadData}
-        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        class="mt-4 px-4 py-2 text-white rounded-lg hover:opacity-90 transition-opacity"
+        style="background-color: rgb(148, 35, 146);"
       >
         Coba Lagi
       </button>
@@ -113,8 +149,8 @@
       <TrendingUp class="mx-auto h-8 w-8 text-gray-400" />
       <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada data lead</h3>
       <p class="mt-1 text-sm text-gray-500">Belum ada data lead untuk branch <strong>{branchName}</strong>.</p>
-      <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-        <p class="text-sm text-blue-800">
+      <div class="mt-4 bg-[rgba(148,35,146,0.05)] border border-[rgba(148,35,146,0.15)] rounded-lg p-4 max-w-md mx-auto">
+        <p class="text-sm text-[rgb(148,35,146)]">
           <strong>Tips:</strong> Data lead akan muncul setelah ada inquiry yang dibuat untuk branch ini.
         </p>
       </div>
@@ -138,12 +174,12 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-100">
           {#each leadData as lead}
-            <tr class="hover:bg-gray-50 transition-colors">
+            <tr class="hover:bg-[rgba(148,35,146,0.02)] transition-colors cursor-pointer" on:click={() => showLeadDetail(lead)}>
               <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
-                    <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <span class="text-xs sm:text-sm font-medium text-blue-600">
+                    <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-[rgba(148,35,146,0.1)] flex items-center justify-center">
+                      <span class="text-xs sm:text-sm font-medium text-[rgb(148,35,146)]">
                         {lead.avatar}
                       </span>
                     </div>
@@ -169,16 +205,213 @@
     </div>
     
     <!-- Summary -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div class="bg-[rgba(148,35,146,0.05)] border border-[rgba(148,35,146,0.15)] rounded-lg p-4">
       <div class="flex items-center justify-between">
         <div>
-          <h5 class="text-sm font-medium text-blue-800">Total Leads {branchName}</h5>
-          <p class="text-2xl font-bold text-blue-600">{leadData.length}</p>
+          <h5 class="text-sm font-medium text-[rgb(148,35,146)]">Total Leads {branchName}</h5>
+          <p class="text-2xl font-bold text-[rgb(148,35,146)]">{leadData.length}</p>
         </div>
         <div class="text-right">
-          <p class="text-sm text-blue-600">Branch: {branchName}</p>
+          <p class="text-sm text-[rgb(148,35,146)]">Branch: {branchName}</p>
         </div>
       </div>
     </div>
   {/if}
 </div>
+
+<!-- Modal Detail Lead -->
+{#if showDetailModal && selectedLead}
+  <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/50">
+      <!-- Header Modal -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-[rgba(148,35,146,0.1)] rounded-xl flex items-center justify-center">
+            <span class="text-lg font-bold text-[rgb(148,35,146)]">
+              {selectedLead.avatar}
+            </span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">{selectedLead.name}</h2>
+            <p class="text-gray-500">Detail Lead</p>
+          </div>
+        </div>
+        <button
+          on:click={closeDetailModal}
+          class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <X class="w-6 h-6 text-gray-500" />
+        </button>
+      </div>
+
+      <!-- Content Modal -->
+      <div class="p-6 space-y-6">
+        <!-- Informasi Utama -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <User class="w-5 h-5 text-[rgb(148,35,146)]" />
+              Informasi Lead
+            </h3>
+
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <Phone class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-500">Telepon</p>
+                  <p class="text-gray-900 break-words">{selectedLead.phone || '-'}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <Mail class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-500">Email</p>
+                  <p class="text-gray-900 break-words">{selectedLead.email || '-'}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <Building class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-500">Cawangan</p>
+                  <p class="text-gray-900 break-words">{selectedLead.branch || '-'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informasi Tambahan -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <TrendingUp class="w-5 h-5 text-green-600" />
+              Informasi Tambahan
+            </h3>
+
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <Globe class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-500">Interest</p>
+                  <p class="text-gray-900 break-words">{selectedLead.interest || selectedLead.seasonDestination || '-'}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <Calendar class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-500">Tarikh Daftar</p>
+                  <p class="text-gray-900 break-words">{selectedLead.date || '-'}</p>
+                </div>
+              </div>
+
+              {#if selectedLead.source && selectedLead.source !== '-'}
+                <div class="flex items-center gap-3">
+                  <Hash class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div class="min-w-0">
+                    <p class="text-sm text-gray-500">Interest/Sumber</p>
+                    <p class="text-gray-900 break-words">{selectedLead.source}</p>
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </div>
+        </div>
+
+        <!-- Informasi Tambahan lainnya -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <FileText class="w-5 h-5 text-purple-600" />
+              Detail Tambahan
+            </h3>
+
+            <div class="space-y-3">
+              {#if selectedLead.packageType && selectedLead.packageType !== '-'}
+                <div class="flex items-center gap-3">
+                  <Package class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div class="min-w-0">
+                    <p class="text-sm text-gray-500">Jenis Pakej</p>
+                    <p class="text-gray-900 break-words">{selectedLead.packageType}</p>
+                  </div>
+                </div>
+              {/if}
+
+              {#if selectedLead.destination && selectedLead.destination !== '-'}
+                <div class="flex items-center gap-3">
+                  <MapPin class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div class="min-w-0">
+                    <p class="text-sm text-gray-500">Destinasi</p>
+                    <p class="text-gray-900 break-words">{selectedLead.destination}</p>
+                  </div>
+                </div>
+              {/if}
+
+              {#if selectedLead.consultant && selectedLead.consultant !== '-'}
+                <div class="flex items-center gap-3">
+                  <User class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div class="min-w-0">
+                    <p class="text-sm text-gray-500">Sales Consultant</p>
+                    <p class="text-gray-900 break-words">{selectedLead.consultant}</p>
+                  </div>
+                </div>
+              {/if}
+
+              {#if selectedLead.outboundDate && selectedLead.outboundDate !== '-'}
+                <div class="flex items-center gap-3">
+                  <Calendar class="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div class="min-w-0">
+                    <p class="text-sm text-gray-500">Tarikh Outbound</p>
+                    <p class="text-gray-900 break-words">{selectedLead.outboundDate}</p>
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <User class="w-5 h-5 text-orange-600" />
+              Informasi Lainnya
+            </h3>
+
+            <div class="space-y-3">
+              {#if selectedLead.budget && selectedLead.budget !== '-'}
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-500">Budget</p>
+                  <p class="text-gray-900 break-words">{selectedLead.budget}</p>
+                </div>
+              {/if}
+
+              {#if selectedLead.timeline && selectedLead.timeline !== '-'}
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-500">Timeline</p>
+                  <p class="text-gray-900 break-words">{selectedLead.timeline}</p>
+                </div>
+              {/if}
+
+
+
+              {#if selectedLead.notes && selectedLead.notes !== '-'}
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-500">Catatan</p>
+                  <p class="text-gray-900 break-words">{selectedLead.notes}</p>
+                </div>
+              {/if}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Modal -->
+      <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+        <button
+          on:click={closeDetailModal}
+          class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

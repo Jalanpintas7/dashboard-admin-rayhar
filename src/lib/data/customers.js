@@ -7,15 +7,16 @@ export function getInitials(name) {
   return name.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase();
 }
 
-// Fungsi untuk mendapatkan warna package
+// Fungsi untuk mendapatkan warna package dengan opacity dari primary color
 export function getPackageColor(packageType) {
   switch (packageType?.toLowerCase()) {
     case 'umrah':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
+      return 'bg-[rgba(148,35,146,0.1)] text-[rgb(148,35,146)] border-[rgba(148,35,146,0.2)]';
     case 'pelancongan':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'outbound':
+      return 'bg-[rgba(148,35,146,0.15)] text-[rgb(148,35,146)] border-[rgba(148,35,146,0.25)]';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-[rgba(148,35,146,0.08)] text-[rgb(148,35,146)] border-[rgba(148,35,146,0.15)]';
   }
 }
 
