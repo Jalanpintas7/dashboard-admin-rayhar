@@ -1,15 +1,12 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-netlify';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   kit: {
     adapter: adapter({
-      // Konfigurasi untuk static export
-      pages: 'build',
-      assets: 'build',
-      fallback: 'index.html',
-      precompress: false,
-      strict: true
+      // Konfigurasi untuk Netlify deployment
+      edge: false,
+      split: false
     }),
     // Konfigurasi untuk SPA routing
     prerender: {
