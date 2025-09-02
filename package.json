@@ -9,12 +9,14 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"build:netlify": "npm run build",
+		"build:vercel": "copy svelte.config.vercel.js svelte.config.js && npm run build",
 		"deploy:preview": "npm run build:netlify && netlify deploy --dir=.svelte-kit/netlify",
 		"deploy:prod": "npm run build:netlify && netlify deploy --prod --dir=.svelte-kit/netlify"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-netlify": "^5.0.0",
 		"@sveltejs/adapter-static": "^3.0.9",
+		"@sveltejs/adapter-vercel": "^5.4.4",
 		"@sveltejs/kit": "^2.22.0",
 		"@sveltejs/vite-plugin-svelte": "^6.0.0",
 		"@tailwindcss/forms": "^0.5.9",
