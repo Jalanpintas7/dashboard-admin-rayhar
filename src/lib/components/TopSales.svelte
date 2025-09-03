@@ -193,7 +193,7 @@
               <div class="min-w-0 flex-1 overflow-hidden">
                 <h3 class="text-slate-900 font-bold text-xs lg:text-sm truncate">{item.name}</h3>
                 <p class="text-slate-500 text-[10px] lg:text-xs truncate">
-                  {item.categoryBookings} {activeTab === 'umrah' ? 'Umrah' : 'Pelancongan'} Bookings
+                  {item.categoryBookings} pax {activeTab === 'umrah' ? 'umrah' : 'pelancongan'}
                 </p>
               </div>
             </div>
@@ -201,7 +201,7 @@
             <!-- Total Revenue -->
             <div class="text-right flex-shrink-0 ml-2">
               <p class="text-slate-900 font-bold text-xs lg:text-sm">
-                RM {item.total.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                RM {item.total.toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p class="text-slate-500 text-[10px] lg:text-xs truncate">Total Revenue</p>
             </div>
@@ -288,7 +288,7 @@
         <!-- Total Revenue -->
         <div class="bg-green-50 p-3 sm:p-4 rounded-lg text-center">
           <p class="text-xl sm:text-2xl font-bold text-green-600">
-            RM {selectedConsultant.total.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            RM {selectedConsultant.total.toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <p class="text-xs sm:text-sm text-green-700">Total Revenue</p>
         </div>
@@ -298,7 +298,7 @@
           <p class="text-lg sm:text-xl font-bold text-blue-600">
             {selectedConsultant.categoryBookings}
           </p>
-          <p class="text-xs sm:text-sm text-blue-700">{activeTab === 'umrah' ? 'Umrah' : 'Pelancongan'} Bookings</p>
+          <p class="text-xs sm:text-sm text-blue-700">pax {activeTab === 'umrah' ? 'umrah' : 'pelancongan'}</p>
         </div>
       </div>
       

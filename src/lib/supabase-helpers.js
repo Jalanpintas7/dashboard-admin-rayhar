@@ -179,10 +179,16 @@ export const getDashboardStats = async () => {
     .from('leads')
     .select('*', { count: 'exact', head: true })
   
-  // Get total bookings
-  const { count: totalBookings } = await supabase
+  // Get total participants: count bookings + sum bilangan (consistent with Umrah/Outbound logic)
+  const { count: totalBookingRecords } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
+  
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select('bilangan')
+  
+  const totalParticipants = (totalBookingRecords || 0) + bookings.reduce((sum, booking) => sum + (booking.bilangan || 0), 0)
   
   // Get recent leads (last 7 days)
   const sevenDaysAgo = new Date()
@@ -193,17 +199,20 @@ export const getDashboardStats = async () => {
     .select('*', { count: 'exact', head: true })
     .gte('created_at', sevenDaysAgo.toISOString())
   
-  // Get recent bookings (last 7 days)
+  // Get recent participants (last 30 days) from members_booking
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  
   const { count: recentBookings } = await supabase
-    .from('bookings')
+    .from('members_booking')
     .select('*', { count: 'exact', head: true })
-    .gte('created_at', sevenDaysAgo.toISOString())
+    .gte('created_at', thirtyDaysAgo.toISOString())
   
   return {
     totalLeads: totalLeads || 0,
-    totalBookings: totalBookings || 0,
+    totalBookings: totalParticipants, // Total participants (count + sum bilangan)
     recentLeads: recentLeads || 0,
-    recentBookings: recentBookings || 0
+    recentBookings: recentBookings || 0 // Recent booking records (not participants)
   }
 }
 
@@ -219,11 +228,18 @@ export const getDashboardStatsByBranch = async (branchId) => {
     .select('*', { count: 'exact', head: true })
     .eq('branch_id', branchId)
   
-  // Get total bookings for specific branch
-  const { count: totalBookings } = await supabase
+  // Get total participants for specific branch: count bookings + sum bilangan (consistent logic)
+  const { count: totalBookingRecords } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
     .eq('branch_id', branchId)
+  
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select('bilangan')
+    .eq('branch_id', branchId)
+  
+  const totalParticipants = (totalBookingRecords || 0) + bookings.reduce((sum, booking) => sum + (booking.bilangan || 0), 0)
   
   // Get recent leads for specific branch (last 7 days)
   const sevenDaysAgo = new Date()
@@ -235,32 +251,63 @@ export const getDashboardStatsByBranch = async (branchId) => {
     .eq('branch_id', branchId)
     .gte('created_at', sevenDaysAgo.toISOString())
   
-  // Get recent bookings for specific branch (last 7 days)
-  const { count: recentBookings } = await supabase
+  // Get recent participants for specific branch (last 30 days) from members_booking
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  
+  // Get branch booking IDs first
+  const { data: branchBookings } = await supabase
     .from('bookings')
-    .select('*', { count: 'exact', head: true })
+    .select('id')
     .eq('branch_id', branchId)
-    .gte('created_at', sevenDaysAgo.toISOString())
+  
+  const branchBookingIds = branchBookings?.map(b => b.id) || []
+  let recentBookings = 0
+  
+  if (branchBookingIds.length > 0) {
+    const { count } = await supabase
+      .from('members_booking')
+      .select('*', { count: 'exact', head: true })
+      .in('booking_id', branchBookingIds)
+      .gte('created_at', thirtyDaysAgo.toISOString())
+    recentBookings = count || 0
+  }
 
-  // Get total Umrah bookings for specific branch (based on umrah_season_id or umrah_category_id)
-  const { count: totalUmrahBookings } = await supabase
+  // Get total Umrah participants for specific branch: count bookings + sum bilangan
+  const { count: umrahBookings } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
     .eq('branch_id', branchId)
     .or('umrah_season_id.not.is.null,umrah_category_id.not.is.null')
   
-  // Get total Outbound bookings for specific branch (based on destination_id or outbound_date_id)
-  const { count: totalOutboundBookings } = await supabase
+  const { data: umrahBilangan } = await supabase
+    .from('bookings')
+    .select('bilangan')
+    .eq('branch_id', branchId)
+    .or('umrah_season_id.not.is.null,umrah_category_id.not.is.null')
+  
+  const totalUmrahBookings = (umrahBookings || 0) + umrahBilangan.reduce((sum, booking) => sum + (booking.bilangan || 0), 0)
+  
+  // Get total Outbound participants for specific branch: count bookings + sum bilangan
+  const { count: outboundBookings } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
     .eq('branch_id', branchId)
     .or('destination_id.not.is.null,outbound_date_id.not.is.null')
   
+  const { data: outboundBilangan } = await supabase
+    .from('bookings')
+    .select('bilangan')
+    .eq('branch_id', branchId)
+    .or('destination_id.not.is.null,outbound_date_id.not.is.null')
+  
+  const totalOutboundBookings = (outboundBookings || 0) + outboundBilangan.reduce((sum, booking) => sum + (booking.bilangan || 0), 0)
+  
   return {
     totalLeads: totalLeads || 0,
-    totalBookings: totalBookings || 0,
+    totalBookings: totalParticipants, // Total participants (count + sum bilangan)
     recentLeads: recentLeads || 0,
-    recentBookings: recentBookings || 0,
+    recentBookings: recentBookings || 0, // Recent booking records (not participants)
     totalUmrahBookings: totalUmrahBookings || 0,
     totalOutboundBookings: totalOutboundBookings || 0
   }
@@ -273,7 +320,8 @@ export const getTopSalesConsultants = async (limit = 5) => {
     .select(`
       consultant_id,
       total_price,
-      created_at
+      created_at,
+      bilangan
     `)
     .not('consultant_id', 'is', null)
     .order('created_at', { ascending: false });
@@ -349,7 +397,10 @@ export const getTopSalesConsultants = async (limit = 5) => {
       };
     }
     
-    consultantStats[consultantId].totalBookings += 1;
+    // Calculate total participants: 1 (pendaftar) + bilangan
+    const participants = 1 + (parseInt(booking.bilangan) || 0);
+    
+    consultantStats[consultantId].totalBookings += participants;
     
     // Add revenue calculation
     const bookingPrice = parseFloat(booking.total_price) || 0;
@@ -366,7 +417,7 @@ export const getTopSalesConsultants = async (limit = 5) => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     if (bookingDate >= thirtyDaysAgo) {
-      consultantStats[consultantId].recentBookings += 1;
+      consultantStats[consultantId].recentBookings += participants;
       consultantStats[consultantId].recentRevenue += bookingPrice;
     }
   });
@@ -395,7 +446,8 @@ export const getTopSalesConsultantsByCategory = async (category = 'umrah', limit
       umrah_season_id,
       umrah_category_id,
       destination_id,
-      outbound_date_id
+      outbound_date_id,
+      bilangan
     `)
     .not('consultant_id', 'is', null);
 
@@ -480,8 +532,11 @@ export const getTopSalesConsultantsByCategory = async (category = 'umrah', limit
       };
     }
     
-    consultantStats[consultantId].totalBookings += 1;
-    consultantStats[consultantId].categoryBookings += 1;
+    // Calculate total participants: 1 (pendaftar) + bilangan
+    const participants = 1 + (parseInt(booking.bilangan) || 0);
+    
+    consultantStats[consultantId].totalBookings += participants;
+    consultantStats[consultantId].categoryBookings += participants;
     
     // Add revenue calculation
     const bookingPrice = parseFloat(booking.total_price) || 0;
@@ -498,7 +553,7 @@ export const getTopSalesConsultantsByCategory = async (category = 'umrah', limit
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     if (bookingDate >= thirtyDaysAgo) {
-      consultantStats[consultantId].recentBookings += 1;
+      consultantStats[consultantId].recentBookings += participants;
       consultantStats[consultantId].recentRevenue += bookingPrice;
     }
   });
@@ -757,10 +812,16 @@ export const getDashboardStatsForSuperAdmin = async () => {
     .from('leads')
     .select('*', { count: 'exact', head: true })
   
-  // Get total bookings from all branches
-  const { count: totalBookings } = await supabase
+  // Get total participants from all branches: count bookings + sum bilangan (consistent logic)
+  const { count: totalBookingRecords } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
+  
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select('bilangan')
+  
+  const totalParticipants = (totalBookingRecords || 0) + bookings.reduce((sum, booking) => sum + (booking.bilangan || 0), 0)
   
   // Get recent leads (last 7 days) from all branches
   const sevenDaysAgo = new Date()
@@ -771,29 +832,46 @@ export const getDashboardStatsForSuperAdmin = async () => {
     .select('*', { count: 'exact', head: true })
     .gte('created_at', sevenDaysAgo.toISOString())
   
-  // Get recent bookings (last 7 days) from all branches
+  // Get recent participants (last 30 days) from all branches via members_booking
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  
   const { count: recentBookings } = await supabase
-    .from('bookings')
+    .from('members_booking')
     .select('*', { count: 'exact', head: true })
-    .gte('created_at', sevenDaysAgo.toISOString())
+    .gte('created_at', thirtyDaysAgo.toISOString())
 
-  // Get total Umrah bookings from all branches (based on umrah_season_id or umrah_category_id)
-  const { count: totalUmrahBookings } = await supabase
+  // Get total Umrah participants from all branches: count bookings + sum bilangan
+  const { count: umrahBookings } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
     .or('umrah_season_id.not.is.null,umrah_category_id.not.is.null')
   
-  // Get total Outbound bookings from all branches (based on destination_id or outbound_date_id)
-  const { count: totalOutboundBookings } = await supabase
+  const { data: umrahBilangan } = await supabase
+    .from('bookings')
+    .select('bilangan')
+    .or('umrah_season_id.not.is.null,umrah_category_id.not.is.null')
+  
+  const totalUmrahBookings = (umrahBookings || 0) + umrahBilangan.reduce((sum, booking) => sum + (booking.bilangan || 0), 0)
+  
+  // Get total Outbound participants from all branches: count bookings + sum bilangan
+  const { count: outboundBookings } = await supabase
     .from('bookings')
     .select('*', { count: 'exact', head: true })
     .or('destination_id.not.is.null,outbound_date_id.not.is.null')
   
+  const { data: outboundBilangan } = await supabase
+    .from('bookings')
+    .select('bilangan')
+    .or('destination_id.not.is.null,outbound_date_id.not.is.null')
+  
+  const totalOutboundBookings = (outboundBookings || 0) + outboundBilangan.reduce((sum, booking) => sum + (booking.bilangan || 0), 0)
+  
   return {
     totalLeads: totalLeads || 0,
-    totalBookings: totalBookings || 0,
+    totalBookings: totalParticipants, // Total participants (count + sum bilangan)
     recentLeads: recentLeads || 0,
-    recentBookings: recentBookings || 0,
+    recentBookings: recentBookings || 0, // Recent booking records (not participants)
     totalUmrahBookings: totalUmrahBookings || 0,
     totalOutboundBookings: totalOutboundBookings || 0
   }
@@ -1094,3 +1172,5 @@ export const getSalesInquiryOverviewForSuperAdmin = async (type = 'sales') => {
     return overviewData;
   }
 };
+
+

@@ -210,10 +210,12 @@
   }
 
   function formatCurrency(amount) {
-    return new Intl.NumberFormat('ms-MY', {
-      style: 'currency',
-      currency: 'MYR',
-      minimumFractionDigits: 0
+    if (!amount) return 'RM 0.00';
+
+    // Format Malaysia: titik untuk ribuan, koma untuk desimal dengan 2 digit desimal
+    return 'RM ' + new Intl.NumberFormat('ms-MY', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   }
 

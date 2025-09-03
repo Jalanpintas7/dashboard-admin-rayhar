@@ -280,7 +280,7 @@
               <td class="px-4 py-3 whitespace-nowrap">
                 <div class="text-sm text-gray-900">
                   {#if customer.total_price && customer.total_price !== '-'}
-                    <div class="font-medium text-green-600">RM {parseFloat(customer.total_price).toLocaleString('id-ID')}</div>
+                    <div class="font-medium text-green-600">RM {parseFloat(customer.total_price).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     <div class="text-xs text-gray-500">{customer.price}</div>
                   {:else}
                     <div class="text-gray-500">{customer.price}</div>
@@ -482,7 +482,7 @@
               {#if selectedCustomer.total_price && selectedCustomer.total_price !== '-'}
                 <div class="min-w-0">
                   <p class="text-sm text-gray-500">Total Harga</p>
-                  <p class="text-2xl font-bold text-green-600 break-words">RM {parseFloat(selectedCustomer.total_price).toLocaleString('id-ID')}</p>
+                  <p class="text-2xl font-bold text-green-600 break-words">RM {parseFloat(selectedCustomer.total_price).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
               {/if}
 
@@ -497,7 +497,7 @@
                 <div class="min-w-0">
                   <p class="text-sm text-gray-500">Harga per Pax</p>
                   <p class="text-lg font-semibold text-gray-700 break-words">
-                    RM {(parseFloat(selectedCustomer.total_price) / parseInt(selectedCustomer.price.split(' ')[0])).toLocaleString('id-ID')}
+                    RM {(parseFloat(selectedCustomer.total_price) / parseInt(selectedCustomer.price.split(' ')[0])).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
               {/if}

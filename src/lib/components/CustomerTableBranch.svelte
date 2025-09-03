@@ -334,7 +334,7 @@
               {#if selectedCustomer.total_price && selectedCustomer.total_price !== '-'}
                 <div>
                   <p class="text-sm text-gray-500">Total Harga</p>
-                  <p class="text-2xl font-bold text-green-600">RM {parseFloat(selectedCustomer.total_price).toLocaleString('id-ID')}</p>
+                  <p class="text-2xl font-bold text-green-600">RM {parseFloat(selectedCustomer.total_price).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
               {/if}
               
@@ -349,7 +349,7 @@
                 <div>
                   <p class="text-sm text-gray-500">Harga per Pax</p>
                   <p class="text-lg font-semibold text-gray-700">
-                    RM {(parseFloat(selectedCustomer.total_price) / parseInt(selectedCustomer.price.split(' ')[0])).toLocaleString('id-ID')}
+                    RM {(parseFloat(selectedCustomer.total_price) / parseInt(selectedCustomer.price.split(' ')[0])).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
               {/if}

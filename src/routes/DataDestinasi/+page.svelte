@@ -944,7 +944,7 @@
                       <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-slate-500">
                         <div>
                           <div>{formatDate(outboundPackage.start_date)}</div>
-                          <div class="text-xs text-slate-400">s/d {formatDate(outboundPackage.end_date)}</div>
+                          <div class="text-xs text-slate-400">to {formatDate(outboundPackage.end_date)}</div>
                         </div>
                       </td>
                       <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900">

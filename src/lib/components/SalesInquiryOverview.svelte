@@ -50,14 +50,15 @@
   async function fetchData() {
     try {
       isLoading = true;
-      
+
       let data, error;
-      
+
       if (selectedFilter === 'Total Sales') {
-        // Query untuk data bookings dengan total_price
+        // Query untuk data bookings dengan total_price dan bilangan (jumlah peserta)
+        // Menghitung total peserta = jumlah booking records + sum(bilangan) per booking
         const result = await supabase
           .from('bookings')
-          .select('created_at, umrah_category_id, total_price')
+          .select('created_at, umrah_category_id, total_price, bilangan')
           .gte('created_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());
         data = result.data;
         error = result.error;
@@ -157,10 +158,17 @@
         // Untuk bookings: umrah_category_id ada = umrah, null = pelancongan
         const pelanconganData = dayData.filter(item => !item.umrah_category_id);
         const umrahData = dayData.filter(item => item.umrah_category_id);
-        
-        pelanconganCount = pelanconganData.length;
-        umrahCount = umrahData.length;
-        
+
+        // Hitung total peserta (jumlah booking records + sum bilangan per booking)
+        // Formula: total peserta = jumlah booking + sum(bilangan dari setiap booking)
+        // Contoh: 2 booking dengan bilangan [3,5] = 2 + (3+5) = 10 peserta
+        pelanconganCount = pelanconganData.length + pelanconganData.reduce((sum, item) => {
+          return sum + (item.bilangan || 0);
+        }, 0);
+        umrahCount = umrahData.length + umrahData.reduce((sum, item) => {
+          return sum + (item.bilangan || 0);
+        }, 0);
+
         // Hitung revenue per jenis paket
         pelanconganRevenue = pelanconganData.reduce((sum, item) => {
           return sum + (item.total_price || 0);
@@ -231,13 +239,13 @@
     }
   }
 
-  // Format currency RM
+  // Format currency RM (format Malaysia: titik ribuan, koma desimal)
   function formatCurrency(amount) {
-    return new Intl.NumberFormat('ms-MY', {
-      style: 'currency',
-      currency: 'MYR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+    if (!amount) return 'RM 0.00';
+
+    return 'RM ' + new Intl.NumberFormat('ms-MY', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   }
 </script>
@@ -246,52 +254,69 @@
 
 <!-- CARD WRAPPER -->
 <section class="rounded-2xl sm:rounded-3xl bg-white/90 border border-white shadow-card p-4 sm:p-6 xl:p-5 2xl:p-6 h-[440px] sm:h-[550px] lg:h-[620px] xl:h-[540px] 2xl:h-[650px] overflow-hidden">
-  <div class="flex flex-row items-center justify-between gap-2 sm:gap-3 lg:gap-4">
-    <div class="flex-1">
-      <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate">Sales & Inquiry Overview</h2>
-      
+  <div class="flex flex-col gap-3 sm:gap-4">
+    <div class="flex flex-row items-center justify-between gap-2 sm:gap-3 lg:gap-4">
+      <div class="flex-1">
+        <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate">Sales & Inquiry Overview</h2>
+      </div>
+
+      <!-- Dropdown (custom styled) -->
+      <div class="relative flex-shrink-0">
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 rounded-lg sm:rounded-xl border border-slate-200 px-2 py-1 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 active:scale-[0.99] transition min-w-0"
+          aria-haspopup="menu"
+          aria-expanded={isMenuOpen}
+          on:click={toggleMenu}
+        >
+          <span class="truncate max-w-[90px] sm:max-w-none">{selectedFilter}</span>
+          <svg class="size-3 text-slate-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+
+        <div
+          class="absolute right-0 z-10 mt-2 w-32 sm:w-44 origin-top-right rounded-lg sm:rounded-xl border border-slate-200 bg-white p-1 sm:p-1.5 shadow-lg ring-1 ring-black/5 transition {isMenuOpen ? 'visible opacity-100 scale-100' : 'invisible opacity-0 scale-95'}"
+          role="menu"
+        >
+          <!-- menu item -->
+          <button
+            class="w-full text-left px-2 py-1.5 sm:px-3 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
+            on:click={() => selectFilter('Total Sales')}
+          >
+            Total Sales
+          </button>
+          <button
+            class="w-full text-left px-2 py-1.5 sm:px-3 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
+            on:click={() => selectFilter('Total Inquiry')}
+          >
+            Total Inquiry
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend and Revenue Section -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+      <!-- Legend -->
+      <div class="flex items-center gap-3 sm:gap-4">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 sm:w-4 sm:h-4 rounded-full" style="background: linear-gradient(to bottom, var(--color-primary), rgba(148, 35, 146, 0.8));"></div>
+          <span class="text-xs sm:text-sm font-medium text-slate-700">Pelancongan</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-[#FFF212]"></div>
+          <span class="text-xs sm:text-sm font-medium text-slate-700">Umrah</span>
+        </div>
+      </div>
+
       <!-- Revenue Display -->
       {#if selectedFilter === 'Total Sales' && totalRevenue > 0}
-        <div class="mt-1 flex items-center gap-2">
+        <div class="flex items-center gap-2">
           <span class="text-xs sm:text-sm text-slate-600">Total Revenue:</span>
           <span class="text-sm sm:text-base font-bold text-green-600">{formatCurrency(totalRevenue)}</span>
         </div>
       {/if}
-    </div>
-    
-    <!-- Dropdown (custom styled) -->
-    <div class="relative flex-shrink-0">
-      <button
-        type="button"
-        class="inline-flex items-center gap-1 rounded-lg sm:rounded-xl border border-slate-200 px-2 py-1 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 active:scale-[0.99] transition min-w-0"
-        aria-haspopup="menu"
-        aria-expanded={isMenuOpen}
-        on:click={toggleMenu}
-      >
-        <span class="truncate max-w-[90px] sm:max-w-none">{selectedFilter}</span>
-        <svg class="size-3 text-slate-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/>
-        </svg>
-      </button>
-
-      <div
-        class="absolute right-0 z-10 mt-2 w-32 sm:w-44 origin-top-right rounded-lg sm:rounded-xl border border-slate-200 bg-white p-1 sm:p-1.5 shadow-lg ring-1 ring-black/5 transition {isMenuOpen ? 'visible opacity-100 scale-100' : 'invisible opacity-0 scale-95'}"
-        role="menu"
-      >
-        <!-- menu item -->
-        <button 
-          class="w-full text-left px-2 py-1.5 sm:px-3 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
-          on:click={() => selectFilter('Total Sales')}
-        >
-          Total Sales
-        </button>
-        <button 
-          class="w-full text-left px-2 py-1.5 sm:px-3 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
-          on:click={() => selectFilter('Total Inquiry')}
-        >
-          Total Inquiry
-        </button>
-      </div>
     </div>
   </div>
 
@@ -314,10 +339,11 @@
                   style="height: {(bar.pelancongan.percentage / 100) * (window.innerWidth < 640 ? 230 : window.innerWidth < 1024 ? 300 : window.innerWidth < 1280 ? 340 : window.innerWidth < 1536 ? 330 : 400)}px; background: linear-gradient(to bottom, var(--color-primary), rgba(148, 35, 146, 0.8));"
                 >
                   <div class="text-center text-white">
-                    <div class="text-[10px] sm:text-xs md:text-sm font-semibold">Pelancongan</div>
-                    <div class="text-[8px] sm:text-[10px] md:text-xs">{bar.pelanconganCount}</div>
                     {#if selectedFilter === 'Total Sales' && bar.pelanconganRevenue > 0}
-                      <div class="text-[8px] sm:text-[10px] md:text-xs font-bold mt-1">{formatCurrency(bar.pelanconganRevenue)}</div>
+                      <div class="text-[8px] sm:text-[10px] md:text-xs font-bold">{formatCurrency(bar.pelanconganRevenue)}</div>
+                      <div class="text-[8px] sm:text-[10px] md:text-xs mt-1">{bar.pelanconganCount} <span class="font-normal opacity-80">Pax</span></div>
+                    {:else}
+                      <div class="text-[8px] sm:text-[10px] md:text-xs">{bar.pelanconganCount} <span class="font-normal opacity-80">Pax</span></div>
                     {/if}
                   </div>
                 </div>
@@ -328,10 +354,11 @@
                   style="height: {(bar.umrah.percentage / 100) * (window.innerWidth < 640 ? 230 : window.innerWidth < 1024 ? 300 : window.innerWidth < 1280 ? 340 : window.innerWidth < 1536 ? 330 : 400)}px;"
                 >
                   <div class="text-center text-black">
-                    <div class="text-[10px] sm:text-xs md:text-sm font-semibold">Umrah</div>
-                    <div class="text-[8px] sm:text-[10px] md:text-xs">{bar.umrahCount}</div>
                     {#if selectedFilter === 'Total Sales' && bar.umrahRevenue > 0}
-                      <div class="text-[8px] sm:text-[10px] md:text-xs font-bold mt-1">{formatCurrency(bar.umrahRevenue)}</div>
+                      <div class="text-[8px] sm:text-[10px] md:text-xs font-bold">{formatCurrency(bar.umrahRevenue)}</div>
+                      <div class="text-[8px] sm:text-[10px] md:text-xs mt-1">{bar.umrahCount} <span class="font-normal opacity-80">Pax</span></div>
+                    {:else}
+                      <div class="text-[8px] sm:text-[10px] md:text-xs">{bar.umrahCount} <span class="font-normal opacity-80">Pax</span></div>
                     {/if}
                   </div>
                 </div>

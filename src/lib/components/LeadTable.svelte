@@ -422,6 +422,9 @@
               LEAD
             </th>
             <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              SALES CONSULTANT
+            </th>
+            <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               CAWANGAN
             </th>
             <th class="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -449,6 +452,10 @@
                     <div class="text-xs text-gray-500">{lead.email}</div>
                   </div>
                 </div>
+              </td>
+              
+              <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                <div class="text-xs sm:text-sm text-gray-900">{lead.consultant || '-'}</div>
               </td>
               
               <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
@@ -586,6 +593,14 @@
                 <div>
                   <p class="text-xs sm:text-sm text-gray-500">Cawangan</p>
                   <p class="text-sm sm:text-base text-gray-900">{selectedLead.branch}</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-2 sm:gap-3">
+                <User class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-xs sm:text-sm text-gray-500">Sales Consultant</p>
+                  <p class="text-sm sm:text-base text-gray-900">{selectedLead.consultant || '-'}</p>
                 </div>
               </div>
               

@@ -319,15 +319,14 @@ export function clearDestinasiCache() {
   invalidateCachePattern('outbound_packages');
 }
 
-// Fungsi untuk format currency
+// Fungsi untuk format currency (format Malaysia)
 export function formatCurrency(amount) {
-  if (!amount) return 'Rp 0';
-  
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
+  if (!amount) return 'RM 0.00';
+
+  // Format Malaysia: titik untuk ribuan, koma untuk desimal dengan 2 digit desimal
+  return 'RM ' + new Intl.NumberFormat('ms-MY', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(amount);
 }
 

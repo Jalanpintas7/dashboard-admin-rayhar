@@ -138,7 +138,7 @@
       summaryData = [
         {
           title: 'Total Bookings',
-          value: safeStats.totalBookings.toString(),
+          value: `${safeStats.totalBookings.toString()} Pax`,
           change: `+${safeStats.recentBookings}`,
           subtitle: 'dari 30 hari',
           icon: 'person',
@@ -147,7 +147,7 @@
         },
         {
           title: 'Bookings Umrah',
-          value: safeStats.totalUmrahBookings.toString(),
+          value: `${safeStats.totalUmrahBookings.toString()} Pax`,
           change: `${umrahPercentage}%`,
           subtitle: 'dari total',
           icon: 'location',
@@ -156,7 +156,7 @@
         },
         {
           title: 'Bookings Outbound',
-          value: safeStats.totalOutboundBookings.toString(),
+          value: `${safeStats.totalOutboundBookings.toString()} Pax`,
           change: `${outboundPercentage}%`,
           subtitle: 'dari total',
           icon: 'airplane',
@@ -165,7 +165,7 @@
         },
         {
           title: 'Total Leads',
-          value: safeStats.totalLeads.toString(),
+          value: `${safeStats.totalLeads.toString()} Pax`,
           change: `+${safeStats.recentLeads}`,
           subtitle: 'dari 30 hari',
           icon: 'trending-up',
@@ -231,7 +231,13 @@
         <div class="h-full flex flex-col justify-between w-full">
           <div>
             <p class="text-sm sm:text-base lg:text-xs xl:text-sm 2xl:text-base text-slate-500">{card.title}</p>
-            <p class="mt-1 text-lg sm:text-xl lg:text-lg xl:text-xl 2xl:text-2xl font-semibold tracking-tight text-slate-900">{card.value}</p>
+            {#if card.title === 'Total Bookings' || card.title === 'Bookings Umrah' || card.title === 'Bookings Outbound' || card.title === 'Total Leads'}
+              <p class="mt-1 text-lg sm:text-xl lg:text-lg xl:text-xl 2xl:text-2xl font-semibold tracking-tight text-slate-900">
+                {card.value.split(' ')[0]} <span class="text-sm sm:text-base lg:text-sm xl:text-base 2xl:text-lg font-normal text-slate-500">{card.value.split(' ')[1]}</span>
+              </p>
+            {:else}
+              <p class="mt-1 text-lg sm:text-xl lg:text-lg xl:text-xl 2xl:text-2xl font-semibold tracking-tight text-slate-900">{card.value}</p>
+            {/if}
           </div>
           <div class="flex items-center gap-1 text-sm sm:text-base lg:text-xs xl:text-sm 2xl:text-base font-medium text-emerald-600">
             {#if card.title === 'Bookings Umrah' || card.title === 'Bookings Outbound'}
