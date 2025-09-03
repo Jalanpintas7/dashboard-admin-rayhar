@@ -44,6 +44,7 @@
   // Modal states
   let showAddModal = false;
   let showEditModal = false;
+  let showEditOutboundModal = false;
   let showDeleteModal = false;
   let selectedItem = null;
   let modalType = '';
@@ -58,7 +59,15 @@
   let editForm = {
     name: '',
     description: '',
-    price: ''
+    price: '',
+    start_date: '',
+    end_date: '',
+    single_price: '',
+    double_price: '',
+    triple_price: '',
+    child_with_bed: '',
+    child_no_bed: '',
+    infant: ''
   };
   
   // Computed values untuk pagination dengan lazy loading
@@ -73,66 +82,26 @@
   $: startIndexOutboundPackages = (currentPage - 1) * itemsPerPage;
   $: endIndexOutboundPackages = startIndexOutboundPackages + itemsPerPage;
   
-  // Lazy loading untuk data yang ditampilkan dengan cache
-  $: paginatedDestinations = getPaginatedData('destinations', destinations, startIndexDestinations, endIndexDestinations);
-  $: paginatedOutboundPackages = getPaginatedData('outbound_packages', outboundPackages, startIndexOutboundPackages, endIndexOutboundPackages);
+  // Use data directly for display (server-side pagination handles the slicing)
+  $: displayDestinations = destinations || [];
   
-  // Fallback: jika cache system gagal, gunakan data langsung
-  $: fallbackDestinations = paginatedDestinations?.length > 0 ? paginatedDestinations : (destinations?.slice(startIndexDestinations, endIndexDestinations) || []);
-  $: fallbackOutboundPackages = paginatedOutboundPackages?.length > 0 ? paginatedOutboundPackages : (outboundPackages?.slice(startIndexOutboundPackages, endIndexOutboundPackages) || []);
+  // For outbound packages, use client-side pagination when data is loaded
+  $: displayOutboundPackages = (() => {
+    if (activeTab === 'outbound' && outboundPackages.length > 0 && !searchTerm.trim()) {
+      // Client-side pagination for outbound packages
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      return outboundPackages.slice(startIndex, endIndex);
+    }
+    return outboundPackages || [];
+  })();
   
-  // Use fallback data for display
-  $: displayDestinations = fallbackDestinations;
-  $: displayOutboundPackages = fallbackOutboundPackages;
-  
-  // Reset pagination when tab changes
-  $: if (activeTab) {
-    currentPage = 1;
-    hasMoreData = true;
-  }
+  // Reset pagination when tab changes - removed reactive statement to prevent auto-switching
   
   // Get current total pages based on active tab
   $: currentTotalPages = activeTab === 'destinations' ? totalPagesDestinations : totalPagesOutboundPackages;
   
-  // Cache management functions
-  function getPaginatedData(type, data, startIndex, endIndex) {
-    // Safety check - jika data kosong atau undefined, return empty array
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      console.log(`⚠️ ${type}: Data kosong atau undefined`);
-      return [];
-    }
-    
-    // Safety check - jika index tidak valid, return empty array
-    if (startIndex < 0 || endIndex < 0 || startIndex >= data.length) {
-      console.log(`⚠️ ${type}: Index tidak valid - startIndex: ${startIndex}, endIndex: ${endIndex}, dataLength: ${data.length}`);
-      return [];
-    }
-    
-    const cacheKey = `${type}_${startIndex}_${endIndex}`;
-    
-    // Check memory cache first
-    if (dataCache.has(cacheKey)) {
-      const cached = dataCache.get(cacheKey);
-      if (Date.now() - cached.timestamp < cacheExpiryTime) {
-        console.log(`✅ ${type}: Cache hit for ${startIndex}-${endIndex}`);
-        return cached.data;
-      } else {
-        console.log(`⏰ ${type}: Cache expired for ${startIndex}-${endIndex}`);
-        dataCache.delete(cacheKey);
-      }
-    }
-    
-    // Get data and cache it
-    const paginatedData = data.slice(startIndex, endIndex);
-    console.log(`🔄 ${type}: Cache miss, slicing data ${startIndex}-${endIndex}, result: ${paginatedData.length} items`);
-    
-    dataCache.set(cacheKey, {
-      data: paginatedData,
-      timestamp: Date.now()
-    });
-    
-    return paginatedData;
-  }
+  // Cache management functions - simplified for server-side pagination
   
   // Update cache statistics
   function updateCacheStats() {
@@ -216,7 +185,47 @@
     }
   }
 
-  // Load outbound packages dengan server-side pagination
+  // Load all outbound packages (untuk initial load dan tab switch)
+  async function loadAllOutboundPackages() {
+    try {
+      isLoading = true;
+      error = null;
+      console.log('🔄 Loading all outbound packages...');
+      
+      const { data, error: queryError } = await supabase
+        .from('outbound_dates')
+        .select(`
+          *,
+          destinations (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      console.log('📊 All outbound packages query result:', { data, error: queryError });
+      
+      if (queryError) {
+        throw queryError;
+      }
+
+      outboundPackages = data || [];
+      currentPage = 1;
+      
+      console.log(`✅ All outbound packages loaded: ${outboundPackages.length} items`);
+      console.log('📊 Outbound packages data sample:', outboundPackages?.slice(0, 3));
+    } catch (err) {
+      error = err.message;
+      console.error('❌ Error loading all outbound packages:', err);
+      
+      // Fallback: set empty array jika error
+      outboundPackages = [];
+    } finally {
+      isLoading = false;
+      console.log('🏁 Loading completed. Loading state:', isLoading);
+    }
+  }
+
+  // Load outbound packages dengan server-side pagination (untuk search dan pagination)
   async function loadOutboundPackages(page = 1, search = '') {
     try {
       isLoading = true;
@@ -246,6 +255,7 @@
       const { data, error: queryError, count } = await query;
       
       console.log('📊 Outbound packages query result:', { data, error: queryError, count });
+      console.log('📊 Raw outbound data sample:', data?.slice(0, 2));
       
       if (queryError) {
         throw queryError;
@@ -255,6 +265,7 @@
       currentPage = page;
       
       console.log(`✅ Outbound packages loaded: ${outboundPackages.length} items, total count: ${count || 0}`);
+      console.log('📊 Outbound packages data:', outboundPackages);
     } catch (err) {
       error = err.message;
       console.error('❌ Error loading outbound packages:', err);
@@ -301,6 +312,10 @@
           outboundSample: outboundPackages?.slice(0, 2)
         });
         
+        // Log data structure untuk debug
+        console.log('📊 Destinations data structure:', destinations?.map(d => ({ id: d.id, name: d.name, table: 'destinations' })));
+        console.log('📊 Outbound packages data structure:', outboundPackages?.map(o => ({ id: o.id, destination_name: o.destinations?.name, table: 'outbound_dates' })));
+        
         isInitialLoad = false;
         
       } catch (err) {
@@ -314,10 +329,10 @@
         isLoading = false;
       }
     } else {
-      // Untuk pagination dan search, gunakan fungsi yang sudah ada
+      // Untuk pagination dan search, gunakan fungsi yang sudah ada berdasarkan tab aktif
       if (activeTab === 'destinations') {
         await loadDestinations(page, search);
-      } else {
+      } else if (activeTab === 'outbound') {
         await loadOutboundPackages(page, search);
       }
     }
@@ -336,7 +351,7 @@
       }
 
       // Reload data setelah delete
-      await loadData(currentPage, searchTerm);
+      await loadDestinations(currentPage, searchTerm);
       
       // Show success snackbar
       showSnackbarNotification('success', 'Destinasi berhasil dihapus!');
@@ -362,7 +377,7 @@
       }
 
       // Reload data setelah delete
-      await loadData(currentPage, searchTerm);
+      await loadOutboundPackages(currentPage, searchTerm);
       
       // Show success snackbar
       showSnackbarNotification('success', 'Pakej outbound berhasil dihapus!');
@@ -432,7 +447,7 @@
       }
 
       // Reload data setelah update
-      await loadData(currentPage, searchTerm);
+      await loadDestinations(currentPage, searchTerm);
 
       closeEditModal();
       
@@ -453,16 +468,28 @@
     editForm.start_date = outboundPackage.start_date || '';
     editForm.end_date = outboundPackage.end_date || '';
     editForm.price = outboundPackage.price || '';
-    showEditModal = true;
+    editForm.single_price = outboundPackage.single || '';
+    editForm.double_price = outboundPackage.double || '';
+    editForm.triple_price = outboundPackage.triple || '';
+    editForm.child_with_bed = outboundPackage.cwb || '';
+    editForm.child_no_bed = outboundPackage.cnb || '';
+    editForm.infant = outboundPackage.infant || '';
+    showEditOutboundModal = true;
   }
 
   // Tutup modal edit outbound package
   function closeEditOutboundModal() {
-    showEditModal = false;
+    showEditOutboundModal = false;
     selectedItem = null;
     editForm.start_date = '';
     editForm.end_date = '';
     editForm.price = '';
+    editForm.single_price = '';
+    editForm.double_price = '';
+    editForm.triple_price = '';
+    editForm.child_with_bed = '';
+    editForm.child_no_bed = '';
+    editForm.infant = '';
   }
 
   // Update outbound package
@@ -473,7 +500,13 @@
         .update({
           start_date: editForm.start_date,
           end_date: editForm.end_date,
-          price: editForm.price
+          price: editForm.price,
+          single: editForm.single_price,
+          double: editForm.double_price,
+          triple: editForm.triple_price,
+          cwb: editForm.child_with_bed,
+          cnb: editForm.child_no_bed,
+          infant: editForm.infant
         })
         .eq('id', selectedItem.id);
 
@@ -482,7 +515,7 @@
       }
 
       // Reload data setelah update
-      await loadData(currentPage, searchTerm);
+      await loadOutboundPackages(currentPage, searchTerm);
 
       closeEditOutboundModal();
       
@@ -512,14 +545,31 @@
   // Debug data loading
   $: {
     console.log('🔍 Destinasi Data Debug:', {
+      activeTab,
       destinationsLength: destinations?.length || 0,
       outboundPackagesLength: outboundPackages?.length || 0,
       displayDestinationsLength: displayDestinations?.length || 0,
       displayOutboundPackagesLength: displayOutboundPackages?.length || 0,
+      destinationsSample: destinations?.slice(0, 2),
+      outboundPackagesSample: outboundPackages?.slice(0, 2),
+      currentPage,
+      searchTerm,
       isInitialLoad,
       isLoading,
       error
     });
+    
+    // Log khusus untuk outbound packages
+    if (activeTab === 'outbound') {
+      console.log('📊 Outbound Packages Detail:', {
+        totalOutboundPackages: outboundPackages?.length || 0,
+        displayOutboundPackages: displayOutboundPackages?.length || 0,
+        currentPage,
+        itemsPerPage,
+        totalPages: Math.ceil((outboundPackages?.length || 0) / itemsPerPage),
+        hasSearchTerm: !!searchTerm.trim()
+      });
+    }
   }
 
   // Handle search dengan debounce
@@ -527,10 +577,22 @@
   
   // Manual search handler
   function handleSearch() {
-    if (isInitialLoad && searchTerm.trim() !== '') {
+    if (!isInitialLoad) {
       clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        loadData(1, searchTerm);
+      searchTimeout = setTimeout(async () => {
+        console.log(`🔍 Searching for: "${searchTerm}" in tab: ${activeTab}`);
+        if (activeTab === 'destinations') {
+          await loadDestinations(1, searchTerm);
+        } else if (activeTab === 'outbound') {
+          // Untuk outbound packages, gunakan client-side filtering jika data sudah dimuat
+          if (outboundPackages.length > 0 && !searchTerm.trim()) {
+            // Jika search kosong, reload semua data
+            await loadAllOutboundPackages();
+          } else {
+            // Jika ada search term, gunakan server-side search
+            await loadOutboundPackages(1, searchTerm);
+          }
+        }
       }, 500);
     }
   }
@@ -539,11 +601,25 @@
   // Tab change akan handle manual saat user klik tab
   
   // Manual handler untuk tab change
-  function handleTabChange(tab) {
-    if (tab !== activeTab && !isInitialLoad) {
+  async function handleTabChange(tab) {
+    if (tab !== activeTab) {
+      console.log(`🔄 Switching from ${activeTab} to ${tab}`);
       activeTab = tab;
       currentPage = 1;
-      loadData(1, searchTerm);
+      searchTerm = ''; // Reset search term when switching tabs
+      
+      // Clear cache untuk memastikan data fresh
+      dataCache.clear();
+      
+      // Clear current data to force fresh load
+      if (tab === 'destinations') {
+        destinations = [];
+        await loadDestinations(1, '');
+      } else if (tab === 'outbound') {
+        outboundPackages = [];
+        // Load all outbound packages first, then paginate
+        await loadAllOutboundPackages();
+      }
     }
   }
 
@@ -561,19 +637,46 @@
   // Pagination functions
   async function goToPage(page) {
     if (page >= 1 && page <= currentTotalPages) {
-      await loadData(page, searchTerm);
+      if (activeTab === 'destinations') {
+        await loadDestinations(page, searchTerm);
+      } else if (activeTab === 'outbound') {
+        // Untuk outbound packages, gunakan client-side pagination jika data sudah dimuat
+        if (outboundPackages.length > 0 && !searchTerm.trim()) {
+          currentPage = page;
+        } else {
+          await loadOutboundPackages(page, searchTerm);
+        }
+      }
     }
   }
 
   async function goToPreviousPage() {
     if (currentPage > 1) {
-      await loadData(currentPage - 1, searchTerm);
+      if (activeTab === 'destinations') {
+        await loadDestinations(currentPage - 1, searchTerm);
+      } else if (activeTab === 'outbound') {
+        // Untuk outbound packages, gunakan client-side pagination jika data sudah dimuat
+        if (outboundPackages.length > 0 && !searchTerm.trim()) {
+          currentPage = currentPage - 1;
+        } else {
+          await loadOutboundPackages(currentPage - 1, searchTerm);
+        }
+      }
     }
   }
 
   async function goToNextPage() {
     if (currentPage < currentTotalPages) {
-      await loadData(currentPage + 1, searchTerm);
+      if (activeTab === 'destinations') {
+        await loadDestinations(currentPage + 1, searchTerm);
+      } else if (activeTab === 'outbound') {
+        // Untuk outbound packages, gunakan client-side pagination jika data sudah dimuat
+        if (outboundPackages.length > 0 && !searchTerm.trim()) {
+          currentPage = currentPage + 1;
+        } else {
+          await loadOutboundPackages(currentPage + 1, searchTerm);
+        }
+      }
     }
   }
 
@@ -769,7 +872,7 @@
               <p class="text-red-800 text-xs sm:text-sm">Error: {error}</p>
             </div>
           </div>
-        {:else if (activeTab === 'destinations' && paginatedDestinations.length === 0) || (activeTab === 'outbound' && paginatedOutboundPackages.length === 0)}
+        {:else if (activeTab === 'destinations' && displayDestinations.length === 0) || (activeTab === 'outbound' && displayOutboundPackages.length === 0)}
           <div class="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl">
             <div class="flex items-center gap-1.5 sm:gap-2">
               <svg class="w-3 h-3 sm:w-4 sm:h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -825,6 +928,7 @@
         {:else}
           <!-- Destinations Table -->
           {#if activeTab === 'destinations'}
+
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-slate-200">
                 <thead class="bg-slate-50">
@@ -916,6 +1020,7 @@
 
           <!-- Outbound Packages Table -->
           {#if activeTab === 'outbound'}
+
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-slate-200">
                 <thead class="bg-slate-50">
@@ -1069,9 +1174,9 @@
   {/if}
 
   <!-- Modal Edit Outbound Package -->
-  {#if showEditModal}
+  {#if showEditOutboundModal}
     <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full border border-slate-200">
+      <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full border border-slate-200 max-h-[90vh] overflow-y-auto">
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b border-slate-200">
           <h3 class="text-lg font-semibold text-slate-800">Edit Pakej Outbound</h3>
@@ -1109,17 +1214,88 @@
             />
           </div>
           
-          <div>
-            <label for="editPrice" class="block text-sm font-medium text-slate-700 mb-2">
-              Harga
-            </label>
-            <input
-              id="editPrice"
-              type="text"
-              bind:value={editForm.price}
-              class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
-              placeholder="Masukkan harga pakej"
-            />
+          <!-- Field Harga Jenis Bilik -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label for="editSinglePrice" class="block text-sm font-medium text-slate-700 mb-2">
+                Single
+              </label>
+              <input
+                id="editSinglePrice"
+                type="text"
+                bind:value={editForm.single_price}
+                class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                placeholder="Harga Single"
+              />
+            </div>
+            
+            <div>
+              <label for="editDoublePrice" class="block text-sm font-medium text-slate-700 mb-2">
+                Double
+              </label>
+              <input
+                id="editDoublePrice"
+                type="text"
+                bind:value={editForm.double_price}
+                class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                placeholder="Harga Double"
+              />
+            </div>
+            
+            <div>
+              <label for="editTriplePrice" class="block text-sm font-medium text-slate-700 mb-2">
+                Triple
+              </label>
+              <input
+                id="editTriplePrice"
+                type="text"
+                bind:value={editForm.triple_price}
+                class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                placeholder="Harga Triple"
+              />
+            </div>
+          </div>
+
+          <!-- Field Kategori Kanak-kanak -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label for="editChildWithBed" class="block text-sm font-medium text-slate-700 mb-2">
+                CWB (Child With Bed)
+              </label>
+              <input
+                id="editChildWithBed"
+                type="text"
+                bind:value={editForm.child_with_bed}
+                class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                placeholder="Harga CWB"
+              />
+            </div>
+            
+            <div>
+              <label for="editChildNoBed" class="block text-sm font-medium text-slate-700 mb-2">
+                CNB (Child No Bed)
+              </label>
+              <input
+                id="editChildNoBed"
+                type="text"
+                bind:value={editForm.child_no_bed}
+                class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                placeholder="Harga CNB"
+              />
+            </div>
+            
+            <div>
+              <label for="editInfant" class="block text-sm font-medium text-slate-700 mb-2">
+                Infant
+              </label>
+              <input
+                id="editInfant"
+                type="text"
+                bind:value={editForm.infant}
+                class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                placeholder="Harga Infant"
+              />
+            </div>
           </div>
         </div>
         

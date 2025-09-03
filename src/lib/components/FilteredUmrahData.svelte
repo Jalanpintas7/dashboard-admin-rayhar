@@ -57,7 +57,14 @@
     infant: '',
     airline_id: '',
     umrah_season_id: '',
-    umrah_category_id: ''
+    umrah_category_id: '',
+    // Deck fields untuk cruise
+    low_deck_interior: '',
+    low_deck_seaview: '',
+    low_deck_balcony: '',
+    high_deck_interior: '',
+    high_deck_seaview: '',
+    high_deck_balcony: ''
   };
 
   // Computed values for pagination dengan lazy loading
@@ -259,7 +266,14 @@
          infant: selectedItem.infant || '',
          airline_id: selectedItem.airline_id || '',
          umrah_season_id: selectedItem.umrah_season_id || '',
-         umrah_category_id: selectedItem.umrah_category_id || ''
+         umrah_category_id: selectedItem.umrah_category_id || '',
+         // Deck fields untuk cruise
+         low_deck_interior: selectedItem.low_deck_interior || '',
+         low_deck_seaview: selectedItem.low_deck_seaview || '',
+         low_deck_balcony: selectedItem.low_deck_balcony || '',
+         high_deck_interior: selectedItem.high_deck_interior || '',
+         high_deck_seaview: selectedItem.high_deck_seaview || '',
+         high_deck_balcony: selectedItem.high_deck_balcony || ''
        };
      }
     showEditModal = true;
@@ -367,7 +381,14 @@
        infant: '',
        airline_id: '',
        umrah_season_id: '',
-       umrah_category_id: ''
+       umrah_category_id: '',
+       // Deck fields untuk cruise
+       low_deck_interior: '',
+       low_deck_seaview: '',
+       low_deck_balcony: '',
+       high_deck_interior: '',
+       high_deck_seaview: '',
+       high_deck_balcony: ''
      };
   }
 
@@ -401,19 +422,32 @@
           
              } else if (modalType === 'package') {
          // Update umrah_dates table
+         const updateData = {
+           start_date: editForm.start_date,
+           end_date: editForm.end_date,
+           cnb: editForm.cnb ? parseFloat(editForm.cnb) : null,
+           infant: editForm.infant ? parseFloat(editForm.infant) : null
+         };
+         
+         // Tambahkan field deck untuk kategori cruise
+         if (selectedItem.umrah_categories?.name === 'Pelayaran' || selectedItem.umrah_categories?.name === 'Umrah + Pelayaran') {
+           updateData.low_deck_interior = editForm.low_deck_interior ? parseFloat(editForm.low_deck_interior) : null;
+           updateData.low_deck_seaview = editForm.low_deck_seaview ? parseFloat(editForm.low_deck_seaview) : null;
+           updateData.low_deck_balcony = editForm.low_deck_balcony ? parseFloat(editForm.low_deck_balcony) : null;
+           updateData.high_deck_interior = editForm.high_deck_interior ? parseFloat(editForm.high_deck_interior) : null;
+           updateData.high_deck_seaview = editForm.high_deck_seaview ? parseFloat(editForm.high_deck_seaview) : null;
+           updateData.high_deck_balcony = editForm.high_deck_balcony ? parseFloat(editForm.high_deck_balcony) : null;
+         } else {
+           // Field bilik biasa untuk kategori non-cruise
+           updateData.quintuple = editForm.quintuple ? parseFloat(editForm.quintuple) : null;
+           updateData.quadruple = editForm.quadruple ? parseFloat(editForm.quadruple) : null;
+           updateData.triple = editForm.triple ? parseFloat(editForm.triple) : null;
+           updateData.double = editForm.double ? parseFloat(editForm.double) : null;
+         }
+         
          result = await supabase
            .from('umrah_dates')
-           .update({
-             start_date: editForm.start_date,
-             end_date: editForm.end_date,
-             quintuple: editForm.quintuple ? parseFloat(editForm.quintuple) : null,
-             quadruple: editForm.quadruple ? parseFloat(editForm.quadruple) : null,
-             triple: editForm.triple ? parseFloat(editForm.triple) : null,
-             double: editForm.double ? parseFloat(editForm.double) : null,
-             cwb: editForm.cwb ? parseFloat(editForm.cwb) : null,
-             cnb: editForm.cnb ? parseFloat(editForm.cnb) : null,
-             infant: editForm.infant ? parseFloat(editForm.infant) : null
-           })
+           .update(updateData)
            .eq('id', selectedItem.id)
            .select();
        }
@@ -1129,7 +1163,7 @@
           </div>
 
           <!-- Harga Pakej - dengan pengkondisian untuk cruise -->
-          {#if selectedItem.umrah_categories?.name === 'PELAYARAN' || selectedItem.umrah_categories?.name === 'UMRAH + PELAYARAN'}
+          {#if selectedItem.umrah_categories?.name === 'Pelayaran' || selectedItem.umrah_categories?.name === 'Umrah + Pelayaran'}
             <!-- Harga Deck untuk Cruise -->
             <div class="space-y-3 sm:space-y-4">
               <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -1386,103 +1420,201 @@
                 </div>
               </div>
               
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                 <div>
-                   <label for="editQuintuple" class="block text-sm font-medium text-gray-700 mb-2">
-                     Harga Quintuple
-                   </label>
-                   <input
-                     id="editQuintuple"
-                     type="number"
-                     bind:value={editForm.quintuple}
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                     placeholder="0"
-                   />
-                 </div>
-                 
-                 <div>
-                   <label for="editQuadruple" class="block text-sm font-medium text-gray-700 mb-2">
-                     Harga Quadruple
-                   </label>
-                   <input
-                     id="editQuadruple"
-                     type="number"
-                     bind:value={editForm.quadruple}
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                     placeholder="0"
-                   />
-                 </div>
-                 
-                 <div>
-                   <label for="editTriple" class="block text-sm font-medium text-gray-700 mb-2">
-                     Harga Triple
-                   </label>
-                   <input
-                     id="editTriple"
-                     type="number"
-                     bind:value={editForm.triple}
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                     placeholder="0"
-                   />
-                 </div>
-                 
-                 <div>
-                   <label for="editDouble" class="block text-sm font-medium text-gray-700 mb-2">
-                     Harga Double
-                   </label>
-                   <input
-                     id="editDouble"
-                     type="number"
-                     bind:value={editForm.double}
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                     placeholder="0"
-                   />
-                 </div>
-               </div>
+              <!-- Kondisi khusus untuk kategori Pelayaran dan Umrah + Pelayaran -->
+              {#if selectedItem.umrah_categories?.name === 'Pelayaran' || selectedItem.umrah_categories?.name === 'Umrah + Pelayaran'}
+                <!-- Form Harga Deck untuk Cruise -->
+                <div class="space-y-4">
+                  <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                    Harga Deck Cruise
+                  </h3>
+                  
+                  <!-- Low Deck -->
+                  <div class="space-y-3">
+                    <h4 class="text-base font-semibold text-gray-800">Low Deck</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label for="editLowDeckInterior" class="block text-sm font-medium text-gray-700 mb-2">
+                          Interior
+                        </label>
+                        <input
+                          id="editLowDeckInterior"
+                          type="number"
+                          bind:value={editForm.low_deck_interior}
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label for="editLowDeckSeaview" class="block text-sm font-medium text-gray-700 mb-2">
+                          Sea View
+                        </label>
+                        <input
+                          id="editLowDeckSeaview"
+                          type="number"
+                          bind:value={editForm.low_deck_seaview}
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label for="editLowDeckBalcony" class="block text-sm font-medium text-gray-700 mb-2">
+                          Balcony
+                        </label>
+                        <input
+                          id="editLowDeckBalcony"
+                          type="number"
+                          bind:value={editForm.low_deck_balcony}
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- High Deck -->
+                  <div class="space-y-3">
+                    <h4 class="text-base font-semibold text-gray-800">High Deck</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label for="editHighDeckInterior" class="block text-sm font-medium text-gray-700 mb-2">
+                          Interior
+                        </label>
+                        <input
+                          id="editHighDeckInterior"
+                          type="number"
+                          bind:value={editForm.high_deck_interior}
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label for="editHighDeckSeaview" class="block text-sm font-medium text-gray-700 mb-2">
+                          Sea View
+                        </label>
+                        <input
+                          id="editHighDeckSeaview"
+                          type="number"
+                          bind:value={editForm.high_deck_seaview}
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label for="editHighDeckBalcony" class="block text-sm font-medium text-gray-700 mb-2">
+                          Balcony
+                        </label>
+                        <input
+                          id="editHighDeckBalcony"
+                          type="number"
+                          bind:value={editForm.high_deck_balcony}
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {:else}
+                <!-- Form Harga Bilik untuk Pakej Umrah Biasa -->
+                <div class="space-y-4">
+                  <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                    Harga Bilik
+                  </h3>
+                  
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                     <div>
+                       <label for="editQuintuple" class="block text-sm font-medium text-gray-700 mb-2">
+                         Harga Quintuple
+                       </label>
+                       <input
+                         id="editQuintuple"
+                         type="number"
+                         bind:value={editForm.quintuple}
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                         placeholder="0"
+                       />
+                     </div>
+                     
+                     <div>
+                       <label for="editQuadruple" class="block text-sm font-medium text-gray-700 mb-2">
+                         Harga Quadruple
+                       </label>
+                       <input
+                         id="editQuadruple"
+                         type="number"
+                         bind:value={editForm.quadruple}
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                         placeholder="0"
+                       />
+                     </div>
+                     
+                     <div>
+                       <label for="editTriple" class="block text-sm font-medium text-gray-700 mb-2">
+                         Harga Triple
+                       </label>
+                       <input
+                         id="editTriple"
+                         type="number"
+                         bind:value={editForm.triple}
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                         placeholder="0"
+                       />
+                     </div>
+                     
+                     <div>
+                       <label for="editDouble" class="block text-sm font-medium text-gray-700 mb-2">
+                         Harga Double
+                       </label>
+                       <input
+                         id="editDouble"
+                         type="number"
+                         bind:value={editForm.double}
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                         placeholder="0"
+                       />
+                     </div>
+                   </div>
+                </div>
+              {/if}
 
                <!-- Harga Kategori Khusus -->
-               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <div>
-                   <label for="editCwb" class="block text-sm font-medium text-gray-700 mb-2">
-                     Harga CWB (Child With Bed)
-                   </label>
-                   <input
-                     id="editCwb"
-                     type="number"
-                     bind:value={editForm.cwb}
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                     placeholder="0"
-                   />
-                 </div>
+               <div class="space-y-4">
+                 <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                   Harga Kategori Khusus
+                 </h3>
                  
-                 <div>
-                   <label for="editCnb" class="block text-sm font-medium text-gray-700 mb-2">
-                     Harga CNB (Child No Bed)
-                   </label>
-                   <input
-                     id="editCnb"
-                     type="number"
-                     bind:value={editForm.cnb}
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                     placeholder="0"
-                   />
-                 </div>
-                 
-                 <div>
-                   <label for="editInfant" class="block text-sm font-medium text-gray-700 mb-2">
-                     Harga Infant
-                   </label>
-                   <input
-                     id="editInfant"
-                     type="number"
-                     bind:value={editForm.infant}
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                     placeholder="0"
-                   />
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div>
+                     <label for="editCnb" class="block text-sm font-medium text-gray-700 mb-2">
+                       Harga CNB (Child No Bed)
+                     </label>
+                     <input
+                       id="editCnb"
+                       type="number"
+                       bind:value={editForm.cnb}
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       placeholder="0"
+                     />
+                   </div>
+                   
+                   <div>
+                     <label for="editInfant" class="block text-sm font-medium text-gray-700 mb-2">
+                       Harga Infant
+                     </label>
+                     <input
+                       id="editInfant"
+                       type="number"
+                       bind:value={editForm.infant}
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                       placeholder="0"
+                     />
+                   </div>
                  </div>
                </div>
-              
-
             </div>
           {/if}
         </form>

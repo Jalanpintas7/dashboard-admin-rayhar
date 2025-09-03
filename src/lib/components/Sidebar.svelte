@@ -70,7 +70,7 @@
 <!-- Mobile Toggle Button -->
 <div class="lg:hidden fixed top-4 right-4 z-50">
   <button 
-    onclick={toggleMobile}
+    on:click={toggleMobile}
     class="p-2 bg-[#942392] text-white rounded-lg shadow-lg hover:bg-[#7a1d7a] transition-colors"
     aria-label="Toggle mobile menu"
   >
@@ -82,8 +82,8 @@
 {#if isMobileOpen}
   <div 
     class="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-    onclick={closeMobile}
-    onkeydown={(e) => e.key === 'Escape' && closeMobile()}
+    on:click={closeMobile}
+    on:keydown={(e) => e.key === 'Escape' && closeMobile()}
     role="button"
     tabindex="0"
     aria-label="Close mobile menu"
@@ -102,7 +102,7 @@
     <div class="flex items-center justify-between">
       <!-- Close Button -->
       <button
-        onclick={closeMobile}
+        on:click={closeMobile}
         class="p-2 rounded-lg hover:bg-slate-100 transition-colors"
         aria-label="Close mobile menu"
       >
@@ -128,7 +128,7 @@
       {#each menuItems as item}
         <a 
           href={item.href}
-          onclick={closeMobile}
+          on:click={closeMobile}
           class="
             group flex items-center gap-3 rounded-xl px-4 py-3
             {item.isActive 
@@ -185,7 +185,7 @@
         </div>
       </div>
       <button
-        onclick={handleLogout}
+        on:click={handleLogout}
         class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
       >
         <LogOut class="w-4 h-4" />
