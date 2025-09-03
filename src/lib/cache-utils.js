@@ -245,15 +245,54 @@ export function invalidateCachePattern(pattern) {
 
 // Auto-cleanup expired cache setiap 5 menit
 if (typeof window !== 'undefined') {
-  setInterval(clearExpiredCache, 5 * 60 * 1000);
-  
-  // Clear expired cache saat page load
-  window.addEventListener('load', clearExpiredCache);
-  
-  // Clear expired cache saat page visibility change
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      clearExpiredCache();
+  const w = window;
+  // Hindari memasang interval/listener berulang saat HMR/dev
+  if (!w.__RAYHAR_CACHE_CLEANER_SETUP__) {
+    w.__RAYHAR_CACHE_CLEANER_SETUP__ = true;
+
+    // Jika sebelumnya ada interval (akibat HMR), pastikan dibersihkan
+    if (w.__RAYHAR_CACHE_CLEANER_INTERVAL__) {
+      try { clearInterval(w.__RAYHAR_CACHE_CLEANER_INTERVAL__); } catch (_) {}
     }
-  });
+
+    const INTERVAL_MS = 5 * 60 * 1000; // 5 menit
+    w.__RAYHAR_CACHE_CLEANER_INTERVAL__ = setInterval(() => {
+      try { clearExpiredCache(); } catch (_) {}
+    }, INTERVAL_MS);
+
+    // Debounce helper untuk menghindari pemanggilan beruntun
+    const debounce = (fn, wait = 800) => {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), wait);
+      };
+    };
+
+    // Clear expired cache saat page load
+    const onLoad = () => { try { clearExpiredCache(); } catch (_) {} };
+
+    // Clear expired cache saat page kembali visible, didebounce
+    const onVisibility = debounce(() => {
+      if (!document.hidden) {
+        try { clearExpiredCache(); } catch (_) {}
+      }
+    });
+
+    w.addEventListener('load', onLoad);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    // Expose cleanup opsional untuk HMR/manual cleanup
+    w.__RAYHAR_CACHE_CLEANER_DISPOSE__ = () => {
+      try {
+        if (w.__RAYHAR_CACHE_CLEANER_INTERVAL__) {
+          clearInterval(w.__RAYHAR_CACHE_CLEANER_INTERVAL__);
+          w.__RAYHAR_CACHE_CLEANER_INTERVAL__ = null;
+        }
+        w.removeEventListener('load', onLoad);
+        document.removeEventListener('visibilitychange', onVisibility);
+        w.__RAYHAR_CACHE_CLEANER_SETUP__ = false;
+      } catch (_) {}
+    };
+  }
 }

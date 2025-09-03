@@ -13,8 +13,16 @@ export const isAuthenticated = derived(user, ($user) => !!$user);
 export const isSuperAdmin = derived(userRole, ($userRole) => $userRole === 'super_admin');
 export const isAdminBranch = derived(userRole, ($userRole) => $userRole === 'admin_branch');
 
+let _authInitialized = false;
+let _authUnsubscribe = null;
+
 // Initialize auth state
 export const initializeAuth = async () => {
+  if (_authInitialized) {
+    // Sudah terinisialisasi, jangan pasang listener lagi
+    return;
+  }
+  _authInitialized = true;
   loading.set(true);
   
   try {
@@ -25,10 +33,16 @@ export const initializeAuth = async () => {
     // Jika ada user, ambil role-nya
     if (session?.user) {
       await getUserRole(session.user.id);
+    } else {
+      userRole.set(null);
+      redirectPath.set(null);
     }
+
+    // Penting: pastikan loading dimatikan setelah pengecekan sesi awal
+    loading.set(false);
     
-    // Listen for auth changes
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    // Listen for auth changes (token refresh, sign in/out)
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       user.set(session?.user || null);
       
       if (session?.user) {
@@ -38,8 +52,12 @@ export const initializeAuth = async () => {
         redirectPath.set(null);
       }
       
+      // Jangan biarkan loading menggantung pada perubahan event
       loading.set(false);
     });
+
+    // Simpan unsubscribe untuk nanti jika dibutuhkan
+    _authUnsubscribe = listener?.subscription?.unsubscribe || null;
     
   } catch (err) {
     error.set(err.message);
