@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { getTopSalesConsultantsByCategory, getBranchIdByUser } from '$lib/supabase-helpers.js';
+  import { fetchTopSalesConsultants } from '$lib/dashboard-data-helpers.js';
   import { user } from '$lib/stores/auth.js';
   
   let topSalesData = [];
@@ -15,24 +15,28 @@
       loading = true;
       error = null;
       
-      // Get top sales consultants data berdasarkan kategori yang aktif
-      const consultants = await getTopSalesConsultantsByCategory(activeTab, 5);
+      console.log(`🔄 Loading top sales data (${activeTab}) with cache system...`);
+      const startTime = Date.now();
       
-      // Transform data untuk komponen
-      topSalesData = consultants.map(consultant => ({
-        id: consultant.id,
-        name: consultant.name,
-        total: consultant.totalRevenue,
-        recent: consultant.recentRevenue,
-        totalBookings: consultant.totalBookings,
-        recentBookings: consultant.recentBookings,
-        email: consultant.email,
-        whatsapp: consultant.whatsapp,
-        salesConsultantNumber: consultant.salesConsultantNumber,
-        branches: consultant.branches,
-        profileImage: `https://ui-avatars.com/api/?name=${encodeURIComponent(consultant.name)}&background=10b981&color=fff&size=40`,
-        categoryBookings: consultant.categoryBookings
-      }));
+      // Get top sales consultants data dengan cache system
+      topSalesData = await fetchTopSalesConsultants(activeTab, 5);
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`⚡ Top sales data loaded in ${loadTime}ms`);
+      
+      // Fallback ke data dummy jika tidak ada data
+      if (topSalesData.length === 0) {
+        topSalesData = [
+          { 
+            name: 'Data tidak tersedia', 
+            total: 0,
+            recent: 0,
+            profileImage: '/api/placeholder/40/40'
+          }
+        ];
+      }
+      
+      console.log(`📊 Top sales data loaded successfully: ${topSalesData.length} items`);
       
     } catch (err) {
       console.error('Error loading top sales data:', err);
@@ -67,15 +71,13 @@
     await loadTopSalesData();
   };
   
+  // Refresh data setiap 5 menit
+  let refreshInterval;
   onMount(() => {
     if ($user) {
       loadTopSalesData();
     }
-  });
-  
-  // Refresh data setiap 5 menit
-  let refreshInterval;
-  onMount(() => {
+    
     refreshInterval = setInterval(() => {
       if ($user) {
         loadTopSalesData();

@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { getTopPackagesByBranch, getTopPackagesForSuperAdmin, getBranchIdByUser } from '../supabase-helpers.js';
+  import { fetchTopPackages } from '$lib/dashboard-data-helpers.js';
   import { user, userRole } from '../stores/auth.js';
 
   let isMenuOpen = false;
@@ -11,32 +11,23 @@
   let branchId = null;
   let isSuperAdmin = false;
 
-  // Load data berdasarkan filter yang dipilih
+  // Load data berdasarkan filter yang dipilih dengan cache system
   async function loadTopPackages() {
     try {
       loading = true;
       error = null;
       
-      // Check if user is super admin
-      isSuperAdmin = $userRole === 'super_admin';
+      console.log(`🔄 Loading top packages (${selectedFilter}) with cache system...`);
+      const startTime = Date.now();
       
-      if (isSuperAdmin) {
-        // Super admin: get data from all branches (total peserta = booking + bilangan)
-        topPackages = await getTopPackagesForSuperAdmin(selectedFilter, 5);
-      } else {
-        // Branch admin: get data from specific branch (total peserta = booking + bilangan)
-        // Get branch ID jika user adalah admin branch
-        if ($user) {
-          try {
-            branchId = await getBranchIdByUser($user.id);
-          } catch (err) {
-            console.log('User bukan admin branch atau error:', err);
-            branchId = null;
-          }
-        }
-
-        topPackages = await getTopPackagesByBranch(branchId, selectedFilter, 5);
-      }
+      // Get data dengan cache system
+      topPackages = await fetchTopPackages(selectedFilter, 5);
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`⚡ Top packages loaded in ${loadTime}ms`);
+      
+      console.log(`📊 Top packages loaded successfully: ${topPackages.length} items`);
+      
     } catch (err) {
       console.error('Error loading top packages:', err);
       error = err.message;

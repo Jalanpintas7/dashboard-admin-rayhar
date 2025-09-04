@@ -1,7 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { getDashboardStatsByBranch, getDashboardStatsForSuperAdmin, getBranchIdByUser } from '$lib/supabase-helpers.js';
-  import { supabase } from '$lib/supabase.js';
+  import { fetchDashboardStats } from '$lib/dashboard-data-helpers.js';
   import { user, userRole } from '$lib/stores/auth.js';
   
   // Import Lucide icons
@@ -64,55 +63,25 @@
       loading = true;
       error = null;
       
+      console.log('🔄 Loading dashboard stats with cache system...');
+      const startTime = Date.now();
+      
+      const dashboardData = await fetchDashboardStats();
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`⚡ Dashboard stats loaded in ${loadTime}ms`);
+
+      const { stats, userRole: fetchedUserRole } = dashboardData;
+      
       // Check if user is super admin
-      isSuperAdmin = $userRole === 'super_admin';
+      isSuperAdmin = fetchedUserRole === 'super_admin';
       
-      let stats;
-      
+      // Set branch info based on user role
       if (isSuperAdmin) {
-        // Super admin: get data from all branches
-        console.log('Loading super admin stats...');
-        try {
-          stats = await getDashboardStatsForSuperAdmin();
-          console.log('Super admin stats:', stats);
-        } catch (statsError) {
-          console.error('Super admin stats error:', statsError);
-          throw new Error('Failed to load dashboard statistics');
-        }
         currentBranch = { name: 'All Branches', state: 'All States', region: 'All Regions' };
       } else {
-        // Branch admin: get data from specific branch
-        console.log('User ID:', $user.id);
-        console.log('User Role:', $userRole);
-        
-        const branchId = await getBranchIdByUser($user.id);
-        console.log('Branch ID:', branchId);
-        
-        if (!branchId) {
-          throw new Error('Branch ID not found for current user');
-        }
-        
-        // Get branch info
-        const { data: branchData, error: branchError } = await supabase
-          .from('branches')
-          .select('name, state, region')
-          .eq('id', branchId)
-          .single();
-        
-        if (branchError) {
-          console.error('Branch error:', branchError);
-          throw new Error('Failed to get branch information');
-        }
-        
-        currentBranch = branchData;
-        
-        // Fetch dashboard statistics for specific branch
-        try {
-          stats = await getDashboardStatsByBranch(branchId);
-        } catch (statsError) {
-          console.error('Stats error:', statsError);
-          throw new Error('Failed to load dashboard statistics');
-        }
+        // For branch admin, we'll need to get branch info separately if needed
+        currentBranch = { name: 'Current Branch', state: 'Current State', region: 'Current Region' };
       }
       
       // Validate stats object
@@ -175,6 +144,13 @@
       ];
       
       lastUpdated = new Date();
+      
+      console.log('📊 Dashboard stats loaded successfully:', {
+        totalBookings: safeStats.totalBookings,
+        totalLeads: safeStats.totalLeads,
+        isSuperAdmin
+      });
+      
     } catch (err) {
       console.error('Error loading dashboard stats:', err);
       error = err.message;

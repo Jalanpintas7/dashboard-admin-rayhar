@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { getTopInquiriesByBranch, getTopInquiriesForSuperAdmin, getBranchIdByUser } from '../supabase-helpers.js';
+  import { fetchTopInquiries } from '$lib/dashboard-data-helpers.js';
   import { user, userRole } from '../stores/auth.js';
 
   let isMenuOpen = false;
@@ -11,32 +11,23 @@
   let branchId = null;
   let isSuperAdmin = false;
 
-  // Load data berdasarkan filter yang dipilih
+  // Load data berdasarkan filter yang dipilih dengan cache system
   async function loadTopInquiries() {
     try {
       loading = true;
       error = null;
       
-      // Check if user is super admin
-      isSuperAdmin = $userRole === 'super_admin';
+      console.log(`🔄 Loading top inquiries (${selectedFilter}) with cache system...`);
+      const startTime = Date.now();
       
-      if (isSuperAdmin) {
-        // Super admin: get data from all branches
-        topInquiries = await getTopInquiriesForSuperAdmin(selectedFilter, 5);
-      } else {
-        // Branch admin: get data from specific branch
-        // Get branch ID jika user adalah admin branch
-        if ($user) {
-          try {
-            branchId = await getBranchIdByUser($user.id);
-          } catch (err) {
-            console.log('User bukan admin branch atau error:', err);
-            branchId = null;
-          }
-        }
-
-        topInquiries = await getTopInquiriesByBranch(branchId, selectedFilter, 5);
-      }
+      // Get data dengan cache system
+      topInquiries = await fetchTopInquiries(selectedFilter, 5);
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`⚡ Top inquiries loaded in ${loadTime}ms`);
+      
+      console.log(`📊 Top inquiries loaded successfully: ${topInquiries.length} items`);
+      
     } catch (err) {
       console.error('Error loading top inquiries:', err);
       error = err.message;

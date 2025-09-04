@@ -1,0 +1,404 @@
+import { supabase } from './supabase.js';
+import { 
+  generateCacheKey, 
+  saveToSessionStorage, 
+  getFromSessionStorage, 
+  invalidateCachePattern 
+} from './cache-utils.js';
+import { getDashboardStatsByBranch, getDashboardStatsForSuperAdmin, getBranchIdByUser } from './supabase-helpers.js';
+import { getTopSalesConsultantsByCategory } from './supabase-helpers.js';
+import { getTopPackagesByBranch, getTopPackagesForSuperAdmin } from './supabase-helpers.js';
+import { getTopInquiriesByBranch, getTopInquiriesForSuperAdmin } from './supabase-helpers.js';
+
+// ==================== DASHBOARD STATS ====================
+
+export async function fetchDashboardStats() {
+  const cacheKey = generateCacheKey('dashboard', 'stats');
+  
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && typeof cachedData === 'object' && Object.keys(cachedData).length > 0) {
+    console.log('✅ Dashboard stats loaded from session cache');
+    return cachedData;
+  }
+  
+  console.log('🔄 Fetching dashboard stats from database...');
+  
+  try {
+    // Get user role to determine which stats to fetch
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Try to get user role from auth metadata first, then fallback to database
+    let userRole = user.user_metadata?.role || user.app_metadata?.role;
+    
+    if (!userRole) {
+      // Skip database query to avoid 404 errors, use default role directly
+      console.log('No user role found in auth metadata, using default role');
+      userRole = 'super_admin'; // Default fallback
+    }
+    let stats;
+
+    try {
+      if (userRole === 'super_admin') {
+        stats = await getDashboardStatsForSuperAdmin();
+      } else {
+        const branchId = await getBranchIdByUser(user.id);
+        if (!branchId) {
+          console.log('Branch ID not found, using super admin stats as fallback');
+          stats = await getDashboardStatsForSuperAdmin();
+        } else {
+          stats = await getDashboardStatsByBranch(branchId);
+        }
+      }
+    } catch (statsError) {
+      console.log('Error fetching dashboard stats, using fallback data:', statsError);
+      // Fallback stats jika ada error
+      stats = {
+        totalBookings: 0,
+        totalLeads: 0,
+        recentBookings: 0,
+        recentLeads: 0,
+        totalUmrahBookings: 0,
+        totalOutboundBookings: 0
+      };
+    }
+
+    const result = {
+      stats,
+      userRole,
+      timestamp: Date.now()
+    };
+    
+    saveToSessionStorage(cacheKey, result);
+    console.log('✅ Dashboard stats cached in session');
+    
+    return result;
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return {
+      stats: {
+        totalBookings: 0,
+        totalLeads: 0,
+        recentBookings: 0,
+        recentLeads: 0,
+        totalUmrahBookings: 0,
+        totalOutboundBookings: 0
+      },
+      userRole: null,
+      timestamp: Date.now()
+    };
+  }
+}
+
+// ==================== TOP SALES CONSULTANTS ====================
+
+export async function fetchTopSalesConsultants(category = 'umrah', limit = 5) {
+  const cacheKey = generateCacheKey('dashboard', `top_sales_${category}_${limit}`);
+  
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log(`✅ Top sales consultants (${category}) loaded from session cache`);
+    return cachedData;
+  }
+  
+  console.log(`🔄 Fetching top sales consultants (${category}) from database...`);
+  
+  try {
+    const consultants = await getTopSalesConsultantsByCategory(category, limit);
+    
+    const result = consultants.map(consultant => ({
+      id: consultant.id,
+      name: consultant.name,
+      total: consultant.totalRevenue,
+      recent: consultant.recentRevenue,
+      totalBookings: consultant.totalBookings,
+      recentBookings: consultant.recentBookings,
+      email: consultant.email,
+      whatsapp: consultant.whatsapp,
+      salesConsultantNumber: consultant.salesConsultantNumber,
+      branches: consultant.branches,
+      profileImage: `https://ui-avatars.com/api/?name=${encodeURIComponent(consultant.name)}&background=10b981&color=fff&size=40`,
+      categoryBookings: consultant.categoryBookings
+    }));
+    
+    if (result.length > 0) {
+      saveToSessionStorage(cacheKey, result);
+      console.log(`✅ Top sales consultants (${category}) cached in session (${result.length} items)`);
+    } else {
+      console.log('⚠️ No top sales consultants found, not caching empty result');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error fetching top sales consultants:', error);
+    return [];
+  }
+}
+
+// ==================== TOP PACKAGES ====================
+
+export async function fetchTopPackages(filter = 'umrah', limit = 5) {
+  const cacheKey = generateCacheKey('dashboard', `top_packages_${filter}_${limit}`);
+  
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log(`✅ Top packages (${filter}) loaded from session cache`);
+    return cachedData;
+  }
+  
+  console.log(`🔄 Fetching top packages (${filter}) from database...`);
+  
+  try {
+    // Get user role to determine which packages to fetch
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Try to get user role from auth metadata first, then fallback to database
+    let userRole = user.user_metadata?.role || user.app_metadata?.role;
+    
+    if (!userRole) {
+      // Skip database query to avoid 404 errors, use default role directly
+      console.log('No user role found in auth metadata, using default role');
+      userRole = 'super_admin'; // Default fallback
+    }
+    
+    let packages;
+
+    try {
+      if (userRole === 'super_admin') {
+        packages = await getTopPackagesForSuperAdmin(filter, limit);
+      } else {
+        const branchId = await getBranchIdByUser(user.id);
+        if (!branchId) {
+          console.log('Branch ID not found, using super admin packages as fallback');
+          packages = await getTopPackagesForSuperAdmin(filter, limit);
+        } else {
+          packages = await getTopPackagesByBranch(branchId, filter, limit);
+        }
+      }
+    } catch (packagesError) {
+      console.log('Error fetching top packages, using empty array as fallback:', packagesError);
+      packages = [];
+    }
+    
+    if (packages.length > 0) {
+      saveToSessionStorage(cacheKey, packages);
+      console.log(`✅ Top packages (${filter}) cached in session (${packages.length} items)`);
+    } else {
+      console.log('⚠️ No top packages found, not caching empty result');
+    }
+    
+    return packages;
+  } catch (error) {
+    console.error('Error fetching top packages:', error);
+    return [];
+  }
+}
+
+// ==================== TOP INQUIRIES ====================
+
+export async function fetchTopInquiries(filter = 'umrah', limit = 5) {
+  const cacheKey = generateCacheKey('dashboard', `top_inquiries_${filter}_${limit}`);
+  
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log(`✅ Top inquiries (${filter}) loaded from session cache`);
+    return cachedData;
+  }
+  
+  console.log(`🔄 Fetching top inquiries (${filter}) from database...`);
+  
+  try {
+    // Get user role to determine which inquiries to fetch
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Try to get user role from auth metadata first, then fallback to database
+    let userRole = user.user_metadata?.role || user.app_metadata?.role;
+    
+    if (!userRole) {
+      // Skip database query to avoid 404 errors, use default role directly
+      console.log('No user role found in auth metadata, using default role');
+      userRole = 'super_admin'; // Default fallback
+    }
+    
+    let inquiries;
+
+    try {
+      if (userRole === 'super_admin') {
+        inquiries = await getTopInquiriesForSuperAdmin(filter, limit);
+      } else {
+        const branchId = await getBranchIdByUser(user.id);
+        if (!branchId) {
+          console.log('Branch ID not found, using super admin inquiries as fallback');
+          inquiries = await getTopInquiriesForSuperAdmin(filter, limit);
+        } else {
+          inquiries = await getTopInquiriesByBranch(branchId, filter, limit);
+        }
+      }
+    } catch (inquiriesError) {
+      console.log('Error fetching top inquiries, using empty array as fallback:', inquiriesError);
+      inquiries = [];
+    }
+    
+    if (inquiries.length > 0) {
+      saveToSessionStorage(cacheKey, inquiries);
+      console.log(`✅ Top inquiries (${filter}) cached in session (${inquiries.length} items)`);
+    } else {
+      console.log('⚠️ No top inquiries found, not caching empty result');
+    }
+    
+    return inquiries;
+  } catch (error) {
+    console.error('Error fetching top inquiries:', error);
+    return [];
+  }
+}
+
+// ==================== SALES INQUIRY OVERVIEW ====================
+
+export async function fetchSalesInquiryData(filter = 'Total Sales') {
+  const cacheKey = generateCacheKey('dashboard', `sales_inquiry_${filter}`);
+  
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log(`✅ Sales inquiry data (${filter}) loaded from session cache`);
+    return cachedData;
+  }
+  
+  console.log(`🔄 Fetching sales inquiry data (${filter}) from database...`);
+  
+  try {
+    let data, error;
+
+    if (filter === 'Total Sales') {
+      // Query untuk data bookings dengan total_price dan bilangan (jumlah peserta)
+      const result = await supabase
+        .from('bookings')
+        .select('created_at, umrah_category_id, total_price, bilangan')
+        .gte('created_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());
+      data = result.data;
+      error = result.error;
+    } else {
+      // Query untuk data leads
+      const result = await supabase
+        .from('leads')
+        .select('created_at, category_id')
+        .gte('created_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());
+      data = result.data;
+      error = result.error;
+    }
+
+    if (error) {
+      throw error;
+    }
+
+    // Proses data untuk mendapatkan statistik harian
+    const dailyStats = processSalesInquiryData(data, filter);
+    
+    if (dailyStats.length > 0) {
+      saveToSessionStorage(cacheKey, dailyStats);
+      console.log(`✅ Sales inquiry data (${filter}) cached in session (${dailyStats.length} items)`);
+    } else {
+      console.log('⚠️ No sales inquiry data found, not caching empty result');
+    }
+    
+    return dailyStats;
+  } catch (error) {
+    console.error('Error fetching sales inquiry data:', error);
+    return [];
+  }
+}
+
+// Helper function untuk memproses data sales inquiry
+function processSalesInquiryData(data, filter) {
+  const today = new Date();
+  const stats = [];
+
+  // Loop untuk 3 hari terakhir
+  for (let i = 0; i < 3; i++) {
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() - i);
+    const dateStr = targetDate.toISOString().split('T')[0];
+
+    // Filter data untuk tanggal tertentu
+    const dayData = data.filter(item => {
+      const itemDate = new Date(item.created_at).toISOString().split('T')[0];
+      return itemDate === dateStr;
+    });
+
+    let pelanconganCount = 0;
+    let umrahCount = 0;
+    let pelanconganRevenue = 0;
+    let umrahRevenue = 0;
+
+    dayData.forEach(item => {
+      if (filter === 'Total Sales') {
+        // Untuk bookings, cek umrah_category_id
+        if (item.umrah_category_id) {
+          umrahCount += item.bilangan || 1;
+          umrahRevenue += item.total_price || 0;
+        } else {
+          pelanconganCount += item.bilangan || 1;
+          pelanconganRevenue += item.total_price || 0;
+        }
+      } else {
+        // Untuk leads, cek category_id
+        if (item.category_id === 1) { // Assuming 1 is Umrah category
+          umrahCount++;
+        } else {
+          pelanconganCount++;
+        }
+      }
+    });
+
+    const totalCount = pelanconganCount + umrahCount;
+    const pelanconganPercentage = totalCount > 0 ? Math.round((pelanconganCount / totalCount) * 100) : 0;
+    const umrahPercentage = totalCount > 0 ? Math.round((umrahCount / totalCount) * 100) : 0;
+
+    stats.push({
+      pelanconganPercentage,
+      umrahPercentage,
+      date: formatDate(targetDate),
+      pelanconganCount,
+      umrahCount,
+      totalCount,
+      pelanconganRevenue,
+      umrahRevenue
+    });
+  }
+
+  return stats.reverse(); // Reverse agar urutan dari lama ke baru
+}
+
+// Helper function untuk format tanggal
+function formatDate(date) {
+  const day = date.getDate();
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  
+  const monthNames = [
+    'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'
+  ];
+  
+  return `${day} ${monthNames[month]} ${year}`;
+}
+
+// ==================== CACHE MANAGEMENT ====================
+
+export function clearDashboardCache() {
+  console.log('🧹 Clearing dashboard data cache...');
+  invalidateCachePattern('dashboard');
+}
+
+export function clearAllDashboardCache() {
+  console.log('🧹 Clearing all dashboard cache...');
+  clearDashboardCache();
+}

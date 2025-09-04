@@ -685,13 +685,13 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
 
     // Tentukan jenis pelancongan berdasarkan data yang ada
     if (lead.season_id && lead.category_id) {
-      // Umrah: ada season_id dan category_id
-      packageId = lead.season_id;
+      // Umrah: ada season_id dan category_id - grouping berdasarkan kombinasi keduanya
+      packageId = `${lead.season_id}_${lead.category_id}`;
       packageName = lead.umrah_seasons?.name || 'Umrah Package';
       packageType = 'umrah';
     } else if (lead.destination_id && lead.outbound_date_id) {
-      // Pelancongan: ada destination_id dan outbound_date_id
-      packageId = lead.destination_id;
+      // Pelancongan: ada destination_id dan outbound_date_id - grouping berdasarkan kombinasi keduanya
+      packageId = `${lead.destination_id}_${lead.outbound_date_id}`;
       packageName = lead.destinations?.name || 'Tour Package';
       packageType = 'outbound';
     }
@@ -738,10 +738,10 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
       bookings.forEach(booking => {
         let packageId = '';
         
-        if (booking.umrah_season_id || booking.umrah_category_id) {
-          packageId = booking.umrah_season_id || booking.umrah_category_id;
-        } else if (booking.destination_id || booking.outbound_date_id) {
-          packageId = booking.destination_id || booking.outbound_date_id;
+        if (booking.umrah_season_id && booking.umrah_category_id) {
+          packageId = `${booking.umrah_season_id}_${booking.umrah_category_id}`;
+        } else if (booking.destination_id && booking.outbound_date_id) {
+          packageId = `${booking.destination_id}_${booking.outbound_date_id}`;
         }
 
         if (packageId && inquiryStats[packageId]) {
@@ -751,7 +751,7 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
     }
   }
 
-  // Convert to array, hitung conversion rate, dan sort
+  // Convert to array, hitung conversion rate, dan sort by total inquiries
   const topInquiries = Object.values(inquiryStats)
     .map(pkg => {
       const conversionRate = pkg.totalInquiries > 0 
@@ -763,7 +763,7 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
         conversion: `${conversionRate}%`
       };
     })
-    .sort((a, b) => parseFloat(b.conversion) - parseFloat(a.conversion))
+    .sort((a, b) => b.totalInquiries - a.totalInquiries)
     .slice(0, limit)
     .map((pkg, index) => ({
       ...pkg,
@@ -775,15 +775,24 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
 
 // ===== GET BRANCH ID BY USER =====
 export const getBranchIdByUser = async (userId) => {
-  const { data, error } = await supabase
-    .from('admin_role')
-    .select('branch_id')
-    .eq('user_id', userId)
-    .eq('role', 'admin_branch')
-    .single()
-  
-  if (error) throw error
-  return data?.branch_id
+  try {
+    const { data, error } = await supabase
+      .from('admin_role')
+      .select('branch_id')
+      .eq('user_id', userId)
+      .eq('role', 'admin_branch')
+      .maybeSingle() // Use maybeSingle to handle 0 rows
+    
+    if (error) {
+      console.log('Error getting branch ID:', error);
+      return null;
+    }
+    
+    return data?.branch_id || null;
+  } catch (err) {
+    console.log('Table admin_role not found or accessible:', err);
+    return null;
+  }
 }
 
 // ===== AUTH HELPERS =====
@@ -984,13 +993,13 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
 
     // Tentukan jenis pelancongan berdasarkan data yang ada
     if (lead.season_id && lead.category_id) {
-      // Umrah: ada season_id dan category_id
-      packageId = lead.season_id;
+      // Umrah: ada season_id dan category_id - grouping berdasarkan kombinasi keduanya
+      packageId = `${lead.season_id}_${lead.category_id}`;
       packageName = lead.umrah_seasons?.name || 'Umrah Package';
       packageType = 'umrah';
     } else if (lead.destination_id && lead.outbound_date_id) {
-      // Pelancongan: ada destination_id dan outbound_date_id
-      packageId = lead.destination_id;
+      // Pelancongan: ada destination_id dan outbound_date_id - grouping berdasarkan kombinasi keduanya
+      packageId = `${lead.destination_id}_${lead.outbound_date_id}`;
       packageName = lead.destinations?.name || 'Tour Package';
       packageType = 'outbound';
     }
@@ -1033,10 +1042,10 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
       bookings.forEach(booking => {
         let packageId = '';
         
-        if (booking.umrah_season_id || booking.umrah_category_id) {
-          packageId = booking.umrah_season_id || booking.umrah_category_id;
-        } else if (booking.destination_id || booking.outbound_date_id) {
-          packageId = booking.destination_id || booking.outbound_date_id;
+        if (booking.umrah_season_id && booking.umrah_category_id) {
+          packageId = `${booking.umrah_season_id}_${booking.umrah_category_id}`;
+        } else if (booking.destination_id && booking.outbound_date_id) {
+          packageId = `${booking.destination_id}_${booking.outbound_date_id}`;
         }
 
         if (packageId && inquiryStats[packageId]) {
@@ -1046,7 +1055,7 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
     }
   }
 
-  // Convert to array, hitung conversion rate, dan sort
+  // Convert to array, hitung conversion rate, dan sort by total inquiries
   const topInquiries = Object.values(inquiryStats)
     .map(pkg => {
       const conversionRate = pkg.totalInquiries > 0 
@@ -1058,7 +1067,7 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
         conversion: `${conversionRate}%`
       };
     })
-    .sort((a, b) => parseFloat(b.conversion) - parseFloat(a.conversion))
+    .sort((a, b) => b.totalInquiries - a.totalInquiries)
     .slice(0, limit)
     .map((pkg, index) => ({
       ...pkg,

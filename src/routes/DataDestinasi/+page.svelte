@@ -33,10 +33,8 @@
   // Error handling
   let error = null;
   
-  // Cache system untuk optimasi performa
+  // Cache system untuk optimasi performa - menggunakan session storage seperti halaman lain
   let dataCache = new Map(); // Memory cache untuk data yang sedang aktif
-  let cacheExpiryTime = 20 * 60 * 1000; // 20 menit untuk data destinasi
-  let lastFetchTime = 0;
   
   // Cache statistics
   let cacheStats = null;
@@ -70,9 +68,9 @@
     infant: ''
   };
   
-  // Computed values untuk pagination dengan lazy loading
-  $: totalDestinations = destinations.length;
-  $: totalOutboundPackages = outboundPackages.length;
+  // Computed values untuk pagination dengan filtered data
+  $: totalDestinations = filteredDestinations.length;
+  $: totalOutboundPackages = filteredOutboundPackages.length;
   
   $: totalPagesDestinations = Math.ceil(totalDestinations / itemsPerPage);
   $: totalPagesOutboundPackages = Math.ceil(totalOutboundPackages / itemsPerPage);
@@ -82,18 +80,31 @@
   $: startIndexOutboundPackages = (currentPage - 1) * itemsPerPage;
   $: endIndexOutboundPackages = startIndexOutboundPackages + itemsPerPage;
   
-  // Use data directly for display (server-side pagination handles the slicing)
-  $: displayDestinations = destinations || [];
+  // Filter data berdasarkan search term - sama seperti halaman lain
+  $: filteredDestinations = destinations.filter(destination => {
+    const matchesSearch = !searchTerm || 
+      destination.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
   
-  // For outbound packages, use client-side pagination when data is loaded
+  $: filteredOutboundPackages = outboundPackages.filter(outbound => {
+    const matchesSearch = !searchTerm || 
+      outbound.destinations?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      outbound.price?.toString().includes(searchTerm);
+    return matchesSearch;
+  });
+  
+  // Use filtered data for display with pagination
+  $: displayDestinations = (() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredDestinations.slice(startIndex, endIndex);
+  })();
+  
   $: displayOutboundPackages = (() => {
-    if (activeTab === 'outbound' && outboundPackages.length > 0 && !searchTerm.trim()) {
-      // Client-side pagination for outbound packages
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      return outboundPackages.slice(startIndex, endIndex);
-    }
-    return outboundPackages || [];
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredOutboundPackages.slice(startIndex, endIndex);
   })();
   
   // Reset pagination when tab changes - removed reactive statement to prevent auto-switching
@@ -114,7 +125,7 @@
     // Clear memory cache
     dataCache.clear();
     
-    // Clear local storage cache untuk destinasi data
+    // Clear session storage cache untuk destinasi data
     clearDestinasiCache();
     
     console.log('🧹 Destinasi data cache cleared');
@@ -128,11 +139,10 @@
   async function forceRefreshDestinasiData() {
     console.log('🔄 Force refreshing destinasi data...');
     
-    // Clear cache untuk current tab
-    const cacheKey = `${activeTab}_${startIndexDestinations}_${endIndexDestinations}`;
-    dataCache.delete(cacheKey);
+    // Clear memory cache
+    dataCache.clear();
     
-    // Clear local storage cache
+    // Clear session storage cache
     clearDestinasiCache();
     
     // Refresh data
@@ -278,63 +288,45 @@
     }
   }
 
-  // Load data dengan cache system
-  async function loadData(page = 1, search = '') {
-    console.log(`🔄 Loading data for tab: ${activeTab}, page: ${page}, search: "${search}"`);
-    
-    // Jika ini adalah initial load, gunakan cache system
-    if (isInitialLoad) {
-      isLoading = true;
-      error = null;
-      try {
-        console.log('🔄 Loading destinasi data with cache system...');
-        const startTime = Date.now();
-        
-        const [destinationsData, outboundData] = await Promise.all([
-          fetchDestinations(),
-          fetchOutboundPackages()
-        ]);
+  // Load data dengan cache system - sama seperti halaman lain
+  async function loadData() {
+    isLoading = true;
+    error = null;
+    try {
+      console.log('🔄 Loading destinasi data with cache system...');
+      const startTime = Date.now();
+      
+      const [destinationsData, outboundData] = await Promise.all([
+        fetchDestinations(),
+        fetchOutboundPackages()
+      ]);
 
-        const loadTime = Date.now() - startTime;
-        console.log(`⚡ Data loaded in ${loadTime}ms`);
+      const loadTime = Date.now() - startTime;
+      console.log(`⚡ Data loaded in ${loadTime}ms`);
 
-        // Simpan data
-        destinations = destinationsData || [];
-        outboundPackages = outboundData || [];
-        
-        // Update cache statistics
-        updateCacheStats();
-        
-        console.log('📊 Data loaded successfully:', {
-          destinations: destinations?.length || 0,
-          outboundPackages: outboundPackages?.length || 0,
-          destinationsSample: destinations?.slice(0, 2),
-          outboundSample: outboundPackages?.slice(0, 2)
-        });
-        
-        // Log data structure untuk debug
-        console.log('📊 Destinations data structure:', destinations?.map(d => ({ id: d.id, name: d.name, table: 'destinations' })));
-        console.log('📊 Outbound packages data structure:', outboundPackages?.map(o => ({ id: o.id, destination_name: o.destinations?.name, table: 'outbound_dates' })));
-        
-        isInitialLoad = false;
-        
-      } catch (err) {
-        error = err.message;
-        console.error('Error loading data:', err);
-        
-        // Fallback: set empty arrays jika error
-        destinations = [];
-        outboundPackages = [];
-      } finally {
-        isLoading = false;
-      }
-    } else {
-      // Untuk pagination dan search, gunakan fungsi yang sudah ada berdasarkan tab aktif
-      if (activeTab === 'destinations') {
-        await loadDestinations(page, search);
-      } else if (activeTab === 'outbound') {
-        await loadOutboundPackages(page, search);
-      }
+      // Simpan data
+      destinations = destinationsData || [];
+      outboundPackages = outboundData || [];
+      
+      // Update cache statistics
+      updateCacheStats();
+      
+      console.log('📊 Data loaded successfully:', {
+        destinations: destinations?.length || 0,
+        outboundPackages: outboundPackages?.length || 0,
+        destinationsSample: destinations?.slice(0, 2),
+        outboundSample: outboundPackages?.slice(0, 2)
+      });
+      
+    } catch (err) {
+      error = err.message;
+      console.error('Error loading data:', err);
+      
+      // Fallback: set empty arrays jika error
+      destinations = [];
+      outboundPackages = [];
+    } finally {
+      isLoading = false;
     }
   }
 
@@ -539,7 +531,6 @@
     
     // Log cache performance
     console.log('📊 Initial cache stats:', cacheStats);
-    console.log('⚡ Cache expiry time:', cacheExpiryTime / 1000, 'seconds');
   });
   
   // Debug data loading
@@ -572,35 +563,22 @@
     }
   }
 
-  // Handle search dengan debounce
+  // Handle search dengan debounce - sederhana seperti halaman lain
   let searchTimeout;
   
   // Manual search handler
   function handleSearch() {
-    if (!isInitialLoad) {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(async () => {
-        console.log(`🔍 Searching for: "${searchTerm}" in tab: ${activeTab}`);
-        if (activeTab === 'destinations') {
-          await loadDestinations(1, searchTerm);
-        } else if (activeTab === 'outbound') {
-          // Untuk outbound packages, gunakan client-side filtering jika data sudah dimuat
-          if (outboundPackages.length > 0 && !searchTerm.trim()) {
-            // Jika search kosong, reload semua data
-            await loadAllOutboundPackages();
-          } else {
-            // Jika ada search term, gunakan server-side search
-            await loadOutboundPackages(1, searchTerm);
-          }
-        }
-      }, 500);
-    }
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      console.log(`🔍 Searching for: "${searchTerm}" in tab: ${activeTab}`);
+      // Search akan dihandle oleh reactive statement di bawah
+    }, 500);
   }
 
   // Handle tab change - hapus reactive statement
   // Tab change akan handle manual saat user klik tab
   
-  // Manual handler untuk tab change
+  // Manual handler untuk tab change - sederhana seperti halaman lain
   async function handleTabChange(tab) {
     if (tab !== activeTab) {
       console.log(`🔄 Switching from ${activeTab} to ${tab}`);
@@ -608,18 +586,8 @@
       currentPage = 1;
       searchTerm = ''; // Reset search term when switching tabs
       
-      // Clear cache untuk memastikan data fresh
-      dataCache.clear();
-      
-      // Clear current data to force fresh load
-      if (tab === 'destinations') {
-        destinations = [];
-        await loadDestinations(1, '');
-      } else if (tab === 'outbound') {
-        outboundPackages = [];
-        // Load all outbound packages first, then paginate
-        await loadAllOutboundPackages();
-      }
+      // Data sudah dimuat dari cache system, tidak perlu reload
+      console.log(`✅ Switched to ${tab} tab, data already loaded from cache`);
     }
   }
 
@@ -634,49 +602,22 @@
   // Get current total pages berdasarkan active tab
   // $: currentTotalPages = activeTab === 'destinations' ? totalPagesDestinations : totalPagesOutboundPackages; // Removed as per new_code
 
-  // Pagination functions
-  async function goToPage(page) {
+  // Pagination functions - sederhana seperti halaman lain
+  function goToPage(page) {
     if (page >= 1 && page <= currentTotalPages) {
-      if (activeTab === 'destinations') {
-        await loadDestinations(page, searchTerm);
-      } else if (activeTab === 'outbound') {
-        // Untuk outbound packages, gunakan client-side pagination jika data sudah dimuat
-        if (outboundPackages.length > 0 && !searchTerm.trim()) {
-          currentPage = page;
-        } else {
-          await loadOutboundPackages(page, searchTerm);
-        }
-      }
+      currentPage = page;
     }
   }
 
-  async function goToPreviousPage() {
+  function goToPreviousPage() {
     if (currentPage > 1) {
-      if (activeTab === 'destinations') {
-        await loadDestinations(currentPage - 1, searchTerm);
-      } else if (activeTab === 'outbound') {
-        // Untuk outbound packages, gunakan client-side pagination jika data sudah dimuat
-        if (outboundPackages.length > 0 && !searchTerm.trim()) {
-          currentPage = currentPage - 1;
-        } else {
-          await loadOutboundPackages(currentPage - 1, searchTerm);
-        }
-      }
+      currentPage = currentPage - 1;
     }
   }
 
-  async function goToNextPage() {
+  function goToNextPage() {
     if (currentPage < currentTotalPages) {
-      if (activeTab === 'destinations') {
-        await loadDestinations(currentPage + 1, searchTerm);
-      } else if (activeTab === 'outbound') {
-        // Untuk outbound packages, gunakan client-side pagination jika data sudah dimuat
-        if (outboundPackages.length > 0 && !searchTerm.trim()) {
-          currentPage = currentPage + 1;
-        } else {
-          await loadOutboundPackages(currentPage + 1, searchTerm);
-        }
-      }
+      currentPage = currentPage + 1;
     }
   }
 

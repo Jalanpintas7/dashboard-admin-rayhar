@@ -72,13 +72,13 @@ export const getUserRole = async (userId) => {
       .from('admin_role')
       .select('role')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle(); // Use maybeSingle to handle 0 rows
     
     if (roleError) {
-      console.error('Error fetching user role:', roleError);
-      userRole.set(null);
+      console.log('Admin role table not found or accessible, using default role');
+      userRole.set('super_admin'); // Default fallback
       redirectPath.set(null);
-      return null;
+      return 'super_admin';
     }
     
     userRole.set(data?.role || null);

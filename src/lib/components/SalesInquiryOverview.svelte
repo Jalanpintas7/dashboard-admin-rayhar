@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { supabase } from '$lib/supabase.js';
+  import { fetchSalesInquiryData } from '$lib/dashboard-data-helpers.js';
 
   // Data untuk diagram batang - akan diisi dari Supabase
   let barChartData = [];
@@ -46,44 +46,24 @@
     return `${day} ${monthNames[month]} ${year}`;
   }
 
-  // Fungsi untuk mengambil data dari Supabase
+  // Fungsi untuk mengambil data dengan cache system
   async function fetchData() {
     try {
       isLoading = true;
 
-      let data, error;
+      console.log(`🔄 Loading sales inquiry data (${selectedFilter}) with cache system...`);
+      const startTime = Date.now();
 
-      if (selectedFilter === 'Total Sales') {
-        // Query untuk data bookings dengan total_price dan bilangan (jumlah peserta)
-        // Menghitung total peserta = jumlah booking records + sum(bilangan) per booking
-        const result = await supabase
-          .from('bookings')
-          .select('created_at, umrah_category_id, total_price, bilangan')
-          .gte('created_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());
-        data = result.data;
-        error = result.error;
-      } else {
-        // Query untuk data leads
-        const result = await supabase
-          .from('leads')
-          .select('created_at, category_id')
-          .gte('created_at', new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString());
-        data = result.data;
-        error = result.error;
-      }
-
-      if (error) {
-        console.error('Error fetching data:', error);
-        return;
-      }
-
-      // Proses data untuk mendapatkan statistik harian
-      const dailyStats = processData(data);
+      // Get data dengan cache system
+      const dailyStats = await fetchSalesInquiryData(selectedFilter);
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`⚡ Sales inquiry data loaded in ${loadTime}ms`);
       
       // Hitung total pendapatan jika Total Sales
       if (selectedFilter === 'Total Sales') {
-        totalRevenue = data.reduce((sum, item) => {
-          return sum + (item.total_price || 0);
+        totalRevenue = dailyStats.reduce((sum, stat) => {
+          return sum + (stat.pelanconganRevenue || 0) + (stat.umrahRevenue || 0);
         }, 0);
       } else {
         totalRevenue = 0; // Reset untuk leads
@@ -100,6 +80,8 @@
         pelanconganRevenue: stat.pelanconganRevenue,
         umrahRevenue: stat.umrahRevenue
       }));
+
+      console.log(`📊 Sales inquiry data loaded successfully: ${barChartData.length} items`);
 
     } catch (error) {
       console.error('Error:', error);
@@ -206,11 +188,6 @@
   }
 
   const dateLabels = getDateLabels();
-
-  // Reactive statement untuk memantau perubahan filter
-  $: if (selectedFilter) {
-    fetchData();
-  }
 
   // Load data saat component mount
   onMount(() => {
