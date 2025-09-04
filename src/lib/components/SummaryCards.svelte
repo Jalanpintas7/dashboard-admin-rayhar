@@ -63,7 +63,6 @@
       loading = true;
       error = null;
       
-      console.log('🔄 Loading dashboard stats with cache system...');
       const startTime = Date.now();
       
       const dashboardData = await fetchDashboardStats();
@@ -71,8 +70,10 @@
       const loadTime = Date.now() - startTime;
       console.log(`⚡ Dashboard stats loaded in ${loadTime}ms`);
 
-      const { stats, userRole: fetchedUserRole } = dashboardData;
-      
+      // Pastikan dashboardData memiliki struktur yang benar
+      const statsObj = dashboardData?.stats || dashboardData || null;
+      const fetchedUserRole = dashboardData?.userRole || null;
+
       // Check if user is super admin
       isSuperAdmin = fetchedUserRole === 'super_admin';
       
@@ -85,18 +86,18 @@
       }
       
       // Validate stats object
-      if (!stats || typeof stats !== 'object') {
+      if (!statsObj || typeof statsObj !== 'object') {
         throw new Error('Invalid statistics data received');
       }
       
       // Ensure all required properties exist with fallback values
       const safeStats = {
-        totalBookings: stats.totalBookings || 0,
-        totalLeads: stats.totalLeads || 0,
-        recentBookings: stats.recentBookings || 0,
-        recentLeads: stats.recentLeads || 0,
-        totalUmrahBookings: stats.totalUmrahBookings || 0,
-        totalOutboundBookings: stats.totalOutboundBookings || 0
+        totalBookings: statsObj.totalBookings || 0,
+        totalLeads: statsObj.totalLeads || 0,
+        recentBookings: statsObj.recentBookings || 0,
+        recentLeads: statsObj.recentLeads || 0,
+        totalUmrahBookings: statsObj.totalUmrahBookings || 0,
+        totalOutboundBookings: statsObj.totalOutboundBookings || 0
       };
       
       // Calculate percentages
@@ -136,7 +137,6 @@
           title: 'Total Leads',
           value: `${safeStats.totalLeads.toString()}`,
           change: `+${safeStats.recentLeads}`,
-          subtitle: 'dari 30 hari',
           icon: 'trending-up',
           bgColor: 'bg-primary',
           shadowColor: 'shadow-[0_6px_16px_rgba(148,35,146,0.35)]'

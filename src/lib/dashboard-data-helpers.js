@@ -17,8 +17,20 @@ export async function fetchDashboardStats() {
   
   const cachedData = getFromSessionStorage(cacheKey);
   if (cachedData && typeof cachedData === 'object' && Object.keys(cachedData).length > 0) {
-    console.log('✅ Dashboard stats loaded from session cache');
-    return cachedData;
+    // Jika cache sudah dalam bentuk wrapper { stats, userRole, timestamp }, langsung return
+    if ('stats' in cachedData) {
+      console.log('✅ Dashboard stats loaded from session cache');
+      return cachedData;
+    }
+    // Legacy cache: hanya berisi objek stats mentah — bungkus agar kompatibel
+    const wrapped = {
+      stats: cachedData,
+      userRole: null,
+      timestamp: Date.now()
+    };
+    saveToSessionStorage(cacheKey, wrapped);
+    console.log('♻️ Normalized legacy dashboard stats cache to wrapped shape');
+    return wrapped;
   }
   
   console.log('🔄 Fetching dashboard stats from database...');
@@ -472,7 +484,8 @@ export async function warmCacheDashboardData() {
     tasks.push((async () => {
       const cacheKey = generateCacheKey('dashboard', 'stats');
       const cached = getFromSessionStorage(cacheKey);
-      if (cached && typeof cached === 'object' && Object.keys(cached).length > 0) return;
+      // Jika cache valid (sudah wrapper dan ada stats), lewati warming
+      if (cached && cached.stats && typeof cached.stats === 'object') return;
       try {
         let stats;
         if (userRole === 'super_admin') {
@@ -482,7 +495,19 @@ export async function warmCacheDashboardData() {
         } else {
           stats = await getDashboardStatsForSuperAdmin();
         }
-        saveToSessionStorage(cacheKey, stats || {});
+        const wrapped = {
+          stats: stats || {
+            totalBookings: 0,
+            totalLeads: 0,
+            recentBookings: 0,
+            recentLeads: 0,
+            totalUmrahBookings: 0,
+            totalOutboundBookings: 0
+          },
+          userRole,
+          timestamp: Date.now()
+        };
+        saveToSessionStorage(cacheKey, wrapped);
         console.log('🔥 Warmed cache: dashboard stats');
       } catch (_) {
         // Do not cache empty object here to allow retry later
