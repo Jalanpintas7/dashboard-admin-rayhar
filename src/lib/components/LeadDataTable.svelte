@@ -36,6 +36,10 @@
   let showDetailModal = false;
   let showDeleteModal = false;
   let selectedItem = null;
+  
+  // Delete state
+  let isDeleting = false;
+  let deleteError = null;
 
   // Computed values for pagination dengan lazy loading
   $: totalLeads = leads.length;
@@ -202,6 +206,8 @@
     showDetailModal = false;
     showDeleteModal = false;
     selectedItem = null;
+    deleteError = null;
+    isDeleting = false;
   }
 
   // Format date
@@ -219,6 +225,73 @@
     ];
     
     return `${day} ${monthNames[month]} ${year}`;
+  }
+
+  // Delete lead function
+  async function deleteLead() {
+    if (!selectedItem || !selectedItem.id) {
+      deleteError = 'Data lead tidak valid';
+      return;
+    }
+
+    isDeleting = true;
+    deleteError = null;
+
+    try {
+      console.log('🗑️ Deleting lead:', selectedItem.id);
+      
+      // Delete from leads table
+      const { error: leadError } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', selectedItem.id);
+
+      if (leadError) {
+        throw leadError;
+      }
+
+      console.log('✅ Lead deleted successfully');
+      
+      // Close modal
+      closeModals();
+      
+      // Show success notification
+      showNotification('Data lead berhasil dihapus', 'success');
+      
+      // Refresh data
+      await refreshLeadData();
+      
+    } catch (error) {
+      console.error('❌ Error deleting lead:', error);
+      deleteError = error.message || 'Gagal menghapus data lead';
+    } finally {
+      isDeleting = false;
+    }
+  }
+
+  // Show notification function
+  function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+      type === 'success' ? 'bg-green-500 text-white' : 
+      type === 'error' ? 'bg-red-500 text-white' : 
+      'bg-blue-500 text-white'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      notification.style.transform = 'translateX(100%)';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 3000);
   }
 </script>
 
@@ -376,8 +449,8 @@
 
 <!-- Detail Modal -->
 {#if showDetailModal && selectedItem}
-  <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-    <div class="bg-white/95 backdrop-blur-md rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/50">
+  <div class="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50">
+    <div class="bg-white/90 backdrop-blur-lg rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/60 shadow-2xl">
       <div class="p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-gray-900">Detail Lead</h3>
@@ -450,8 +523,8 @@
 
 <!-- Delete Modal -->
 {#if showDeleteModal && selectedItem}
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-lg max-w-md w-full">
+  <div class="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50">
+    <div class="bg-white/90 backdrop-blur-lg rounded-lg max-w-md w-full border border-white/60 shadow-2xl">
       <div class="p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-gray-900">Hapus Lead</h3>
@@ -467,6 +540,12 @@
           <AlertTriangle class="w-12 h-12 text-red-400 mx-auto mb-4" />
           <p class="text-sm text-gray-600 mb-2">Apakah Anda yakin ingin menghapus data lead ini?</p>
           <p class="text-sm font-medium text-gray-900">{selectedItem.name}</p>
+          
+          {#if deleteError}
+            <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p class="text-sm text-red-600">{deleteError}</p>
+            </div>
+          {/if}
         </div>
         
         <div class="mt-6 flex justify-end space-x-3">
@@ -477,13 +556,16 @@
             Batal
           </button>
           <button
-            on:click={() => {
-              // TODO: Implement delete functionality
-              closeModals();
-            }}
-            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+            on:click={deleteLead}
+            disabled={isDeleting}
+            class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
-            Hapus
+            {#if isDeleting}
+              <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Menghapus...
+            {:else}
+              Hapus
+            {/if}
           </button>
         </div>
       </div>
