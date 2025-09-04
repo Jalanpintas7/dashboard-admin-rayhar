@@ -98,7 +98,6 @@
   rounded-card shadow-soft 
   border border-white/80 
   p-3 sm:p-4 lg:p-5 xl:p-5 2xl:p-7
-  h-[440px] sm:h-[550px] lg:h-[620px] xl:h-[540px] 2xl:h-[650px]
   min-w-0
   overflow-hidden
   flex flex-col
@@ -141,11 +140,11 @@
     </div>
   {:else}
     <!-- Content dengan responsive design yang lebih baik -->
-    <div class="flex-1 overflow-y-auto pr-1 flex flex-col">
+    <div class="flex flex-col space-y-1.5 lg:space-y-2">
       {#each topSalesData as item, index}
         <div
           class="
-                        bg-white
+            bg-white
             p-2 lg:p-3 xl:p-4
             py-3 lg:py-4 xl:py-5
             transition-all duration-200
@@ -155,12 +154,12 @@
             border border-gray-100
             shadow-sm
             min-w-0
-            flex-1
-            mb-1.5 lg:mb-2
-            last:mb-0
           "
           style="background-color: #ffffff !important;"
+          role="button"
+          tabindex="0"
           on:click={() => showConsultantDetail(item)}
+          on:keydown={(e) => e.key === 'Enter' && showConsultantDetail(item)}
         >
           <div class="flex items-center justify-between min-w-0 h-full">
             <div class="flex items-center space-x-1.5 lg:space-x-2 min-w-0 flex-1">
@@ -231,6 +230,7 @@
         <button 
           on:click={closeDetailModal}
           class="text-slate-400 hover:text-slate-600 p-1 flex-shrink-0"
+          aria-label="Tutup modal"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>

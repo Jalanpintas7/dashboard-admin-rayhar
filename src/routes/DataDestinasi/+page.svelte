@@ -57,7 +57,6 @@
   let editForm = {
     name: '',
     description: '',
-    price: '',
     start_date: '',
     end_date: '',
     single_price: '',
@@ -89,8 +88,7 @@
   
   $: filteredOutboundPackages = outboundPackages.filter(outbound => {
     const matchesSearch = !searchTerm || 
-      outbound.destinations?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      outbound.price?.toString().includes(searchTerm);
+      outbound.destinations?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
   
@@ -258,7 +256,7 @@
       
       // Tambahkan filter search jika ada
       if (search.trim()) {
-        query = query.or(`destinations.name.ilike.%${search}%,price.ilike.%${search}%`);
+        query = query.ilike('destinations.name', `%${search}%`);
         console.log(`🔍 Applied search filter: ${search}`);
       }
       
@@ -459,7 +457,6 @@
     selectedItem = outboundPackage;
     editForm.start_date = outboundPackage.start_date || '';
     editForm.end_date = outboundPackage.end_date || '';
-    editForm.price = outboundPackage.price || '';
     editForm.single_price = outboundPackage.single || '';
     editForm.double_price = outboundPackage.double || '';
     editForm.triple_price = outboundPackage.triple || '';
@@ -475,7 +472,6 @@
     selectedItem = null;
     editForm.start_date = '';
     editForm.end_date = '';
-    editForm.price = '';
     editForm.single_price = '';
     editForm.double_price = '';
     editForm.triple_price = '';
@@ -492,7 +488,6 @@
         .update({
           start_date: editForm.start_date,
           end_date: editForm.end_date,
-          price: editForm.price,
           single: editForm.single_price,
           double: editForm.double_price,
           triple: editForm.triple_price,
@@ -968,7 +963,6 @@
                   <tr>
                     <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Destinasi</th>
                     <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Periode</th>
-                    <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Harga</th>
                     <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi</th>
                   </tr>
                 </thead>
@@ -992,9 +986,6 @@
                           <div>{formatDate(outboundPackage.start_date)}</div>
                           <div class="text-xs text-slate-400">to {formatDate(outboundPackage.end_date)}</div>
                         </div>
-                      </td>
-                      <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-slate-900">
-                        {outboundPackage.price || '-'}
                       </td>
                       <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                         <div class="flex space-x-1.5 sm:space-x-2">
