@@ -327,19 +327,22 @@ export async function fetchCustomersDataByBranch(branchName) {
   }
 }
 
-// Fungsi untuk mengambil data pelanggan dari Supabase dengan pagination
+// Fungsi untuk mengambil data pelanggan dari Supabase dengan pagination menggunakan VIEW
 export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters = {}) {
   try {
-    console.log(`Fetching customers page ${page} with limit ${limit} and filters:`, filters);
+    console.log(`🚀 Fetching customers page ${page} with limit ${limit} and filters:`, filters);
+    console.log('📊 Using customer_data_view for optimized performance');
     
     // Hitung offset untuk pagination
     const offset = (page - 1) * limit;
     
-    // Gunakan single query dengan JOIN untuk menghindari multiple database calls
+    // Gunakan VIEW customer_data_view untuk performa yang optimal
     let query = supabase
-      .from('bookings')
+      .from('customer_data_view')
       .select(`
         id,
+        branch_id,
+        consultant_id,
         gelaran,
         nama,
         nokp,
@@ -352,25 +355,27 @@ export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters 
         bilangan,
         total_price,
         age,
+        gender,
         birth_date,
         created_at,
         is_from_inquiry,
-        branch_id,
-        package_id,
-        destination_id,
-        umrah_season_id,
-        umrah_category_id,
-        consultant_id,
-        branches(name),
-        package_types(name),
-        destinations(name),
-        umrah_seasons(name),
-        umrah_categories(name),
-        sales_consultant(name)
+        branch_name,
+        consultant_name,
+        destination_name,
+        umrah_season_name,
+        umrah_category_name,
+        package_type,
+        season_destination,
+        full_name,
+        full_address,
+        avatar_initials,
+        formatted_date,
+        formatted_birth_date,
+        from_inquiry_status
       `, { count: 'exact' });
     
-    // Apply filters
-    if (filters.search) {
+    // Apply filters di level database (lebih efisien)
+    if (filters.search && filters.search.trim()) {
       query = query.or(`nama.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
     }
     
@@ -379,89 +384,65 @@ export async function fetchCustomersDataPaginated(page = 1, limit = 10, filters 
       query = query.eq('is_from_inquiry', isFromInquiry);
     }
     
+    if (filters.branch && filters.branch.trim()) {
+      query = query.eq('branch_name', filters.branch);
+    }
+    
+    if (filters.package && filters.package.trim()) {
+      query = query.eq('package_type', filters.package);
+    }
+    
+    if (filters.consultant && filters.consultant.trim()) {
+      query = query.eq('consultant_name', filters.consultant);
+    }
+    
     // Apply pagination dan ordering
     const { data, error, count } = await query
       .range(offset, offset + limit - 1)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching customers from Supabase:', error);
+      console.error('❌ Error fetching customers from view:', error);
       throw error;
     }
 
-    console.log(`Raw data from Supabase page ${page}:`, data);
-    console.log(`Total count: ${count}, Page data: ${data?.length || 0}`);
+    console.log(`✅ Raw data from customer_data_view page ${page}:`, data);
+    console.log(`📈 Total count: ${count}, Page data: ${data?.length || 0}`);
 
-    // Transform data menggunakan data yang sudah di-JOIN
-    let transformedData = data.map(booking => {
-      // Tentukan package type berdasarkan data yang ada
-      const isUmrah = booking.umrah_season_id !== null || booking.umrah_category_id !== null;
-      const isOutbound = booking.destination_id !== null;
-      const packageName = isUmrah ? 'Umrah' : (isOutbound ? 'Outbound' : 'Tidak Diketahui');
-      
-      // Tentukan musim/destinasi berdasarkan jenis package
-      let seasonDestination = '-';
-      if (isUmrah) {
-        // Untuk Umrah, gunakan musim umrah atau kategori umrah
-        seasonDestination = booking.umrah_seasons?.name || 
-                          booking.umrah_categories?.name || 
-                          'Umrah Standard';
-      } else if (isOutbound) {
-        // Untuk Outbound, gunakan nama destinasi
-        seasonDestination = booking.destinations?.name || '-';
-      }
-
-      // Format tanggal lahir
-      let formattedBirthDate = '-';
-      if (booking.birth_date) {
-        formattedBirthDate = formatDateMalaysia(booking.birth_date);
-      }
-
+    // Transform data dari view (sudah ter-optimasi)
+    const transformedData = data.map(customer => {
       return {
-        id: booking.id,
-        name: `${booking.gelaran || ''} ${booking.nama}`.trim(),
-        email: booking.email || '-',
-        phone: booking.telefon || '-',
-        address: `${booking.alamat || ''}, ${booking.poskod || ''} ${booking.bandar || ''}, ${booking.negeri || ''}`.replace(/^[, ]+|[, ]+$/g, '') || '-',
-        branch: booking.branches?.name || 'Tidak Diketahui',
-        package: packageName,
-        seasonDestination: seasonDestination,
-        category: seasonDestination, // Untuk backward compatibility
-        price: booking.bilangan ? `${booking.bilangan} pax` : '-',
-        total_price: booking.total_price || '-',
-        date: formatDateMalaysia(booking.created_at),
-        avatar: getInitials(booking.nama || 'NA'),
-        consultant: booking.sales_consultant?.name || '-',
-        nokp: booking.nokp || '-',
-        jenis_pelancongan: (booking.umrah_season_id || booking.umrah_category_id) ? 'Umrah' : (booking.destination_id ? 'Outbound' : '-'),
-        age: booking.age || '-',
-        birth_date: formattedBirthDate,
-        from_inquiry: booking.is_from_inquiry || false
+        id: customer.id,
+        name: customer.full_name,
+        email: customer.email || '-',
+        phone: customer.telefon || '-',
+        address: customer.full_address || '-',
+        branch: customer.branch_name || 'Tidak Diketahui',
+        package: customer.package_type,
+        seasonDestination: customer.season_destination,
+        category: customer.season_destination, // Untuk backward compatibility
+        price: customer.bilangan ? `${customer.bilangan} pax` : '-',
+        total_price: customer.total_price || '-',
+        date: customer.formatted_date,
+        avatar: customer.avatar_initials,
+        consultant: customer.consultant_name || '-',
+        nokp: customer.nokp || '-',
+        jenis_pelancongan: customer.package_type,
+        age: customer.age || '-',
+        birth_date: customer.formatted_birth_date || '-',
+        from_inquiry: customer.is_from_inquiry || false
       };
     });
 
-    // Apply filters yang tidak bisa diterapkan di level database
-    if (filters.branch && filters.branch.trim()) {
-      transformedData = transformedData.filter(customer => 
-        customer.branch === filters.branch
-      );
-    }
-    
-    if (filters.package && filters.package.trim()) {
-      transformedData = transformedData.filter(customer => 
-        customer.package === filters.package
-      );
-    }
-
-    console.log('Transformed data after filtering:', transformedData);
-    console.log('Final data count:', transformedData.length);
+    // console.log('🎯 Transformed data from view:', transformedData);
+    // console.log('📊 Final data count:', transformedData.length);
 
     return {
       data: transformedData,
       totalCount: count || 0
     };
   } catch (error) {
-    console.error('Error in fetchCustomersDataPaginated:', error);
+    console.error('❌ Error in fetchCustomersDataPaginated:', error);
     throw error;
   }
 }

@@ -598,7 +598,7 @@ export const getTopPackagesByBranch = async (branchId, filter = 'keseluruhan', l
 
   if (error) throw error;
 
-  // Group by package dan hitung total sales
+  // Group by package dan hitung total peserta (booking + bilangan)
   const packageStats = {};
 
   bookings.forEach(booking => {
@@ -630,10 +630,13 @@ export const getTopPackagesByBranch = async (branchId, filter = 'keseluruhan', l
       };
     }
 
-    packageStats[packageId].totalSales += 1;
+    // Perhitungan baru: Total peserta = 1 booking + bilangan
+    // Formula: total peserta = 1 (booking) + bilangan (jumlah peserta dalam booking)
+    const pesertaCount = 1 + (booking.bilangan || 0);
+    packageStats[packageId].totalSales += pesertaCount;
   });
 
-  // Convert to array dan sort by total sales
+  // Convert to array dan sort by total peserta
   const topPackages = Object.values(packageStats)
     .sort((a, b) => b.totalSales - a.totalSales)
     .slice(0, limit)
@@ -899,7 +902,7 @@ export const getTopPackagesForSuperAdmin = async (filter = 'keseluruhan', limit 
 
   if (error) throw error;
 
-  // Group by package dan hitung total sales
+  // Group by package dan hitung total peserta (booking + bilangan)
   const packageStats = {};
 
   bookings.forEach(booking => {
@@ -931,10 +934,13 @@ export const getTopPackagesForSuperAdmin = async (filter = 'keseluruhan', limit 
       };
     }
 
-    packageStats[packageId].totalSales += 1;
+    // Perhitungan baru: Total peserta = 1 booking + bilangan
+    // Formula: total peserta = 1 (booking) + bilangan (jumlah peserta dalam booking)
+    const pesertaCount = 1 + (booking.bilangan || 0);
+    packageStats[packageId].totalSales += pesertaCount;
   });
 
-  // Convert to array dan sort by total sales
+  // Convert to array dan sort by total peserta
   const topPackages = Object.values(packageStats)
     .sort((a, b) => b.totalSales - a.totalSales)
     .slice(0, limit)

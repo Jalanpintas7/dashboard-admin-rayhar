@@ -5,8 +5,8 @@
   import { supabase } from '$lib/supabase.js';
   import { 
     generateCacheKey, 
-    saveToLocalStorage, 
-    getFromLocalStorage, 
+    saveToSessionStorage, 
+    getFromSessionStorage, 
     invalidateCachePattern,
     getCacheStats 
   } from '$lib/cache-utils.js';

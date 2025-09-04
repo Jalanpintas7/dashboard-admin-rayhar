@@ -21,10 +21,10 @@
       isSuperAdmin = $userRole === 'super_admin';
       
       if (isSuperAdmin) {
-        // Super admin: get data from all branches
+        // Super admin: get data from all branches (total peserta = booking + bilangan)
         topPackages = await getTopPackagesForSuperAdmin(selectedFilter, 5);
       } else {
-        // Branch admin: get data from specific branch
+        // Branch admin: get data from specific branch (total peserta = booking + bilangan)
         // Get branch ID jika user adalah admin branch
         if ($user) {
           try {
@@ -77,7 +77,7 @@
 <div class="bg-white/90 backdrop-blur-sm rounded-card shadow-soft border border-white/80 p-3 sm:p-4 lg:p-5 xl:p-5 2xl:p-7 h-[440px] sm:h-[550px] lg:h-[620px] xl:h-[540px] 2xl:h-[650px] overflow-hidden flex flex-col min-w-0">
   <!-- Header -->
   <div class="flex flex-row items-center justify-between mb-3 sm:mb-4 lg:mb-5 gap-2 sm:gap-3 lg:gap-4">
-    <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate flex-1">Package Top Sales</h2>
+    <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate flex-1">Package Top Peserta</h2>
     
     <!-- Dropdown (custom styled) -->
     <div class="relative flex-shrink-0">
@@ -144,7 +144,7 @@
     {:else if topPackages.length === 0}
       <!-- Empty state -->
       <div class="text-center py-6 sm:py-8">
-        <p class="text-slate-500 text-xs sm:text-sm">Tidak ada data package untuk ditampilkan</p>
+        <p class="text-slate-500 text-xs sm:text-sm">Tidak ada data package peserta untuk ditampilkan</p>
       </div>
     {:else}
       <!-- Package list -->
@@ -180,7 +180,7 @@
             </div>
             <div class="text-right flex-shrink-0 ml-2">
               <p class="text-slate-900 font-bold text-sm sm:text-base lg:text-base xl:text-base">{pkg.totalSales}</p>
-              <p class="text-slate-500 text-xs sm:text-sm truncate">sales</p>
+              <p class="text-slate-500 text-xs sm:text-sm truncate">peserta</p>
             </div>
           </div>
         </div>

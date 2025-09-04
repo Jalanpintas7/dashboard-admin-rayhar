@@ -1,5 +1,5 @@
 import { formatDateMalaysia } from '../date-helpers.js';
-import { generateCacheKey, saveToLocalStorage, getFromLocalStorage, invalidateCachePattern } from '../cache-utils.js';
+import { generateCacheKey, saveToSessionStorage, getFromSessionStorage, invalidateCachePattern } from '../cache-utils.js';
 
 // Cache expiry untuk leads data (10 menit karena leads data sering berubah)
 const LEADS_CACHE_EXPIRY = 10 * 60 * 1000;
@@ -521,10 +521,10 @@ export async function fetchLeadsDataPaginated(page = 1, limit = 10, filters = {}
 export async function fetchLeadsDataWithCache(page = 1, limit = 10, filters = {}) {
   const cacheKey = generateCacheKey('leads', `${page}_${limit}_${JSON.stringify(filters)}`);
   
-  // Check cache first
-  const cachedData = getFromLocalStorage(cacheKey);
-  if (cachedData) {
-    console.log('✅ Leads data loaded from cache');
+  // Check session cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && cachedData.data && Array.isArray(cachedData.data) && cachedData.data.length > 0) {
+    console.log('✅ Leads data loaded from session cache');
     return cachedData;
   }
   
@@ -534,9 +534,9 @@ export async function fetchLeadsDataWithCache(page = 1, limit = 10, filters = {}
   try {
     const result = await fetchLeadsDataPaginated(page, limit, filters);
     
-    // Save to cache
-    saveToLocalStorage(cacheKey, result, LEADS_CACHE_EXPIRY);
-    console.log(`✅ Leads data cached (${result.data?.length || 0} items)`);
+    // Save to session cache
+    saveToSessionStorage(cacheKey, result);
+    console.log(`✅ Leads data cached in session (${result.data?.length || 0} items)`);
     
     return result;
   } catch (error) {

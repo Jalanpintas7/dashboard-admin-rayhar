@@ -4,6 +4,7 @@
 // Konfigurasi cache
 const CACHE_PREFIX = 'rayhar_cache_';
 const DEFAULT_EXPIRY = 10 * 60 * 1000; // 10 menit default
+const SESSION_CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 jam untuk session cache
 
 /**
  * Generate cache key yang unik
@@ -41,6 +42,94 @@ export function saveToLocalStorage(key, data, expiryMs = DEFAULT_EXPIRY) {
     // Jika local storage penuh, clear old cache
     clearExpiredCache();
   }
+}
+
+/**
+ * Save data ke session storage (tidak expired selama tab masih terbuka)
+ * @param {string} key - Cache key
+ * @param {any} data - Data yang akan di-cache
+ */
+export function saveToSessionStorage(key, data) {
+  try {
+    const cacheData = {
+      data: data,
+      timestamp: Date.now(),
+      sessionId: getSessionId(),
+      pageLoadId: getCurrentPageLoadId()
+    };
+    
+    sessionStorage.setItem(key, JSON.stringify(cacheData));
+    console.log(`✅ Data cached in session: ${key}`);
+    
+    // Log cache info untuk debugging
+    const dataSize = JSON.stringify(data).length;
+    console.log(`📊 Session cache info: ${key} - Size: ${(dataSize / 1024).toFixed(2)}KB`);
+    
+  } catch (error) {
+    console.error(`❌ Error saving to session cache: ${key}`, error);
+  }
+}
+
+/**
+ * Get data dari session storage
+ * @param {string} key - Cache key
+ * @returns {any|null} Data dari cache atau null jika tidak ditemukan
+ */
+export function getFromSessionStorage(key) {
+  try {
+    const cached = sessionStorage.getItem(key);
+    if (!cached) {
+      return null;
+    }
+    
+    const cacheData = JSON.parse(cached);
+    
+    // Check if session is still valid
+    if (cacheData.sessionId !== getSessionId()) {
+      console.log(`⏰ Session expired: ${key}`);
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    
+    // Check if cache is from current page load (refresh detection)
+    const currentPageLoad = getCurrentPageLoadId();
+    if (cacheData.pageLoadId !== currentPageLoad) {
+      console.log(`🔄 Page refreshed, cache invalidated: ${key}`);
+      sessionStorage.removeItem(key);
+      return null;
+    }
+    
+    // Cache masih fresh
+    console.log(`✅ Session cache hit: ${key}`);
+    return cacheData.data;
+    
+  } catch (error) {
+    console.error(`❌ Error reading from session cache: ${key}`, error);
+    sessionStorage.removeItem(key); // Remove corrupted cache
+    return null;
+  }
+}
+
+/**
+ * Generate unique session ID
+ * @returns {string} Session ID
+ */
+function getSessionId() {
+  if (!window.__RAYHAR_SESSION_ID__) {
+    window.__RAYHAR_SESSION_ID__ = Date.now().toString(36) + Math.random().toString(36).substr(2);
+  }
+  return window.__RAYHAR_SESSION_ID__;
+}
+
+/**
+ * Generate unique page load ID (berubah setiap page refresh)
+ * @returns {string} Page load ID
+ */
+function getCurrentPageLoadId() {
+  if (!window.__RAYHAR_PAGE_LOAD_ID__) {
+    window.__RAYHAR_PAGE_LOAD_ID__ = Date.now().toString(36) + Math.random().toString(36).substr(2);
+  }
+  return window.__RAYHAR_PAGE_LOAD_ID__;
 }
 
 /**

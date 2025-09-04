@@ -1,22 +1,19 @@
 import { supabase } from './supabase.js';
 import { 
   generateCacheKey, 
-  saveToLocalStorage, 
-  getFromLocalStorage, 
+  saveToSessionStorage, 
+  getFromSessionStorage, 
   invalidateCachePattern 
 } from './cache-utils.js';
 
-// Cache expiry untuk data umrah (15 menit karena data umrah jarang berubah)
-const UMRAH_CACHE_EXPIRY = 15 * 60 * 1000;
-
-// Fungsi untuk mengambil data musim umrah dengan cache
+// Fungsi untuk mengambil data musim umrah dengan session cache (tidak expired selama tab terbuka)
 export async function fetchUmrahSeasons() {
   const cacheKey = generateCacheKey('umrah_seasons', 'all');
   
-  // Check cache first
-  const cachedData = getFromLocalStorage(cacheKey);
-  if (cachedData) {
-    console.log('✅ Umrah seasons loaded from cache');
+  // Check session cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log('✅ Umrah seasons loaded from session cache');
     return cachedData;
   }
   
@@ -36,9 +33,13 @@ export async function fetchUmrahSeasons() {
 
     const result = data || [];
     
-    // Save to cache
-    saveToLocalStorage(cacheKey, result, UMRAH_CACHE_EXPIRY);
-    console.log(`✅ Umrah seasons cached (${result.length} items)`);
+    // Save to session cache hanya jika ada data
+    if (result.length > 0) {
+      saveToSessionStorage(cacheKey, result);
+      console.log(`✅ Umrah seasons cached in session (${result.length} items)`);
+    } else {
+      console.log('⚠️ No umrah seasons found, not caching empty result');
+    }
     
     return result;
   } catch (error) {
@@ -51,10 +52,10 @@ export async function fetchUmrahSeasons() {
 export async function fetchUmrahCategories() {
   const cacheKey = generateCacheKey('umrah_categories', 'all');
   
-  // Check cache first
-  const cachedData = getFromLocalStorage(cacheKey);
-  if (cachedData) {
-    console.log('✅ Umrah categories loaded from cache');
+  // Check session cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log('✅ Umrah categories loaded from session cache');
     return cachedData;
   }
   
@@ -74,9 +75,13 @@ export async function fetchUmrahCategories() {
 
     const result = data || [];
     
-    // Save to cache
-    saveToLocalStorage(cacheKey, result, UMRAH_CACHE_EXPIRY);
-    console.log(`✅ Umrah categories cached (${result.length} items)`);
+    // Save to session cache hanya jika ada data
+    if (result.length > 0) {
+      saveToSessionStorage(cacheKey, result);
+      console.log(`✅ Umrah categories cached in session (${result.length} items)`);
+    } else {
+      console.log('⚠️ No umrah categories found, not caching empty result');
+    }
     
     return result;
   } catch (error) {
@@ -89,10 +94,10 @@ export async function fetchUmrahCategories() {
 export async function fetchUmrahPackages() {
   const cacheKey = generateCacheKey('umrah_packages', 'all');
   
-  // Check cache first
-  const cachedData = getFromLocalStorage(cacheKey);
-  if (cachedData) {
-    console.log('✅ Umrah packages loaded from cache');
+  // Check session cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log('✅ Umrah packages loaded from session cache');
     return cachedData;
   }
   
@@ -117,9 +122,13 @@ export async function fetchUmrahPackages() {
 
     const result = data || [];
     
-    // Save to cache
-    saveToLocalStorage(cacheKey, result, UMRAH_CACHE_EXPIRY);
-    console.log(`✅ Umrah packages cached (${result.length} items)`);
+    // Save to session cache hanya jika ada data
+    if (result.length > 0) {
+      saveToSessionStorage(cacheKey, result);
+      console.log(`✅ Umrah packages cached in session (${result.length} items)`);
+    } else {
+      console.log('⚠️ No umrah packages found, not caching empty result');
+    }
     
     return result;
   } catch (error) {
@@ -132,10 +141,10 @@ export async function fetchUmrahPackages() {
 export async function getPackageCountBySeason() {
   const cacheKey = generateCacheKey('umrah_package_counts', 'by_season');
   
-  // Check cache first
-  const cachedData = getFromLocalStorage(cacheKey);
-  if (cachedData) {
-    console.log('✅ Package counts by season loaded from cache');
+  // Check session cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log('✅ Package counts by season loaded from session cache');
     return cachedData;
   }
   
@@ -159,9 +168,9 @@ export async function getPackageCountBySeason() {
       }
     });
 
-    // Save to cache
-    saveToLocalStorage(cacheKey, countMap, UMRAH_CACHE_EXPIRY);
-    console.log('✅ Package counts by season cached');
+    // Save to session cache
+    saveToSessionStorage(cacheKey, countMap);
+    console.log('✅ Package counts by season cached in session');
     
     return countMap;
   } catch (error) {
@@ -174,10 +183,10 @@ export async function getPackageCountBySeason() {
 export async function getPackageCountByCategory() {
   const cacheKey = generateCacheKey('umrah_package_counts', 'by_category');
   
-  // Check cache first
-  const cachedData = getFromLocalStorage(cacheKey);
-  if (cachedData) {
-    console.log('✅ Package counts by category loaded from cache');
+  // Check session cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && typeof cachedData === 'object' && Object.keys(cachedData).length > 0) {
+    console.log('✅ Package counts by category loaded from session cache');
     return cachedData;
   }
   
@@ -201,9 +210,9 @@ export async function getPackageCountByCategory() {
       }
     });
 
-    // Save to cache
-    saveToLocalStorage(cacheKey, countMap, UMRAH_CACHE_EXPIRY);
-    console.log('✅ Package counts by category cached');
+    // Save to session cache
+    saveToSessionStorage(cacheKey, countMap);
+    console.log('✅ Package counts by category cached in session');
     
     return countMap;
   } catch (error) {
@@ -237,10 +246,10 @@ const DESTINASI_CACHE_EXPIRY = 20 * 60 * 1000;
 export async function fetchDestinations() {
   const cacheKey = generateCacheKey('destinations', 'all');
   
-  // Check cache first
-  const cachedData = getFromLocalStorage(cacheKey);
-  if (cachedData) {
-    console.log('✅ Destinations loaded from cache');
+  // Check session cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log('✅ Destinations loaded from session cache');
     return cachedData;
   }
   
@@ -260,9 +269,9 @@ export async function fetchDestinations() {
 
     const result = data || [];
     
-    // Save to cache
-    saveToLocalStorage(cacheKey, result, DESTINASI_CACHE_EXPIRY);
-    console.log(`✅ Destinations cached (${result.length} items)`);
+    // Save to session cache
+    saveToSessionStorage(cacheKey, result);
+    console.log(`✅ Destinations cached in session (${result.length} items)`);
     
     return result;
   } catch (error) {
@@ -275,10 +284,10 @@ export async function fetchDestinations() {
 export async function fetchOutboundPackages() {
   const cacheKey = generateCacheKey('outbound_packages', 'all');
   
-  // Check cache first
-  const cachedData = getFromLocalStorage(cacheKey);
-  if (cachedData) {
-    console.log('✅ Outbound packages loaded from cache');
+  // Check session cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log('✅ Outbound packages loaded from session cache');
     return cachedData;
   }
   
@@ -301,9 +310,9 @@ export async function fetchOutboundPackages() {
 
     const result = data || [];
     
-    // Save to cache
-    saveToLocalStorage(cacheKey, result, DESTINASI_CACHE_EXPIRY);
-    console.log(`✅ Outbound packages cached (${result.length} items)`);
+    // Save to session cache
+    saveToSessionStorage(cacheKey, result);
+    console.log(`✅ Outbound packages cached in session (${result.length} items)`);
     
     return result;
   } catch (error) {
