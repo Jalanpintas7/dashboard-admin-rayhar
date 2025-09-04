@@ -54,8 +54,6 @@
   // State untuk modal detail
   let selectedCustomer = null;
   let showDetailModal = false;
-  let additionalMembers = [];
-  let loadingMembers = false;
   
   // State untuk filter options (tidak terpengaruh oleh filter yang aktif)
   let allPackages = [];
@@ -74,7 +72,6 @@
   
   // Debounce untuk filter
   let filterTimeout;
-  let refreshInterval;
   
   // State untuk mencegah multiple loading
   let isLoadingData = false;
@@ -106,8 +103,7 @@
         // Load data dengan cache system (menggunakan view)
         await loadPageData(1);
         
-        // Setup auto-refresh yang lebih smart (setiap 10 menit, bukan 5 menit)
-        setupAutoRefresh();
+        // Cache system akan handle refresh otomatis
         
         // Setup tab visibility handling
         document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -123,7 +119,6 @@
     
     // Cleanup saat komponen unmount
     return () => {
-      if (refreshInterval) clearInterval(refreshInterval);
       if (filterTimeout) clearTimeout(filterTimeout);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -233,20 +228,7 @@
     }
   }
   
-  // Setup auto-refresh yang smart dengan cache validation dan tab visibility handling
-  function setupAutoRefresh() {
-    refreshInterval = setInterval(async () => {
-      // Hanya refresh jika tab aktif dan cache sudah expired
-      if (!document.hidden && Date.now() - lastFetchTime > cacheExpiryTime) {
-        console.log('🔄 Auto-refresh triggered (tab active, cache expired)');
-        await checkForDataChanges();
-      } else if (document.hidden) {
-        console.log('⏸️ Auto-refresh skipped (tab not active)');
-      } else {
-        console.log('⏸️ Auto-refresh skipped (cache still valid)');
-      }
-    }, 10 * 60 * 1000); // 10 menit
-  }
+  // Cache system akan handle refresh otomatis
   
   // Handle tab visibility changes
   function handleVisibilityChange() {
@@ -676,101 +658,21 @@
     }
   }
   
-  // Fungsi untuk mengambil data members_booking (tetap menggunakan table langsung karena data terpisah)
-  async function fetchAdditionalMembers(bookingId) {
-    try {
-      loadingMembers = true;
-      console.log('=== FETCHING ADDITIONAL MEMBERS ===');
-      console.log('Booking ID:', bookingId);
-      console.log('Selected Customer:', selectedCustomer);
-      
-      // Test query untuk melihat struktur tabel members_booking
-      const { data: testData, error: testError } = await supabase
-        .from('members_booking')
-        .select('*')
-        .limit(5);
-      
-      console.log('Test query result:', { testData, testError });
-      
-      // Query utama untuk mengambil data berdasarkan booking_id
-      const { data, error } = await supabase
-        .from('members_booking')
-        .select(`
-          id,
-          nama,
-          nokp,
-          age,
-          gender,
-          birth_date,
-          cwb,
-          infant,
-          cnb,
-          created_at,
-          booking_id
-        `)
-        .eq('booking_id', bookingId)
-        .order('created_at', { ascending: true });
-      
-      console.log('Main query result:', { data, error });
-      console.log('Query conditions: booking_id =', bookingId);
-      
-      if (error) {
-        console.error('Error fetching additional members:', error);
-        additionalMembers = [];
-        return;
-      }
-      
-      console.log('Additional members data:', data);
-      console.log('Number of members found:', data?.length || 0);
-      additionalMembers = data || [];
-      
-      // Debug: Cek apakah ada data di tabel members_booking untuk booking ini
-      if (!data || data.length === 0) {
-        console.log('No members found for booking ID:', bookingId);
-        console.log('Checking if there are any members_booking records at all...');
-        
-        const { data: allMembers, error: allMembersError } = await supabase
-          .from('members_booking')
-          .select('booking_id, nama')
-          .limit(10);
-        
-        console.log('Sample members_booking records:', { allMembers, allMembersError });
-        
-        // Tidak ada data untuk booking ini
-        console.log('No members found for this booking ID');
-      }
-      
-    } catch (err) {
-      console.error('Error in fetchAdditionalMembers:', err);
-      additionalMembers = [];
-    } finally {
-      loadingMembers = false;
-    }
-  }
 
   // Fungsi untuk menampilkan modal detail
-  async function showCustomerDetail(customer) {
+  function showCustomerDetail(customer) {
     console.log('=== SHOWING CUSTOMER DETAIL ===');
     console.log('Customer data:', customer);
     console.log('Customer ID:', customer.id);
     
     selectedCustomer = customer;
     showDetailModal = true;
-    
-    // Fetch additional members data
-    if (customer.id) {
-      console.log('Fetching additional members for customer ID:', customer.id);
-      await fetchAdditionalMembers(customer.id);
-    } else {
-      console.log('No customer ID found, skipping additional members fetch');
-    }
   }
   
   // Fungsi untuk menutup modal
   function closeDetailModal() {
     showDetailModal = false;
     selectedCustomer = null;
-    additionalMembers = [];
   }
   
   // Dapatkan daftar unik untuk filter (dari data yang sudah di-load)
@@ -1258,123 +1160,6 @@
            </div>
          </div>
 
-        <!-- Detail Peserta Tambahan -->
-        {#if (selectedCustomer.price && selectedCustomer.price !== '-') || loadingMembers || additionalMembers.length > 0}
-          <div class="space-y-3 sm:space-y-4">
-            <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Users class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-              Detail Peserta Tambahan
-            </h3>
-            
-            <div class="space-y-3">
-              <!-- Summary Card -->
-              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Users class="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-blue-900">Peserta Tambahan</p>
-                    <p class="text-lg font-bold text-blue-700">{Math.max(0, additionalMembers.length - 1)} orang</p>
-                    <p class="text-xs text-blue-600">Selain pendaftar utama</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Loading State -->
-              {#if loadingMembers}
-                <div class="flex items-center justify-center py-4">
-                  <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-blue-500 hover:bg-blue-400 transition ease-in-out duration-150 cursor-not-allowed">
-                    <Loader2 class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                    Memuat data peserta...
-                  </div>
-                </div>
-              {:else if additionalMembers.length > 1}
-                <!-- List of Additional Members -->
-                <div class="space-y-3">
-                  <h4 class="text-sm font-medium text-gray-700">Daftar Peserta Tambahan:</h4>
-                  <div class="space-y-2">
-                    {#each additionalMembers.slice(1) as member, index}
-                      <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                        <div class="flex items-start gap-3">
-                          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span class="text-xs font-medium text-blue-600">{index + 1}</span>
-                          </div>
-                          <div class="flex-1 min-w-0">
-                                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                               <div class="sm:col-span-2">
-                                 <p class="text-xs text-gray-500">Nama</p>
-                                 <div class="flex items-center gap-2">
-                                   <p class="text-sm font-medium text-gray-900">{member.nama || '-'}</p>
-                                   <div class="flex gap-1">
-                                     {#if member.cwb}
-                                       <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">CWB</span>
-                                     {/if}
-                                     {#if member.infant}
-                                       <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Infant</span>
-                                     {/if}
-                                     {#if member.cnb}
-                                       <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">CNB</span>
-                                     {/if}
-                                     {#if !member.cwb && !member.infant && !member.cnb}
-                                       <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Dewasa</span>
-                                     {/if}
-                                   </div>
-                                 </div>
-                               </div>
-                               {#if member.nokp}
-                                 <div>
-                                   <p class="text-xs text-gray-500">No. KP</p>
-                                   <p class="text-sm text-gray-900">{member.nokp}</p>
-                                 </div>
-                               {/if}
-                               {#if member.age}
-                                 <div>
-                                   <p class="text-xs text-gray-500">Umur</p>
-                                   <p class="text-sm text-gray-900">{member.age} tahun</p>
-                                 </div>
-                               {/if}
-                               {#if member.gender}
-                                 <div>
-                                   <p class="text-xs text-gray-500">Jenis Kelamin</p>
-                                   <p class="text-sm text-gray-900">{member.gender === 'male' ? 'Laki-laki' : 'Perempuan'}</p>
-                                 </div>
-                               {/if}
-                               {#if member.birth_date}
-                                 <div>
-                                   <p class="text-xs text-gray-500">Tanggal Lahir</p>
-                                   <p class="text-sm text-gray-900">{formatDateMalaysia(member.birth_date)}</p>
-                                 </div>
-                               {/if}
-                             </div>
-                          </div>
-                        </div>
-                      </div>
-                    {/each}
-                  </div>
-                </div>
-              {:else if additionalMembers.length === 1}
-                <!-- Only First Member (Main Registrant) -->
-                <div class="text-center py-4">
-                  <div class="text-gray-400 mb-2">
-                    <Users class="mx-auto h-8 w-8" />
-                  </div>
-                  <p class="text-sm text-gray-500">Tidak ada peserta tambahan</p>
-                  <p class="text-xs text-gray-400 mt-1">Hanya pendaftar utama yang ikut</p>
-                </div>
-              {:else}
-                <!-- No Additional Members -->
-                <div class="text-center py-4">
-                  <div class="text-gray-400 mb-2">
-                    <Users class="mx-auto h-8 w-8" />
-                  </div>
-                  <p class="text-sm text-gray-500">Tidak ada peserta tambahan</p>
-                  <p class="text-xs text-gray-400 mt-1">Hanya pendaftar utama yang ikut</p>
-                </div>
-              {/if}
-            </div>
-          </div>
-        {/if}
 
         <!-- Harga -->
         <div class="space-y-3 sm:space-y-4">

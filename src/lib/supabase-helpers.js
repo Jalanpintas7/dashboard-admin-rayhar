@@ -457,7 +457,10 @@ export const getTopSalesConsultantsByCategory = async (category = 'umrah', limit
     query = query.or('umrah_season_id.not.is.null,umrah_category_id.not.is.null');
   } else if (category === 'pelancongan') {
     // Filter untuk paket pelancongan (yang memiliki destination_id atau outbound_date_id)
-    query = query.or('destination_id.not.is.null,outbound_date_id.not.is.null');
+    // Dan TIDAK memiliki umrah_season_id atau umrah_category_id
+    query = query.or('destination_id.not.is.null,outbound_date_id.not.is.null')
+                 .is('umrah_season_id', null)
+                 .is('umrah_category_id', null);
   }
 
   const { data: bookings, error } = await query;

@@ -98,8 +98,8 @@ export async function fetchTopSalesConsultants(category = 'umrah', limit = 5) {
   const cacheKey = generateCacheKey('dashboard', `top_sales_${category}_${limit}`);
   
   const cachedData = getFromSessionStorage(cacheKey);
-  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log(`✅ Top sales consultants (${category}) loaded from session cache`);
+  if (cachedData && Array.isArray(cachedData)) {
+    console.log(`✅ Top sales consultants (${category}) loaded from session cache (${cachedData.length} items)`);
     return cachedData;
   }
   
@@ -123,12 +123,9 @@ export async function fetchTopSalesConsultants(category = 'umrah', limit = 5) {
       categoryBookings: consultant.categoryBookings
     }));
     
-    if (result.length > 0) {
-      saveToSessionStorage(cacheKey, result);
-      console.log(`✅ Top sales consultants (${category}) cached in session (${result.length} items)`);
-    } else {
-      console.log('⚠️ No top sales consultants found, not caching empty result');
-    }
+    // Cache hasil query, termasuk hasil kosong untuk menghindari fetch berulang
+    saveToSessionStorage(cacheKey, result);
+    console.log(`✅ Top sales consultants (${category}) cached in session (${result.length} items)`);
     
     return result;
   } catch (error) {
@@ -143,8 +140,8 @@ export async function fetchTopPackages(filter = 'umrah', limit = 5) {
   const cacheKey = generateCacheKey('dashboard', `top_packages_${filter}_${limit}`);
   
   const cachedData = getFromSessionStorage(cacheKey);
-  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log(`✅ Top packages (${filter}) loaded from session cache`);
+  if (cachedData && Array.isArray(cachedData)) {
+    console.log(`✅ Top packages (${filter}) loaded from session cache (${cachedData.length} items)`);
     return cachedData;
   }
   
@@ -185,12 +182,9 @@ export async function fetchTopPackages(filter = 'umrah', limit = 5) {
       packages = [];
     }
     
-    if (packages.length > 0) {
-      saveToSessionStorage(cacheKey, packages);
-      console.log(`✅ Top packages (${filter}) cached in session (${packages.length} items)`);
-    } else {
-      console.log('⚠️ No top packages found, not caching empty result');
-    }
+    // Cache hasil query, termasuk hasil kosong untuk menghindari fetch berulang
+    saveToSessionStorage(cacheKey, packages);
+    console.log(`✅ Top packages (${filter}) cached in session (${packages.length} items)`);
     
     return packages;
   } catch (error) {
@@ -205,8 +199,8 @@ export async function fetchTopInquiries(filter = 'umrah', limit = 5) {
   const cacheKey = generateCacheKey('dashboard', `top_inquiries_${filter}_${limit}`);
   
   const cachedData = getFromSessionStorage(cacheKey);
-  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log(`✅ Top inquiries (${filter}) loaded from session cache`);
+  if (cachedData && Array.isArray(cachedData)) {
+    console.log(`✅ Top inquiries (${filter}) loaded from session cache (${cachedData.length} items)`);
     return cachedData;
   }
   
@@ -247,12 +241,9 @@ export async function fetchTopInquiries(filter = 'umrah', limit = 5) {
       inquiries = [];
     }
     
-    if (inquiries.length > 0) {
-      saveToSessionStorage(cacheKey, inquiries);
-      console.log(`✅ Top inquiries (${filter}) cached in session (${inquiries.length} items)`);
-    } else {
-      console.log('⚠️ No top inquiries found, not caching empty result');
-    }
+    // Cache hasil query, termasuk hasil kosong untuk menghindari fetch berulang
+    saveToSessionStorage(cacheKey, inquiries);
+    console.log(`✅ Top inquiries (${filter}) cached in session (${inquiries.length} items)`);
     
     return inquiries;
   } catch (error) {
@@ -267,8 +258,8 @@ export async function fetchSalesInquiryData(filter = 'Total Sales') {
   const cacheKey = generateCacheKey('dashboard', `sales_inquiry_${filter}`);
   
   const cachedData = getFromSessionStorage(cacheKey);
-  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log(`✅ Sales inquiry data (${filter}) loaded from session cache`);
+  if (cachedData && Array.isArray(cachedData)) {
+    console.log(`✅ Sales inquiry data (${filter}) loaded from session cache (${cachedData.length} items)`);
     return cachedData;
   }
   
@@ -302,12 +293,9 @@ export async function fetchSalesInquiryData(filter = 'Total Sales') {
     // Proses data untuk mendapatkan statistik harian
     const dailyStats = processSalesInquiryData(data, filter);
     
-    if (dailyStats.length > 0) {
-      saveToSessionStorage(cacheKey, dailyStats);
-      console.log(`✅ Sales inquiry data (${filter}) cached in session (${dailyStats.length} items)`);
-    } else {
-      console.log('⚠️ No sales inquiry data found, not caching empty result');
-    }
+    // Cache hasil query, termasuk hasil kosong untuk menghindari fetch berulang
+    saveToSessionStorage(cacheKey, dailyStats);
+    console.log(`✅ Sales inquiry data (${filter}) cached in session (${dailyStats.length} items)`);
     
     return dailyStats;
   } catch (error) {

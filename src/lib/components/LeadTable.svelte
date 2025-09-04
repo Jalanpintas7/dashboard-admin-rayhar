@@ -29,33 +29,24 @@
   
   // Debounce untuk filter
   let filterTimeout;
-  let refreshInterval;
   
   onMount(async () => {
     console.log('🚀 LeadTable component mounted with advanced cache system');
     
     await loadPageData(1);
     
-    // Setup auto-refresh setiap 5 menit (hanya jika ada perubahan)
-    setupAutoRefresh();
+    // Cache system akan handle refresh otomatis
     
     // Log cache performance
     console.log('📊 Initial cache stats:', cacheStats);
     
     // Cleanup saat komponen unmount
     return () => {
-      if (refreshInterval) clearInterval(refreshInterval);
       if (filterTimeout) clearTimeout(filterTimeout);
     };
   });
   
-  // Setup auto-refresh yang smart
-  function setupAutoRefresh() {
-    refreshInterval = setInterval(async () => {
-      // Hanya refresh jika ada perubahan data
-      await checkForDataChanges();
-    }, 5 * 60 * 1000); // 5 menit
-  }
+  // Cache system akan handle refresh otomatis
   
   // Check apakah ada perubahan data baru
   async function checkForDataChanges() {

@@ -9,7 +9,6 @@
     invalidateCachePattern,
     getCacheStats 
   } from '$lib/cache-utils.js';
-  import { fetchCustomerWithMembers } from '$lib/customer-data-helpers.js';
 
   // Data state - menerima dari parent
   export let customers = [];
@@ -47,8 +46,6 @@
   let showDetailModal = false;
   let showDeleteModal = false;
   let selectedItem = null;
-  let selectedItemMembers = [];
-  let isLoadingMembers = false;
 
   // Computed values for pagination dengan lazy loading
   $: displayTotalCustomers = totalCustomers || customers.length;
@@ -198,29 +195,9 @@
   }
 
   // Modal functions
-  async function openDetailModal(customer) {
+  function openDetailModal(customer) {
     selectedItem = customer;
-    selectedItemMembers = [];
     showDetailModal = true;
-    
-    // Load members data if customer has additional participants
-    if ((customer.bilangan || 0) > 0) {
-      isLoadingMembers = true;
-      try {
-        selectedItemMembers = await fetchCustomerWithMembers(customer.id);
-        console.log('📋 Loaded members for customer:', {
-          customerId: customer.id,
-          customerName: customer.nama,
-          membersCount: selectedItemMembers.length,
-          members: selectedItemMembers
-        });
-      } catch (error) {
-        console.error('Error loading customer members:', error);
-        selectedItemMembers = [];
-      } finally {
-        isLoadingMembers = false;
-      }
-    }
   }
 
 
@@ -233,8 +210,6 @@
     showDetailModal = false;
     showDeleteModal = false;
     selectedItem = null;
-    selectedItemMembers = [];
-    isLoadingMembers = false;
   }
 
   // Format currency
@@ -603,79 +578,6 @@
             </div>
           </div>
           
-          <!-- Additional Participants -->
-          {#if (selectedItem.bilangan || 0) > 0}
-            <div class="border-t pt-4">
-              <h4 class="text-sm font-medium text-gray-900 mb-3">Peserta Tambahan ({(selectedItem.bilangan || 0)} orang)</h4>
-              
-              {#if isLoadingMembers}
-                <div class="flex items-center justify-center py-4">
-                  <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mr-2"></div>
-                  <span class="text-sm text-gray-600">Memuat data peserta...</span>
-                </div>
-              {:else if selectedItemMembers.length > 0}
-                <div class="space-y-3">
-                  {#each selectedItemMembers as member, index}
-                  <div class="bg-gray-50 rounded-lg p-3">
-                    <div class="flex items-center justify-between mb-2">
-                      <h5 class="text-sm font-medium text-gray-900">Peserta {index + 1}</h5>
-                      <div class="flex items-center gap-2">
-                        {#if member.cwb}
-                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            CWB
-                          </span>
-                        {/if}
-                        {#if member.cnb}
-                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            CNB
-                          </span>
-                        {/if}
-                        {#if member.infant}
-                          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
-                            Infant
-                          </span>
-                        {/if}
-                      </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span class="text-gray-600">Nama:</span>
-                        <span class="ml-1 text-gray-900">{member.nama || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span class="text-gray-600">No. KP:</span>
-                        <span class="ml-1 text-gray-900">{member.nokp || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span class="text-gray-600">Umur:</span>
-                        <span class="ml-1 text-gray-900">{member.age || 'N/A'} tahun</span>
-                      </div>
-                      <div>
-                        <span class="text-gray-600">Jantina:</span>
-                        <span class="ml-1 text-gray-900">{member.gender === 'male' ? 'Lelaki' : member.gender === 'female' ? 'Perempuan' : 'N/A'}</span>
-                      </div>
-                      {#if member.birth_date}
-                        <div class="md:col-span-2">
-                          <span class="text-gray-600">Tarikh Lahir:</span>
-                          <span class="ml-1 text-gray-900">{formatDate(member.birth_date)}</span>
-                        </div>
-                      {/if}
-                    </div>
-                  </div>
-                  {/each}
-                </div>
-              {:else}
-                <div class="text-center py-4">
-                  <p class="text-sm text-gray-500">Data peserta tidak ditemukan</p>
-                </div>
-              {/if}
-            </div>
-          {:else}
-            <div class="border-t pt-4">
-              <h4 class="text-sm font-medium text-gray-900 mb-2">Peserta Tambahan</h4>
-              <p class="text-sm text-gray-500">Hanya pendaftar utama (tidak ada peserta tambahan)</p>
-            </div>
-          {/if}
         </div>
         
         <div class="mt-6 flex justify-end">

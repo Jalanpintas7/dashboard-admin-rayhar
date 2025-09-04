@@ -71,24 +71,11 @@
     await loadTopSalesData();
   };
   
-  // Refresh data setiap 5 menit
-  let refreshInterval;
+  // Load data sekali saat component mount (cache system akan handle refresh)
   onMount(() => {
     if ($user) {
       loadTopSalesData();
     }
-    
-    refreshInterval = setInterval(() => {
-      if ($user) {
-        loadTopSalesData();
-      }
-    }, 5 * 60 * 1000); // 5 menit
-    
-    return () => {
-      if (refreshInterval) {
-        clearInterval(refreshInterval);
-      }
-    };
   });
 </script>
 
