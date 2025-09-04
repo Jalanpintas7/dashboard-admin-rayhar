@@ -45,17 +45,19 @@ export function saveToLocalStorage(key, data, expiryMs = DEFAULT_EXPIRY) {
 }
 
 /**
- * Save data ke session storage (tidak expired selama tab masih terbuka)
+ * Save data ke session storage (dengan opsi expiry khusus)
  * @param {string} key - Cache key
  * @param {any} data - Data yang akan di-cache
+ * @param {number} [expiryMs=SESSION_CACHE_EXPIRY] - Expiry time dalam milliseconds untuk session cache
  */
-export function saveToSessionStorage(key, data) {
+export function saveToSessionStorage(key, data, expiryMs = SESSION_CACHE_EXPIRY) {
   try {
     const cacheData = {
       data: data,
       timestamp: Date.now(),
       sessionId: getSessionId(),
-      pageLoadId: getCurrentPageLoadId()
+      pageLoadId: getCurrentPageLoadId(),
+      expiry: expiryMs
     };
     
     sessionStorage.setItem(key, JSON.stringify(cacheData));
@@ -63,7 +65,7 @@ export function saveToSessionStorage(key, data) {
     
     // Log cache info untuk debugging
     const dataSize = JSON.stringify(data).length;
-    console.log(`📊 Session cache info: ${key} - Size: ${(dataSize / 1024).toFixed(2)}KB`);
+    console.log(`📊 Session cache info: ${key} - Size: ${(dataSize / 1024).toFixed(2)}KB, Expiry: ${(expiryMs / 1000).toFixed(0)}s`);
     
   } catch (error) {
     console.error(`❌ Error saving to session cache: ${key}`, error);
@@ -84,22 +86,23 @@ export function getFromSessionStorage(key) {
     
     const cacheData = JSON.parse(cached);
     
-    // Check if session is still valid
+    // Check if session is still valid (persisted across reload via sessionStorage)
     if (cacheData.sessionId !== getSessionId()) {
-      console.log(`⏰ Session expired: ${key}`);
+      console.log(`⏰ Session changed: ${key}`);
+      sessionStorage.removeItem(key);
+      return null;
+    }
+
+    // Enforce TTL for session cache
+    const now = Date.now();
+    const expiryMs = cacheData.expiry || SESSION_CACHE_EXPIRY;
+    if (now - cacheData.timestamp > expiryMs) {
+      console.log(`⏰ Session cache expired: ${key}`);
       sessionStorage.removeItem(key);
       return null;
     }
     
-    // Check if cache is from current page load (refresh detection)
-    const currentPageLoad = getCurrentPageLoadId();
-    if (cacheData.pageLoadId !== currentPageLoad) {
-      console.log(`🔄 Page refreshed, cache invalidated: ${key}`);
-      sessionStorage.removeItem(key);
-      return null;
-    }
-    
-    // Cache masih fresh
+    // Cache masih valid
     console.log(`✅ Session cache hit: ${key}`);
     return cacheData.data;
     
@@ -115,10 +118,26 @@ export function getFromSessionStorage(key) {
  * @returns {string} Session ID
  */
 function getSessionId() {
-  if (!window.__RAYHAR_SESSION_ID__) {
-    window.__RAYHAR_SESSION_ID__ = Date.now().toString(36) + Math.random().toString(36).substr(2);
+  try {
+    // Persist session id per-tab di sessionStorage agar konsisten melewati reload
+    if (window.__RAYHAR_SESSION_ID__) {
+      return window.__RAYHAR_SESSION_ID__;
+    }
+    const KEY = '__RAYHAR_SESSION_ID__';
+    let id = sessionStorage.getItem(KEY);
+    if (!id) {
+      id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+      sessionStorage.setItem(KEY, id);
+    }
+    window.__RAYHAR_SESSION_ID__ = id;
+    return id;
+  } catch (e) {
+    // Fallback jika sessionStorage tidak tersedia
+    if (!window.__RAYHAR_SESSION_ID__) {
+      window.__RAYHAR_SESSION_ID__ = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+    return window.__RAYHAR_SESSION_ID__;
   }
-  return window.__RAYHAR_SESSION_ID__;
 }
 
 /**
@@ -230,126 +249,108 @@ export function clearAllCache() {
         clearedCount++;
       }
     });
-    
-    console.log(`🧹 Cleared all ${clearedCount} cache entries`);
-    
+
+    if (clearedCount > 0) {
+      console.log(`🧹 Cleared ${clearedCount} cache entries`);
+    }
   } catch (error) {
     console.error('❌ Error clearing all cache:', error);
   }
 }
 
 /**
- * Get cache statistics
- * @returns {object} Cache statistics
+ * Get cache statistics (debug helper)
  */
 export function getCacheStats() {
   try {
     const keys = Object.keys(localStorage);
-    const cacheKeys = keys.filter(key => key.startsWith(CACHE_PREFIX));
-    
-    let totalSize = 0;
-    let expiredCount = 0;
-    let validCount = 0;
-    
-    cacheKeys.forEach(key => {
-      try {
-        const cached = localStorage.getItem(key);
-        if (cached) {
-          const cacheData = JSON.parse(cached);
-          totalSize += JSON.stringify(cacheData.data).length;
-          
-          if (Date.now() - cacheData.timestamp > cacheData.expiry) {
-            expiredCount++;
-          } else {
-            validCount++;
+    const stats = [];
+
+    keys.forEach(key => {
+      if (key.startsWith(CACHE_PREFIX)) {
+        try {
+          const cached = localStorage.getItem(key);
+          if (cached) {
+            const cacheData = JSON.parse(cached);
+            const age = Date.now() - cacheData.timestamp;
+            stats.push({ key, ageMs: age, ageSec: Math.round(age / 1000), size: (JSON.stringify(cacheData.data).length / 1024).toFixed(2) + 'KB' });
           }
+        } catch (error) {
+          // ignore corrupted entries here
         }
-      } catch (error) {
-        expiredCount++;
       }
     });
-    
+
     return {
-      totalEntries: cacheKeys.length,
-      validEntries: validCount,
-      expiredEntries: expiredCount,
-      totalSizeKB: (totalSize / 1024).toFixed(2),
-      cachePrefix: CACHE_PREFIX
+      total: stats.length,
+      entries: stats
     };
-    
   } catch (error) {
     console.error('❌ Error getting cache stats:', error);
-    return null;
+    return { total: 0, entries: [] };
   }
 }
 
 /**
- * Smart cache function wrapper
- * @param {string} cacheKey - Cache key
- * @param {Function} fetchFunction - Function untuk fetch data jika cache miss
- * @param {number} expiryMs - Expiry time dalam milliseconds
- * @returns {Promise<any>} Data dari cache atau hasil fetch function
+ * Smart cache helper untuk membungkus fetch function dengan local storage cache
  */
 export async function smartCache(cacheKey, fetchFunction, expiryMs = DEFAULT_EXPIRY) {
-  // Check cache first
-  const cachedData = getFromLocalStorage(cacheKey);
-  if (cachedData) {
-    return cachedData;
+  // Cek di localStorage terlebih dahulu
+  const cached = getFromLocalStorage(cacheKey);
+  if (cached) {
+    return cached;
   }
-  
-  // Cache miss, fetch data
-  console.log(`🔄 Cache miss: ${cacheKey}, fetching data...`);
+
+  // Jika tidak ada di cache, fetch dan simpan
   const data = await fetchFunction();
-  
-  // Save to cache
   saveToLocalStorage(cacheKey, data, expiryMs);
-  
   return data;
 }
 
 /**
  * Invalidate cache berdasarkan pattern
- * @param {string} pattern - Pattern untuk invalidate cache (e.g., 'customers', 'umrah')
  */
 export function invalidateCachePattern(pattern) {
   try {
     const keys = Object.keys(localStorage);
-    let invalidatedCount = 0;
+    const sessionKeys = Object.keys(sessionStorage);
     
     keys.forEach(key => {
       if (key.startsWith(CACHE_PREFIX) && key.includes(pattern)) {
         localStorage.removeItem(key);
-        invalidatedCount++;
       }
     });
     
-    if (invalidatedCount > 0) {
-      console.log(`🔄 Invalidated ${invalidatedCount} cache entries for pattern: ${pattern}`);
-    }
+    sessionKeys.forEach(key => {
+      if (key.startsWith(CACHE_PREFIX) && key.includes(pattern)) {
+        sessionStorage.removeItem(key);
+      }
+    });
     
+    console.log(`🧹 Invalidated cache entries with pattern: ${pattern}`);
   } catch (error) {
-    console.error(`❌ Error invalidating cache pattern: ${pattern}`, error);
+    console.error('❌ Error invalidating cache:', error);
   }
 }
 
-// Auto-cleanup expired cache setiap 5 menit
+// Auto-clear expired cache secara berkala dan saat visibility change
 if (typeof window !== 'undefined') {
   const w = window;
-  // Hindari memasang interval/listener berulang saat HMR/dev
+
+  // Hindari setup ganda
   if (!w.__RAYHAR_CACHE_CLEANER_SETUP__) {
     w.__RAYHAR_CACHE_CLEANER_SETUP__ = true;
 
-    // Jika sebelumnya ada interval (akibat HMR), pastikan dibersihkan
+    // Interval pembersihan
     if (w.__RAYHAR_CACHE_CLEANER_INTERVAL__) {
       try { clearInterval(w.__RAYHAR_CACHE_CLEANER_INTERVAL__); } catch (_) {}
     }
-
     const INTERVAL_MS = 5 * 60 * 1000; // 5 menit
     w.__RAYHAR_CACHE_CLEANER_INTERVAL__ = setInterval(() => {
       try { clearExpiredCache(); } catch (_) {}
     }, INTERVAL_MS);
 
-    // Debounce helper untuk menghindari pemanggilan beruntun
+    // Debounce helper
     const debounce = (fn, wait = 800) => {
       let t;
       return (...args) => {
@@ -358,30 +359,22 @@ if (typeof window !== 'undefined') {
       };
     };
 
-    // Clear expired cache saat page load
-    const onLoad = () => { try { clearExpiredCache(); } catch (_) {} };
-
-    // Clear expired cache saat page kembali visible, didebounce
+    // Event listeners
+    const onLoad = () => {
+      try { clearExpiredCache(); } catch (_) {}
+    };
     const onVisibility = debounce(() => {
-      if (!document.hidden) {
-        try { clearExpiredCache(); } catch (_) {}
-      }
-    });
+      try { clearExpiredCache(); } catch (_) {}
+    }, 800);
 
     w.addEventListener('load', onLoad);
     document.addEventListener('visibilitychange', onVisibility);
 
-    // Expose cleanup opsional untuk HMR/manual cleanup
+    // Expose disposer (opsional)
     w.__RAYHAR_CACHE_CLEANER_DISPOSE__ = () => {
-      try {
-        if (w.__RAYHAR_CACHE_CLEANER_INTERVAL__) {
-          clearInterval(w.__RAYHAR_CACHE_CLEANER_INTERVAL__);
-          w.__RAYHAR_CACHE_CLEANER_INTERVAL__ = null;
-        }
-        w.removeEventListener('load', onLoad);
-        document.removeEventListener('visibilitychange', onVisibility);
-        w.__RAYHAR_CACHE_CLEANER_SETUP__ = false;
-      } catch (_) {}
+      try { w.removeEventListener('load', onLoad); } catch (_) {}
+      try { document.removeEventListener('visibilitychange', onVisibility); } catch (_) {}
+      try { clearInterval(w.__RAYHAR_CACHE_CLEANER_INTERVAL__); } catch (_) {}
     };
   }
 }

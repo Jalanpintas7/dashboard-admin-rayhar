@@ -10,6 +10,7 @@
   import RoleGuard from '$lib/components/RoleGuard.svelte';
   import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
   import { user, userRole, loading } from '$lib/stores/auth.js';
+  import { warmCacheDashboardData } from '$lib/dashboard-data-helpers.js';
   
   // Redirect ke login jika tidak ada user (hanya jika di halaman ini)
   $: if (!$loading && !$user) {
@@ -20,6 +21,12 @@
   $: if ($userRole === 'admin_branch' && $page?.url?.pathname === '/') {
     goto('/DashboardBranch');
   }
+
+  onMount(() => {
+    // Prefetch semua data dashboard di background
+    // Dibiarkan non-blocking agar UI tidak delay
+    warmCacheDashboardData().catch(() => {});
+  });
 </script>
 
 <RoleGuard allowedRoles={['super_admin']} redirectTo="/login">
