@@ -1,7 +1,8 @@
 <script>
-  import { getUmrahSeasons, getUmrahCategories, getAirlines, createUmrahPackage } from '../supabase-helpers.js';
+  import { createUmrahPackage } from '../supabase-helpers.js';
+  import { fetchAllUmrahData, clearUmrahCache } from '../umrah-data-helpers.js';
   import { onMount } from 'svelte';
-  import { Building2, Loader2 } from 'lucide-svelte';
+  import { Building2, Loader2, RefreshCw } from 'lucide-svelte';
 
   // Data dari database
   let seasons = [];
@@ -36,26 +37,54 @@
     highDeckBalcony: 0
   };
 
-  // Load data dari database
+  // Load data dari database dengan cache system
   async function loadData() {
     try {
       isLoading = true;
       error = '';
       
-      // Load musim, kategori, dan airlines secara parallel
-      const [seasonsData, categoriesData, airlinesData] = await Promise.all([
-        getUmrahSeasons(),
-        getUmrahCategories(),
-        getAirlines()
-      ]);
+      const data = await fetchAllUmrahData();
       
-      seasons = seasonsData;
-      categories = categoriesData;
-      airlines = airlinesData;
+      seasons = data.seasons;
+      categories = data.categories;
+      airlines = data.airlines;
       
     } catch (err) {
-      console.error('Error loading data:', err);
-      error = 'Gagal memuat data musim, kategori, dan airlines';
+      console.error('Error loading UmrahPackageCreator data:', err);
+      error = 'Gagal memuat data musim, kategori, dan airlines. Silakan coba lagi.';
+      
+      // Set default empty arrays jika error
+      seasons = [];
+      categories = [];
+      airlines = [];
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  // Force refresh data (clear cache and reload)
+  async function refreshData() {
+    try {
+      isLoading = true;
+      error = '';
+      
+      console.log('🔄 Force refreshing UmrahPackageCreator data...');
+      clearUmrahCache();
+      
+      const data = await fetchAllUmrahData();
+      
+      seasons = data.seasons;
+      categories = data.categories;
+      airlines = data.airlines;
+      
+    } catch (err) {
+      console.error('Error refreshing UmrahPackageCreator data:', err);
+      error = 'Gagal memuat data musim, kategori, dan airlines. Silakan coba lagi.';
+      
+      // Set default empty arrays jika error
+      seasons = [];
+      categories = [];
+      airlines = [];
     } finally {
       isLoading = false;
     }
@@ -225,17 +254,40 @@
 </script>
 
 <div class="bg-white rounded-xl sm:rounded-2xl shadow-soft p-3 sm:p-4 lg:p-6 border border-white/60">
-  <div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6">
-    <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-green-100 rounded-xl flex items-center justify-center">
-      <Building2 class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-green-600" />
+  <div class="flex items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-green-100 rounded-xl flex items-center justify-center">
+        <Building2 class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-green-600" />
+      </div>
+      <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Buat Pakej Umrah</h2>
     </div>
-    <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Buat Pakej Umrah</h2>
+    
+    <!-- Refresh Button -->
+    <button
+      type="button"
+      on:click={refreshData}
+      disabled={isLoading}
+      class="p-1.5 sm:p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      title="Refresh data"
+    >
+      <RefreshCw class="w-4 h-4 sm:w-5 sm:h-5 {isLoading ? 'animate-spin' : ''}" />
+    </button>
   </div>
 
   <!-- Error Display -->
   {#if error}
     <div class="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-red-100 text-red-800 border border-red-200 rounded-lg text-xs sm:text-sm">
-      {error}
+      <div class="flex items-center justify-between">
+        <span>{error}</span>
+        <button
+          type="button"
+          on:click={refreshData}
+          class="ml-2 px-2 py-1 bg-red-200 hover:bg-red-300 text-red-800 rounded text-xs font-medium transition-colors flex items-center gap-1"
+        >
+          <RefreshCw class="w-3 h-3" />
+          Retry
+        </button>
+      </div>
     </div>
   {/if}
 

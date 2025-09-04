@@ -5,7 +5,9 @@
   import { user, loading } from "$lib/stores/auth.js";
   import { goto } from "$app/navigation";
   import { supabase } from "$lib/supabase.js";
+  import { fetchAirlinesForManagement, refreshAirlines } from "$lib/umrah-data-helpers.js";
   import { onMount } from "svelte";
+  import { RefreshCw } from "lucide-svelte";
 
   // Redirect ke login jika tidak ada user (hanya jika di halaman ini)
   $: if (!$loading && !$user) {
@@ -45,15 +47,26 @@
     loadingAirlines = true;
     error = null;
     try {
-      const { data, error: supabaseError } = await supabase
-        .from('airlines')
-        .select('*')
-        .order('name', { ascending: true });
-      
-      if (supabaseError) throw supabaseError;
+      const data = await fetchAirlinesForManagement();
       airlines = data || [];
     } catch (err) {
       console.error('Error fetching airlines:', err);
+      error = 'Gagal memuat data penerbangan';
+      airlines = [];
+    } finally {
+      loadingAirlines = false;
+    }
+  }
+
+  // Force refresh airlines (clear cache and reload)
+  async function refreshAirlinesData() {
+    loadingAirlines = true;
+    error = null;
+    try {
+      const data = await refreshAirlines();
+      airlines = data || [];
+    } catch (err) {
+      console.error('Error refreshing airlines:', err);
       error = 'Gagal memuat data penerbangan';
       airlines = [];
     } finally {
@@ -177,24 +190,40 @@
       <!-- Data Table List Airline -->
       <div>
         <div class="bg-white rounded-xl sm:rounded-2xl shadow-soft p-3 sm:p-4 lg:p-6 border border-white/60">
-          <div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6">
-            <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-green-100 rounded-xl flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-green-600">
-                <path d="M3 3h18v18H3zM9 9h6v6H9z"/>
-              </svg>
+          <div class="flex items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-green-600">
+                  <path d="M3 3h18v18H3zM9 9h6v6H9z"/>
+                </svg>
+              </div>
+              <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Daftar Penerbangan</h2>
             </div>
-            <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Daftar Penerbangan</h2>
+            
+            <!-- Refresh Button -->
+            <button
+              type="button"
+              on:click={refreshAirlinesData}
+              disabled={loadingAirlines}
+              class="p-1.5 sm:p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh data penerbangan"
+            >
+              <RefreshCw class="w-4 h-4 sm:w-5 sm:h-5 {loadingAirlines ? 'animate-spin' : ''}" />
+            </button>
           </div>
 
           {#if error}
             <div class="mb-3 sm:mb-4 p-2.5 sm:p-3 rounded-lg bg-red-100 text-red-800 border border-red-200 text-xs sm:text-sm">
-              {error}
-              <button 
-                on:click={fetchAirlines}
-                class="ml-2 underline hover:no-underline"
-              >
-                Coba lagi
-              </button>
+              <div class="flex items-center justify-between">
+                <span>{error}</span>
+                <button 
+                  on:click={refreshAirlinesData}
+                  class="ml-2 px-2 py-1 bg-red-200 hover:bg-red-300 text-red-800 rounded text-xs font-medium transition-colors flex items-center gap-1"
+                >
+                  <RefreshCw class="w-3 h-3" />
+                  Retry
+                </button>
+              </div>
             </div>
           {/if}
 

@@ -1,334 +1,279 @@
-import { supabase } from './supabase.js';
 import { 
   generateCacheKey, 
   saveToSessionStorage, 
   getFromSessionStorage, 
   invalidateCachePattern 
 } from './cache-utils.js';
+import { getUmrahSeasons, getUmrahCategories, getAirlines } from './supabase-helpers.js';
+import { supabase } from './supabase.js';
 
-// Fungsi untuk mengambil data musim umrah dengan session cache (tidak expired selama tab terbuka)
+// ==================== UMRAH DATA CACHE HELPERS ====================
+
+/**
+ * Fetch umrah seasons with cache system
+ */
 export async function fetchUmrahSeasons() {
-  const cacheKey = generateCacheKey('umrah_seasons', 'all');
+  const cacheKey = generateCacheKey('umrah', 'seasons');
   
-  // Check session cache first
+  // Try to get from cache first
   const cachedData = getFromSessionStorage(cacheKey);
   if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log('✅ Umrah seasons loaded from session cache');
+    console.log(`✅ Umrah seasons loaded from session cache (${cachedData.length} items)`);
     return cachedData;
   }
   
-  // Cache miss, fetch from database
   console.log('🔄 Fetching umrah seasons from database...');
   
   try {
-    const { data, error } = await supabase
-      .from('umrah_seasons')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching umrah seasons:', error);
-      return [];
-    }
-
-    const result = data || [];
+    const seasons = await getUmrahSeasons();
     
-    // Save to session cache hanya jika ada data
-    if (result.length > 0) {
-      saveToSessionStorage(cacheKey, result);
-      console.log(`✅ Umrah seasons cached in session (${result.length} items)`);
+    if (seasons && seasons.length > 0) {
+      saveToSessionStorage(cacheKey, seasons);
+      console.log(`✅ Umrah seasons cached in session (${seasons.length} items)`);
     } else {
       console.log('⚠️ No umrah seasons found, not caching empty result');
     }
     
-    return result;
+    return seasons || [];
   } catch (error) {
     console.error('Error fetching umrah seasons:', error);
     return [];
   }
 }
 
-// Fungsi untuk mengambil data kategori umrah dengan cache
+/**
+ * Fetch umrah categories with cache system
+ */
 export async function fetchUmrahCategories() {
-  const cacheKey = generateCacheKey('umrah_categories', 'all');
+  const cacheKey = generateCacheKey('umrah', 'categories');
   
-  // Check session cache first
+  // Try to get from cache first
   const cachedData = getFromSessionStorage(cacheKey);
   if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log('✅ Umrah categories loaded from session cache');
+    console.log(`✅ Umrah categories loaded from session cache (${cachedData.length} items)`);
     return cachedData;
   }
   
-  // Cache miss, fetch from database
   console.log('🔄 Fetching umrah categories from database...');
   
   try {
-    const { data, error } = await supabase
-      .from('umrah_categories')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching umrah categories:', error);
-      return [];
-    }
-
-    const result = data || [];
+    const categories = await getUmrahCategories();
     
-    // Save to session cache hanya jika ada data
-    if (result.length > 0) {
-      saveToSessionStorage(cacheKey, result);
-      console.log(`✅ Umrah categories cached in session (${result.length} items)`);
+    if (categories && categories.length > 0) {
+      saveToSessionStorage(cacheKey, categories);
+      console.log(`✅ Umrah categories cached in session (${categories.length} items)`);
     } else {
       console.log('⚠️ No umrah categories found, not caching empty result');
     }
     
-    return result;
+    return categories || [];
   } catch (error) {
     console.error('Error fetching umrah categories:', error);
     return [];
   }
 }
 
-// Fungsi untuk mengambil data pakej umrah (umrah_dates) dengan cache
-export async function fetchUmrahPackages() {
-  const cacheKey = generateCacheKey('umrah_packages', 'all');
+/**
+ * Fetch airlines with cache system
+ */
+export async function fetchAirlines() {
+  const cacheKey = generateCacheKey('umrah', 'airlines');
   
-  // Check session cache first
+  // Try to get from cache first
   const cachedData = getFromSessionStorage(cacheKey);
   if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log('✅ Umrah packages loaded from session cache');
+    console.log(`✅ Airlines loaded from session cache (${cachedData.length} items)`);
     return cachedData;
   }
   
-  // Cache miss, fetch from database
-  console.log('🔄 Fetching umrah packages from database...');
+  console.log('🔄 Fetching airlines from database...');
   
   try {
-    const { data, error } = await supabase
-      .from('umrah_dates')
-      .select(`
-        *,
-        umrah_seasons(name),
-        umrah_categories(name),
-        airlines(name)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching umrah packages:', error);
-      return [];
-    }
-
-    const result = data || [];
+    const airlines = await getAirlines();
     
-    // Save to session cache hanya jika ada data
-    if (result.length > 0) {
-      saveToSessionStorage(cacheKey, result);
-      console.log(`✅ Umrah packages cached in session (${result.length} items)`);
+    if (airlines && airlines.length > 0) {
+      saveToSessionStorage(cacheKey, airlines);
+      console.log(`✅ Airlines cached in session (${airlines.length} items)`);
     } else {
-      console.log('⚠️ No umrah packages found, not caching empty result');
+      console.log('⚠️ No airlines found, not caching empty result');
     }
     
-    return result;
+    return airlines || [];
   } catch (error) {
-    console.error('Error fetching umrah packages:', error);
+    console.error('Error fetching airlines:', error);
     return [];
   }
 }
 
-// Fungsi untuk menghitung jumlah pakej per musim dengan cache
-export async function getPackageCountBySeason() {
-  const cacheKey = generateCacheKey('umrah_package_counts', 'by_season');
-  
-  // Check session cache first
-  const cachedData = getFromSessionStorage(cacheKey);
-  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log('✅ Package counts by season loaded from session cache');
-    return cachedData;
-  }
-  
-  // Cache miss, fetch from database
-  console.log('🔄 Fetching package counts by season from database...');
+/**
+ * Fetch all umrah data (seasons, categories, airlines) with cache system
+ */
+export async function fetchAllUmrahData() {
+  console.log('🔄 Loading all umrah data with cache system...');
   
   try {
-    const { data, error } = await supabase
-      .from('umrah_dates')
-      .select('umrah_season_id');
-
-    if (error) {
-      console.error('Error counting packages by season:', error);
-      return {};
-    }
-
-    const countMap = {};
-    data.forEach(item => {
-      if (item.umrah_season_id) {
-        countMap[item.umrah_season_id] = (countMap[item.umrah_season_id] || 0) + 1;
-      }
-    });
-
-    // Save to session cache
-    saveToSessionStorage(cacheKey, countMap);
-    console.log('✅ Package counts by season cached in session');
+    // Load all data in parallel
+    const [seasons, categories, airlines] = await Promise.all([
+      fetchUmrahSeasons(),
+      fetchUmrahCategories(),
+      fetchAirlines()
+    ]);
     
-    return countMap;
-  } catch (error) {
-    console.error('Error counting packages by season:', error);
-    return {};
-  }
-}
-
-// Fungsi untuk menghitung jumlah pakej per kategori dengan cache
-export async function getPackageCountByCategory() {
-  const cacheKey = generateCacheKey('umrah_package_counts', 'by_category');
-  
-  // Check session cache first
-  const cachedData = getFromSessionStorage(cacheKey);
-  if (cachedData && typeof cachedData === 'object' && Object.keys(cachedData).length > 0) {
-    console.log('✅ Package counts by category loaded from session cache');
-    return cachedData;
-  }
-  
-  // Cache miss, fetch from database
-  console.log('🔄 Fetching package counts by category from database...');
-  
-  try {
-    const { data, error } = await supabase
-      .from('umrah_dates')
-      .select('umrah_category_id');
-
-    if (error) {
-      console.error('Error counting packages by category:', error);
-      return {};
-    }
-
-    const countMap = {};
-    data.forEach(item => {
-      if (item.umrah_category_id) {
-        countMap[item.umrah_category_id] = (countMap[item.umrah_category_id] || 0) + 1;
-      }
-    });
-
-    // Save to session cache
-    saveToSessionStorage(cacheKey, countMap);
-    console.log('✅ Package counts by category cached in session');
+    console.log(`✅ All umrah data loaded: ${seasons.length} seasons, ${categories.length} categories, ${airlines.length} airlines`);
     
-    return countMap;
+    return {
+      seasons,
+      categories,
+      airlines
+    };
   } catch (error) {
-    console.error('Error counting packages by category:', error);
-    return {};
+    console.error('Error loading all umrah data:', error);
+    return {
+      seasons: [],
+      categories: [],
+      airlines: []
+    };
   }
 }
 
-// Fungsi untuk invalidate cache umrah data
-export function invalidateUmrahCache() {
-  console.log('🔄 Invalidating umrah data cache...');
-  invalidateCachePattern('umrah');
-}
-
-// Fungsi untuk clear semua cache umrah
+/**
+ * Clear umrah data cache
+ */
 export function clearUmrahCache() {
-  console.log('🧹 Clearing all umrah data cache...');
+  console.log('🧹 Clearing umrah data cache...');
   invalidateCachePattern('umrah');
-  invalidateCachePattern('umrah_seasons');
-  invalidateCachePattern('umrah_categories');
-  invalidateCachePattern('umrah_packages');
-  invalidateCachePattern('umrah_package_counts');
 }
 
-// ===== DESTINASI DATA CACHING =====
+/**
+ * Force refresh umrah data (clear cache and reload)
+ */
+export async function refreshUmrahData() {
+  console.log('🔄 Force refreshing umrah data...');
+  clearUmrahCache();
+  return await fetchAllUmrahData();
+}
 
-// Cache expiry untuk data destinasi (20 menit karena data destinasi jarang berubah)
-const DESTINASI_CACHE_EXPIRY = 20 * 60 * 1000;
+// ==================== DESTINATION DATA CACHE HELPERS ====================
 
-// Fungsi untuk mengambil data destinasi dengan cache
+/**
+ * Fetch destinations with cache system
+ */
 export async function fetchDestinations() {
-  const cacheKey = generateCacheKey('destinations', 'all');
+  const cacheKey = generateCacheKey('destination', 'list');
   
-  // Check session cache first
+  // Try to get from cache first
   const cachedData = getFromSessionStorage(cacheKey);
   if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log('✅ Destinations loaded from session cache');
+    console.log(`✅ Destinations loaded from session cache (${cachedData.length} items)`);
     return cachedData;
   }
   
-  // Cache miss, fetch from database
   console.log('🔄 Fetching destinations from database...');
   
   try {
     const { data, error } = await supabase
       .from('destinations')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching destinations:', error);
-      return [];
+      .select('id, name, created_at')
+      .order('name');
+    
+    if (error) throw error;
+    
+    const destinations = data || [];
+    
+    if (destinations.length > 0) {
+      saveToSessionStorage(cacheKey, destinations);
+      console.log(`✅ Destinations cached in session (${destinations.length} items)`);
+    } else {
+      console.log('⚠️ No destinations found, not caching empty result');
     }
-
-    const result = data || [];
     
-    // Save to session cache
-    saveToSessionStorage(cacheKey, result);
-    console.log(`✅ Destinations cached in session (${result.length} items)`);
-    
-    return result;
+    return destinations;
   } catch (error) {
     console.error('Error fetching destinations:', error);
     return [];
   }
 }
 
-// Fungsi untuk mengambil data outbound packages dengan cache
-export async function fetchOutboundPackages() {
-  const cacheKey = generateCacheKey('outbound_packages', 'all');
+/**
+ * Clear destination cache
+ */
+export function clearDestinationCache() {
+  console.log('🧹 Clearing destination cache...');
+  invalidateCachePattern('destination');
+}
+
+/**
+ * Force refresh destinations (clear cache and reload)
+ */
+export async function refreshDestinations() {
+  console.log('🔄 Force refreshing destinations...');
+  clearDestinationCache();
+  return await fetchDestinations();
+}
+
+// ==================== AIRLINE DATA CACHE HELPERS ====================
+
+/**
+ * Fetch airlines with cache system (for airline management page)
+ */
+export async function fetchAirlinesForManagement() {
+  const cacheKey = generateCacheKey('airline', 'management');
   
-  // Check session cache first
+  // Try to get from cache first
   const cachedData = getFromSessionStorage(cacheKey);
   if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
-    console.log('✅ Outbound packages loaded from session cache');
+    console.log(`✅ Airlines (management) loaded from session cache (${cachedData.length} items)`);
     return cachedData;
   }
   
-  // Cache miss, fetch from database
-  console.log('🔄 Fetching outbound packages from database...');
+  console.log('🔄 Fetching airlines (management) from database...');
   
   try {
     const { data, error } = await supabase
-      .from('outbound_dates')
-      .select(`
-        *,
-        destinations(name)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching outbound packages:', error);
-      return [];
+      .from('airlines')
+      .select('*')
+      .order('name', { ascending: true });
+    
+    if (error) throw error;
+    
+    const airlines = data || [];
+    
+    if (airlines.length > 0) {
+      saveToSessionStorage(cacheKey, airlines);
+      console.log(`✅ Airlines (management) cached in session (${airlines.length} items)`);
+    } else {
+      console.log('⚠️ No airlines found, not caching empty result');
     }
-
-    const result = data || [];
     
-    // Save to session cache
-    saveToSessionStorage(cacheKey, result);
-    console.log(`✅ Outbound packages cached in session (${result.length} items)`);
-    
-    return result;
+    return airlines;
   } catch (error) {
-    console.error('Error fetching outbound packages:', error);
+    console.error('Error fetching airlines (management):', error);
     return [];
   }
 }
 
-// Fungsi untuk clear semua cache destinasi
-export function clearDestinasiCache() {
-  console.log('🧹 Clearing all destinasi data cache...');
-  invalidateCachePattern('destinations');
-  invalidateCachePattern('outbound_packages');
+/**
+ * Clear airline cache
+ */
+export function clearAirlineCache() {
+  console.log('🧹 Clearing airline cache...');
+  invalidateCachePattern('airline');
 }
 
-// Fungsi untuk format currency (format Malaysia)
+/**
+ * Force refresh airlines (clear cache and reload)
+ */
+export async function refreshAirlines() {
+  console.log('🔄 Force refreshing airlines...');
+  clearAirlineCache();
+  return await fetchAirlinesForManagement();
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Format currency to Malaysian Ringgit format
+ */
 export function formatCurrency(amount) {
   if (!amount) return 'RM 0.00';
 
@@ -339,16 +284,16 @@ export function formatCurrency(amount) {
   }).format(amount);
 }
 
-// Fungsi untuk format tanggal
-export function formatDate(dateString) {
-  if (!dateString) return '-';
+/**
+ * Format date to Malaysian format
+ */
+export function formatDate(date) {
+  if (!date) return '';
   
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return '-';
-  
-  const day = date.getDate();
-  const month = date.getMonth();
-  const year = date.getFullYear();
+  const dateObj = new Date(date);
+  const day = dateObj.getDate();
+  const month = dateObj.getMonth();
+  const year = dateObj.getFullYear();
   
   const monthNames = [
     'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
@@ -356,4 +301,109 @@ export function formatDate(dateString) {
   ];
   
   return `${day} ${monthNames[month]} ${year}`;
+}
+
+// ==================== MISSING EXPORTS FOR COMPATIBILITY ====================
+
+/**
+ * Alias for clearDestinationCache (for backward compatibility)
+ */
+export const clearDestinasiCache = clearDestinationCache;
+
+/**
+ * Fetch outbound packages with cache system
+ */
+export async function fetchOutboundPackages() {
+  const cacheKey = generateCacheKey('outbound', 'packages');
+  
+  // Try to get from cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log(`✅ Outbound packages loaded from session cache (${cachedData.length} items)`);
+    return cachedData;
+  }
+  
+  console.log('🔄 Fetching outbound packages from database...');
+  
+  try {
+    const { data, error } = await supabase
+      .from('outbound_dates')
+      .select(`
+        *,
+        destinations (
+          id,
+          name
+        )
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    const packages = data || [];
+    
+    if (packages.length > 0) {
+      saveToSessionStorage(cacheKey, packages);
+      console.log(`✅ Outbound packages cached in session (${packages.length} items)`);
+    } else {
+      console.log('⚠️ No outbound packages found, not caching empty result');
+    }
+    
+    return packages;
+  } catch (error) {
+    console.error('Error fetching outbound packages:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch umrah packages with cache system
+ */
+export async function fetchUmrahPackages() {
+  const cacheKey = generateCacheKey('umrah', 'packages');
+  
+  // Try to get from cache first
+  const cachedData = getFromSessionStorage(cacheKey);
+  if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    console.log(`✅ Umrah packages loaded from session cache (${cachedData.length} items)`);
+    return cachedData;
+  }
+  
+  console.log('🔄 Fetching umrah packages from database...');
+  
+  try {
+    const { data, error } = await supabase
+      .from('umrah_dates')
+      .select(`
+        *,
+        umrah_seasons (
+          id,
+          name
+        ),
+        umrah_categories (
+          id,
+          name
+        ),
+        airlines (
+          id,
+          name
+        )
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    const packages = data || [];
+    
+    if (packages.length > 0) {
+      saveToSessionStorage(cacheKey, packages);
+      console.log(`✅ Umrah packages cached in session (${packages.length} items)`);
+    } else {
+      console.log('⚠️ No umrah packages found, not caching empty result');
+    }
+    
+    return packages;
+  } catch (error) {
+    console.error('Error fetching umrah packages:', error);
+    return [];
+  }
 }

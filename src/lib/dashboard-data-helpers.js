@@ -350,9 +350,11 @@ function processSalesInquiryData(data, filter) {
         }
       } else {
         // Untuk leads, cek category_id
-        if (item.category_id === 1) { // Assuming 1 is Umrah category
+        if (item.category_id) {
+          // Ada category_id = Umrah
           umrahCount++;
         } else {
+          // Tidak ada category_id = Pelancongan
           pelanconganCount++;
         }
       }

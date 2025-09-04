@@ -134,7 +134,7 @@
         },
         {
           title: 'Total Leads',
-          value: `${safeStats.totalLeads.toString()} Pax`,
+          value: `${safeStats.totalLeads.toString()}`,
           change: `+${safeStats.recentLeads}`,
           subtitle: 'dari 30 hari',
           icon: 'trending-up',

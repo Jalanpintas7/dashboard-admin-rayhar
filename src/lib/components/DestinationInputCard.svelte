@@ -1,6 +1,7 @@
 <script>
-  import { MapPin, Search, ChevronDown } from 'lucide-svelte';
+  import { MapPin, Search, ChevronDown, RefreshCw } from 'lucide-svelte';
   import { supabase } from '$lib/supabase.js';
+  import { fetchDestinations, refreshDestinations } from '$lib/umrah-data-helpers.js';
   import { onMount } from 'svelte';
   
   // State untuk form input pakej destinasi
@@ -31,23 +32,29 @@
     await loadDestinations();
   });
 
-  // Load data destinations dari database
+  // Load data destinations dari database dengan cache system
   async function loadDestinations() {
     try {
-      const { data, error } = await supabase
-        .from('destinations')
-        .select('id, name, created_at')
-        .order('name');
-
-      if (error) {
-        console.error('Error loading destinations:', error);
-        return;
-      }
-
+      const data = await fetchDestinations();
       destinations = data || [];
       filteredDestinations = [...destinations];
     } catch (error) {
       console.error('Error loading destinations:', error);
+      destinations = [];
+      filteredDestinations = [];
+    }
+  }
+
+  // Force refresh destinations (clear cache and reload)
+  async function refreshData() {
+    try {
+      const data = await refreshDestinations();
+      destinations = data || [];
+      filteredDestinations = [...destinations];
+    } catch (error) {
+      console.error('Error refreshing destinations:', error);
+      destinations = [];
+      filteredDestinations = [];
     }
   }
 
@@ -154,11 +161,23 @@
 
 <div class="bg-white rounded-xl sm:rounded-2xl shadow-soft p-3 sm:p-4 lg:p-6 border border-white/60">
   <!-- Header dengan ikon -->
-  <div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6">
-    <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
-      <MapPin class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-yellow-600" />
+  <div class="flex items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
+        <MapPin class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-yellow-600" />
+      </div>
+      <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Tambah Pakej Destinasi</h2>
     </div>
-            <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Tambah Pakej Destinasi</h2>
+    
+    <!-- Refresh Button -->
+    <button
+      type="button"
+      on:click={refreshData}
+      class="p-1.5 sm:p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+      title="Refresh data destinasi"
+    >
+      <RefreshCw class="w-4 h-4 sm:w-5 sm:h-5" />
+    </button>
   </div>
 
   <!-- Message -->
