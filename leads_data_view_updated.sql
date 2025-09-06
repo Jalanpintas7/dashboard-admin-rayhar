@@ -222,3 +222,5 @@ CREATE INDEX IF NOT EXISTS idx_leads_search ON leads USING gin(
         COALESCE(phone, '')
     )
 );
+
+

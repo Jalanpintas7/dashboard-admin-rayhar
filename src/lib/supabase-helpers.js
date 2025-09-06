@@ -669,7 +669,7 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
 
   // Filter berdasarkan jenis pelancongan
   if (filter === 'Umrah') {
-    query = query.not('season_id', 'is', null).not('category_id', 'is', null);
+    query = query.not('season_id', 'is', null);
   } else if (filter === 'Pelancongan') {
     query = query.not('destination_id', 'is', null).not('outbound_date_id', 'is', null);
   }
@@ -687,9 +687,9 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
     let packageType = '';
 
     // Tentukan jenis pelancongan berdasarkan data yang ada
-    if (lead.season_id && lead.category_id) {
-      // Umrah: ada season_id dan category_id - grouping berdasarkan kombinasi keduanya
-      packageId = `${lead.season_id}_${lead.category_id}`;
+    if (lead.season_id) {
+      // Umrah: ada season_id - grouping berdasarkan season_id saja
+      packageId = `season_${lead.season_id}`;
       packageName = lead.umrah_seasons?.name || 'Umrah Package';
       packageType = 'umrah';
     } else if (lead.destination_id && lead.outbound_date_id) {
@@ -729,7 +729,7 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
     }
 
     if (filter === 'Umrah') {
-      bookingQuery = bookingQuery.or('umrah_season_id.not.is.null,umrah_category_id.not.is.null');
+      bookingQuery = bookingQuery.not('umrah_season_id', 'is', null);
     } else if (filter === 'Pelancongan') {
       bookingQuery = bookingQuery.or('destination_id.not.is.null,outbound_date_id.not.is.null');
     }
@@ -741,8 +741,8 @@ export const getTopInquiriesByBranch = async (branchId, filter = 'keseluruhan', 
       bookings.forEach(booking => {
         let packageId = '';
         
-        if (booking.umrah_season_id && booking.umrah_category_id) {
-          packageId = `${booking.umrah_season_id}_${booking.umrah_category_id}`;
+        if (booking.umrah_season_id) {
+          packageId = `season_${booking.umrah_season_id}`;
         } else if (booking.destination_id && booking.outbound_date_id) {
           packageId = `${booking.destination_id}_${booking.outbound_date_id}`;
         }
@@ -977,7 +977,7 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
 
   // Filter berdasarkan jenis pelancongan
   if (filter === 'Umrah') {
-    query = query.not('season_id', 'is', null).not('category_id', 'is', null);
+    query = query.not('season_id', 'is', null);
   } else if (filter === 'Pelancongan') {
     query = query.not('destination_id', 'is', null).not('outbound_date_id', 'is', null);
   }
@@ -995,9 +995,9 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
     let packageType = '';
 
     // Tentukan jenis pelancongan berdasarkan data yang ada
-    if (lead.season_id && lead.category_id) {
-      // Umrah: ada season_id dan category_id - grouping berdasarkan kombinasi keduanya
-      packageId = `${lead.season_id}_${lead.category_id}`;
+    if (lead.season_id) {
+      // Umrah: ada season_id - grouping berdasarkan season_id saja
+      packageId = `season_${lead.season_id}`;
       packageName = lead.umrah_seasons?.name || 'Umrah Package';
       packageType = 'umrah';
     } else if (lead.destination_id && lead.outbound_date_id) {
@@ -1033,9 +1033,9 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
       .not('branch_id', 'is', null);
 
     if (filter === 'Umrah') {
-      bookingQuery = bookingQuery.or('umrah_season_id.not.is.null,umrah_category_id.not.is.null');
+      bookingQuery = bookingQuery.not('umrah_season_id', 'is', null);
     } else if (filter === 'Pelancongan') {
-      bookingQuery = bookingQuery.eq('destination_id.not.is.null,outbound_date_id.not.is.null');
+      bookingQuery = bookingQuery.or('destination_id.not.is.null,outbound_date_id.not.is.null');
     }
 
     const { data: bookings, error: bookingError } = await bookingQuery;
@@ -1045,8 +1045,8 @@ export const getTopInquiriesForSuperAdmin = async (filter = 'keseluruhan', limit
       bookings.forEach(booking => {
         let packageId = '';
         
-        if (booking.umrah_season_id && booking.umrah_category_id) {
-          packageId = `${booking.umrah_season_id}_${booking.umrah_category_id}`;
+        if (booking.umrah_season_id) {
+          packageId = `season_${booking.umrah_season_id}`;
         } else if (booking.destination_id && booking.outbound_date_id) {
           packageId = `${booking.destination_id}_${booking.outbound_date_id}`;
         }
