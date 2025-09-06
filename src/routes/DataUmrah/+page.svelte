@@ -165,8 +165,22 @@
   <div class="p-2 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6">
     <!-- Header Halaman -->
     <div class="mb-4 sm:mb-6">
-      <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 mb-1 sm:mb-2">Data Umrah</h1>
-              <p class="text-sm sm:text-base text-slate-600 leading-relaxed">Kelola data musim, kategori, dan pakej umrah yang tersedia</p>
+      <div class="flex items-center justify-between mb-1 sm:mb-2">
+        <div>
+          <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 mb-1 sm:mb-2">Data Umrah</h1>
+          <p class="text-sm sm:text-base text-slate-600 leading-relaxed">Kelola data musim, kategori, dan pakej umrah yang tersedia</p>
+        </div>
+        
+        <!-- Refresh Button -->
+        <button
+          on:click={forceRefreshAllData}
+          class="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+          title="Refresh semua data umrah"
+        >
+          <RefreshCw class="w-4 h-4 sm:w-5 sm:h-5" />
+          <span class="text-sm font-medium">Refresh</span>
+        </button>
+      </div>
     </div>
 
     <!-- Data Table dengan Pencarian -->
@@ -190,44 +204,6 @@
             </div>
           </div>
           
-          <!-- Cache Control Section - Hidden from UI but functionality preserved -->
-          <!-- 
-          <div class="flex flex-wrap items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <div class="flex items-center gap-2 text-sm text-green-700">
-              <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span class="font-medium">Cache System:</span>
-            </div>
-            
-            <div class="text-xs text-green-600">
-              {#if cacheStats}
-                <span class="font-medium">{cacheStats.validEntries}</span> valid, 
-                <span class="font-medium">{cacheStats.totalSizeKB}KB</span> used
-              {:else}
-                Initializing...
-              {/if}
-            </div>
-            
-            <div class="flex items-center gap-2 ml-auto">
-              <button
-                on:click={forceRefreshAllData}
-                class="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors flex items-center gap-1"
-                title="Force refresh all data (bypass cache)"
-              >
-                <RefreshCw class="w-3 h-3" />
-                Refresh All
-              </button>
-              
-              <button
-                on:click={clearAllCache}
-                class="px-3 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors flex items-center gap-1"
-                title="Clear all cache"
-              >
-                <X class="w-3 h-3" />
-                Clear Cache
-              </button>
-            </div>
-          </div>
-          -->
 
 
         </div>

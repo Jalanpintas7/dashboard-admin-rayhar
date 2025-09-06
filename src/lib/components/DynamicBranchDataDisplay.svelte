@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { supabase } from '$lib/supabase.js';
   import { formatDateMalaysia } from '$lib/date-helpers.js';
-  import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText } from 'lucide-svelte';
+  import { Loader2, AlertTriangle, Users, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, ChevronLeft, ChevronRight } from 'lucide-svelte';
   
   // Props untuk menerima nama branch
   export let branchName = '';
@@ -15,10 +15,29 @@
   let selectedCustomer = null;
   let showDetailModal = false;
   
+  // State untuk paginasi
+  let currentPage = 1;
+  const itemsPerPage = 10;
+  
   // Reactive statement untuk reload data ketika branch berubah
   $: if (branchName) {
     loadBranchData();
   }
+  
+  // Computed values untuk paginasi
+  $: totalPages = Math.ceil(branchData.length / itemsPerPage);
+  $: startIndex = (currentPage - 1) * itemsPerPage;
+  $: endIndex = startIndex + itemsPerPage;
+  $: paginatedBranchData = branchData.slice(startIndex, endIndex);
+  
+  // Computed value untuk total pax
+  $: totalPax = branchData.reduce((total, customer) => {
+    if (customer.price && customer.price !== '-') {
+      const paxCount = parseInt(customer.price.split(' ')[0]) || 0;
+      return total + paxCount;
+    }
+    return total;
+  }, 0);
 
   // Fungsi untuk menampilkan modal detail
   function showCustomerDetail(customer) {
@@ -32,12 +51,32 @@
     selectedCustomer = null;
   }
   
+  // Fungsi navigasi paginasi
+  function goToPage(page) {
+    if (page >= 1 && page <= totalPages) {
+      currentPage = page;
+    }
+  }
+
+  function goToPreviousPage() {
+    if (currentPage > 1) {
+      currentPage--;
+    }
+  }
+
+  function goToNextPage() {
+    if (currentPage < totalPages) {
+      currentPage++;
+    }
+  }
+  
   async function loadBranchData() {
     if (!branchName) return;
     
     try {
       loading = true;
       error = null;
+      currentPage = 1; // Reset ke halaman pertama saat data dimuat ulang
       
       // Ambil data branch berdasarkan nama
       const { data: branchInfo, error: branchError } = await supabase
@@ -159,7 +198,7 @@
           branch: branchInfo.name,
           package: isUmrah ? 'Umrah' : (isOutbound ? 'Outbound' : 'Tidak Diketahui'),
           category: seasonDestination,
-          price: booking.bilangan ? `${booking.bilangan} pax` : '-',
+          price: booking.bilangan ? `${(booking.bilangan || 0) + 1} pax` : '1 pax',
           total_price: booking.total_price || '-',
           date: formatDateMalaysia(booking.created_at),
           consultant: salesConsultantMap.get(booking.consultant_id) || '-',
@@ -235,7 +274,7 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-[rgba(148,35,146,0.1)]">
-          {#each branchData as customer}
+          {#each paginatedBranchData as customer}
             <tr class="hover:bg-[rgba(148,35,146,0.02)] transition-colors cursor-pointer" on:click={() => showCustomerDetail(customer)}>
               <td class="px-4 py-3 whitespace-nowrap">
                 <div class="flex items-center">
@@ -293,12 +332,56 @@
       </table>
     </div>
     
+    <!-- Pagination -->
+    {#if totalPages > 1}
+      <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-700">
+            Menampilkan {startIndex + 1} sampai {Math.min(endIndex, branchData.length)} dari {branchData.length} hasil
+          </div>
+          <div class="flex items-center space-x-2">
+            <button
+              on:click={goToPreviousPage}
+              disabled={currentPage === 1}
+              class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              <ChevronLeft class="w-4 h-4" />
+            </button>
+            
+            {#each Array.from({length: Math.min(5, totalPages)}, (_, i) => {
+              const start = Math.max(1, currentPage - 2);
+              return start + i;
+            }) as page}
+              {#if page <= totalPages}
+                <button
+                  on:click={() => goToPage(page)}
+                  class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 {currentPage === page ? 'bg-[rgb(148,35,146)] text-white border-[rgb(148,35,146)]' : ''}"
+                >
+                  {page}
+                </button>
+              {/if}
+            {/each}
+            
+            <button
+              on:click={goToNextPage}
+              disabled={currentPage === totalPages}
+              class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              <ChevronRight class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
+    
     <!-- Summary -->
     <div class="bg-[rgba(148,35,146,0.05)] border border-[rgba(148,35,146,0.15)] rounded-lg p-4">
       <div class="flex items-center justify-between">
         <div>
-          <h5 class="text-sm font-medium text-[rgb(148,35,146)]">Total Bookings {branchName}</h5>
-          <p class="text-2xl font-bold text-[rgb(148,35,146)]">{branchData.length}</p>
+          <h5 class="text-sm font-medium text-[rgb(148,35,146)]">Total Booking {branchName}</h5>
+          <p class="text-2xl font-bold text-[rgb(148,35,146)]">
+            {branchData.length} Pendaftar Total {totalPax} Pax
+          </p>
         </div>
         <div class="text-right">
           <p class="text-sm text-[rgb(148,35,146)]">Branch: {branchName}</p>

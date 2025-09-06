@@ -1,38 +1,137 @@
 <script>
   import { onMount } from 'svelte';
-  import { fetchTopPackages } from '$lib/dashboard-data-helpers.js';
-  import { user, userRole } from '../stores/auth.js';
+  import { user } from '$lib/stores/auth.js';
+  import { supabase } from '$lib/supabase.js';
 
   let isMenuOpen = false;
   let selectedFilter = 'keseluruhan';
   let topPackages = [];
   let loading = true;
   let error = null;
+  let userBranch = null;
   let branchId = null;
-  let isSuperAdmin = false;
 
-  // Load data berdasarkan filter yang dipilih dengan cache system
+  // Load data berdasarkan filter yang dipilih dengan filter branch
   async function loadTopPackages() {
     try {
       loading = true;
       error = null;
       
-      console.log(`🔄 Loading top packages (${selectedFilter}) with cache system...`);
+      if (!$user || !branchId) {
+        console.error('User or branch ID not available');
+        return;
+      }
+      
+      console.log(`🔄 Loading top packages for branch: ${userBranch} (${selectedFilter})...`);
       const startTime = Date.now();
       
-      // Get data dengan cache system
-      topPackages = await fetchTopPackages(selectedFilter, 5);
+      // Query untuk mendapatkan top packages berdasarkan branch
+      const packages = await getTopPackagesByBranch(branchId, selectedFilter, 5);
       
       const loadTime = Date.now() - startTime;
-      console.log(`⚡ Top packages loaded in ${loadTime}ms`);
+      console.log(`⚡ Branch top packages loaded in ${loadTime}ms`);
       
-      console.log(`📊 Top packages loaded successfully: ${topPackages.length} items`);
+      topPackages = packages;
+      
+      console.log(`📊 Branch top packages loaded successfully: ${topPackages.length} items for branch ${userBranch}`);
       
     } catch (err) {
-      console.error('Error loading top packages:', err);
+      console.error('Error loading branch top packages:', err);
       error = err.message;
     } finally {
       loading = false;
+    }
+  }
+
+  // Fungsi untuk mendapatkan top packages berdasarkan branch
+  async function getTopPackagesByBranch(branchId, filter, limit) {
+    try {
+      console.log(`🔍 Fetching packages for branch ${branchId} with filter: ${filter}`);
+      
+      let query = supabase
+        .from('bookings')
+        .select(`
+          *,
+          umrah_seasons(name),
+          destinations(name),
+          umrah_categories(name)
+        `)
+        .eq('branch_id', branchId);
+
+      // Apply filter berdasarkan jenis package
+      if (filter === 'Umrah') {
+        query = query.or('umrah_season_id.not.is.null,umrah_category_id.not.is.null');
+      } else if (filter === 'Pelancongan') {
+        query = query.or('destination_id.not.is.null,outbound_date_id.not.is.null');
+      }
+      // 'keseluruhan' tidak perlu filter tambahan
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
+
+      console.log(`📊 Raw data from Supabase:`, data);
+
+      // Group dan hitung total peserta per package
+      const packageStats = {};
+      
+      data.forEach(booking => {
+        let packageName = '';
+        let packageId = '';
+        let packageType = '';
+
+        // Tentukan jenis pelancongan berdasarkan data yang ada
+        if (booking.umrah_season_id || booking.umrah_category_id) {
+          // Umrah: ada umrah_season_id atau umrah_category_id
+          packageId = booking.umrah_season_id || booking.umrah_category_id;
+          packageName = booking.umrah_seasons?.name || booking.umrah_categories?.name || 'Umrah Package';
+          packageType = 'umrah';
+        } else if (booking.destination_id || booking.outbound_date_id) {
+          // Outbound: ada destination_id atau outbound_date_id
+          packageId = booking.destination_id || booking.outbound_date_id;
+          packageName = booking.destinations?.name || 'Tour Package';
+          packageType = 'outbound';
+        }
+
+        if (!packageId) {
+          console.log('Skipping booking without package info:', booking);
+          return; // Skip jika tidak ada package ID
+        }
+
+        if (!packageStats[packageId]) {
+          packageStats[packageId] = {
+            name: packageName,
+            totalSales: 0,
+            type: packageType
+          };
+        }
+
+        // Hitung total peserta (1 booking + bilangan)
+        const totalPax = 1 + (booking.bilangan || 0);
+        packageStats[packageId].totalSales += totalPax;
+      });
+
+      console.log(`📈 Package stats:`, packageStats);
+
+      // Convert ke array dan sort berdasarkan total sales
+      const sortedPackages = Object.values(packageStats)
+        .sort((a, b) => b.totalSales - a.totalSales)
+        .slice(0, limit)
+        .map((pkg, index) => ({
+          ...pkg,
+          rank: index + 1
+        }));
+
+      console.log(`🏆 Final sorted packages:`, sortedPackages);
+
+      return sortedPackages;
+
+    } catch (error) {
+      console.error('Error fetching top packages by branch:', error);
+      return [];
     }
   }
 
@@ -58,8 +157,30 @@
   }
 
   // Load data saat komponen mount
-  onMount(() => {
-    loadTopPackages();
+  onMount(async () => {
+    try {
+      if ($user) {
+        // Ambil informasi branch dari user yang login
+        const { data: userProfile, error: profileError } = await supabase
+          .from('admin_role')
+          .select('branch_id, branches(name)')
+          .eq('user_id', $user.id)
+          .single();
+        
+        if (profileError || !userProfile?.branches?.name) {
+          console.error('Error fetching user branch:', profileError);
+          return;
+        }
+        
+        userBranch = userProfile.branches.name;
+        branchId = userProfile.branch_id;
+        
+        // Load data setelah branch info tersedia
+        await loadTopPackages();
+      }
+    } catch (err) {
+      console.error('Error loading user branch:', err);
+    }
   });
 </script>
 
@@ -68,7 +189,7 @@
 <div class="bg-white/90 backdrop-blur-sm rounded-card shadow-soft border border-white/80 p-3 sm:p-4 lg:p-5 xl:p-5 2xl:p-7 h-[440px] sm:h-[550px] lg:h-[620px] xl:h-[540px] 2xl:h-[650px] overflow-hidden flex flex-col min-w-0">
   <!-- Header -->
   <div class="flex flex-row items-center justify-between mb-3 sm:mb-4 lg:mb-5 gap-2 sm:gap-3 lg:gap-4">
-    <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate flex-1">Package Top Sales</h2>
+    <h2 class="text-base sm:text-lg lg:text-lg xl:text-lg font-bold text-slate-900 truncate flex-1">Package Top Peserta - {userBranch || 'Loading...'}</h2>
     
     <!-- Dropdown (custom styled) -->
     <div class="relative flex-shrink-0">
@@ -103,7 +224,7 @@
           Umrah
         </button>
         <button 
-          class="w-full text-left px-2 py-1.5 sm:px-3 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm text-slate-700 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400/50"
+          class="w-full text-left px-2 py-1.5 sm:px-3 sm:py-2 rounded-md sm:rounded-lg text-xs sm:text-sm text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
           on:click={() => selectFilter('Pelancongan')}
         >
           Pelancongan
@@ -135,7 +256,7 @@
     {:else if topPackages.length === 0}
       <!-- Empty state -->
       <div class="text-center py-6 sm:py-8">
-        <p class="text-slate-500 text-xs sm:text-sm">Tidak ada data package pax untuk ditampilkan</p>
+        <p class="text-slate-500 text-xs sm:text-sm">Tidak ada data package peserta untuk ditampilkan</p>
       </div>
     {:else}
       <!-- Package list -->
@@ -171,7 +292,7 @@
             </div>
             <div class="text-right flex-shrink-0 ml-2">
               <p class="text-slate-900 font-bold text-sm sm:text-base lg:text-base xl:text-base">{pkg.totalSales}</p>
-              <p class="text-slate-500 text-xs sm:text-sm truncate">pax</p>
+              <p class="text-slate-500 text-xs sm:text-sm truncate">peserta</p>
             </div>
           </div>
         </div>

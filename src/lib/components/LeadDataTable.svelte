@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { Eye, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Calendar, Package, Globe, FileText, DollarSign, CheckCircle, RefreshCw, User, MapPin, Phone, Mail, TrendingUp } from 'lucide-svelte';
+  import { Eye, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Calendar, Package, Globe, RefreshCw, User, Phone, TrendingUp, Building } from 'lucide-svelte';
   import { supabase } from '$lib/supabase.js';
   import { 
     generateCacheKey, 
@@ -449,73 +449,146 @@
 
 <!-- Detail Modal -->
 {#if showDetailModal && selectedItem}
-  <div class="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50">
-    <div class="bg-white/90 backdrop-blur-lg rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/60 shadow-2xl">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-900">Detail Lead</h3>
-          <button
-            on:click={closeModals}
-            class="text-gray-400 hover:text-gray-600"
-          >
-            <X class="w-6 h-6" />
-          </button>
+  <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/50">
+      <!-- Header Modal -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+            <span class="text-lg font-bold text-blue-600">
+              {selectedItem.avatar || (selectedItem.name || 'N/A').charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">{selectedItem.name || 'N/A'}</h2>
+            <p class="text-gray-500">Detail Lengkap Lead</p>
+          </div>
         </div>
-        
+        <button
+          on:click={closeModals}
+          class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <X class="w-6 h-6 text-gray-500" />
+        </button>
+      </div>
+
+      <!-- Content Modal -->
+      <div class="p-6 space-y-6">
+        <!-- Informasi Pribadi -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <User class="w-5 h-5 text-blue-600" />
+              Informasi Pribadi
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <Phone class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Telepon</p>
+                  <p class="text-gray-900">{selectedItem.phone || '-'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informasi Lead -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <TrendingUp class="w-5 h-5 text-[rgb(148,35,146)]" />
+              Informasi Lead
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <Building class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Cawangan</p>
+                  <p class="text-gray-900">{selectedItem.branch || '-'}</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <User class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Sales Consultant</p>
+                  <p class="text-gray-900">{selectedItem.consultant || '-'}</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <Globe class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Minat</p>
+                  <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border bg-green-100 text-green-800 border-green-200">
+                    {selectedItem.interest || '-'}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <Calendar class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Tarikh Daftar</p>
+                  <p class="text-gray-900">{formatDate(selectedItem.date)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informasi Perjalanan -->
         <div class="space-y-4">
-          <!-- Personal Info -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Nama Lengkap</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.name || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Telefon</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.phone || 'N/A'}</p>
-            </div>
-          </div>
+          <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Package class="w-5 h-5 text-green-600" />
+            Informasi Perjalanan
+          </h3>
           
-          <!-- Lead Info -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Cawangan</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.branch || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Sales Consultant</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.consultant || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Minat</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.interest || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Jenis Pakej</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.packageType || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Tarikh Perjalanan</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.outboundDate || 'N/A'}</p>
-            </div>
-          </div>
-          
-          <!-- Dates -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Tanggal Daftar</div>
-              <p class="mt-1 text-sm text-gray-900">{formatDate(selectedItem.date)}</p>
-            </div>
+          <div class="space-y-3">
+            {#if selectedItem.packageType}
+              <div class="flex items-center gap-3">
+                <Package class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Jenis Pakej</p>
+                  <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200">
+                    {selectedItem.packageType}
+                  </span>
+                </div>
+              </div>
+            {/if}
+            
+            {#if selectedItem.outboundDate}
+              <div class="flex items-center gap-3">
+                <Calendar class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Tarikh Perjalanan</p>
+                  <p class="text-gray-900">{selectedItem.outboundDate}</p>
+                </div>
+              </div>
+            {/if}
+            
+            {#if selectedItem.destination}
+              <div class="flex items-center gap-3">
+                <Globe class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Destinasi</p>
+                  <p class="text-gray-900">{selectedItem.destination}</p>
+                </div>
+              </div>
+            {/if}
           </div>
         </div>
-        
-        <div class="mt-6 flex justify-end">
-          <button
-            on:click={closeModals}
-            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Tutup
-          </button>
-        </div>
+      </div>
+
+      <!-- Footer Modal -->
+      <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+        <button
+          on:click={closeModals}
+          class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Tutup
+        </button>
       </div>
     </div>
   </div>

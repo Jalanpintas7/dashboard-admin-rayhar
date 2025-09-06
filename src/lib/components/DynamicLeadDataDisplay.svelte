@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { supabase } from '$lib/supabase.js';
   import { formatDateMalaysia } from '$lib/date-helpers.js';
-  import { Loader2, AlertTriangle, Users, TrendingUp, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText } from 'lucide-svelte';
+  import { Loader2, AlertTriangle, Users, TrendingUp, X, Phone, Mail, MapPin, Calendar, User, Building, Package, Globe, Hash, FileText, ChevronLeft, ChevronRight } from 'lucide-svelte';
   
   // Props untuk menerima nama branch
   export let branchName = '';
@@ -15,10 +15,20 @@
   let selectedLead = null;
   let showDetailModal = false;
   
+  // State untuk paginasi
+  let currentPage = 1;
+  const itemsPerPage = 10;
+  
   // Reactive statement untuk reload data ketika branch berubah
   $: if (branchName) {
     loadLeadData();
   }
+  
+  // Computed values untuk paginasi
+  $: totalPages = Math.ceil(leadData.length / itemsPerPage);
+  $: startIndex = (currentPage - 1) * itemsPerPage;
+  $: endIndex = startIndex + itemsPerPage;
+  $: paginatedLeads = leadData.slice(startIndex, endIndex);
 
   // Fungsi untuk menampilkan modal detail
   function showLeadDetail(lead) {
@@ -32,12 +42,32 @@
     selectedLead = null;
   }
   
+  // Fungsi navigasi paginasi
+  function goToPage(page) {
+    if (page >= 1 && page <= totalPages) {
+      currentPage = page;
+    }
+  }
+
+  function goToPreviousPage() {
+    if (currentPage > 1) {
+      currentPage--;
+    }
+  }
+
+  function goToNextPage() {
+    if (currentPage < totalPages) {
+      currentPage++;
+    }
+  }
+  
   async function loadLeadData() {
     if (!branchName) return;
     
     try {
       loading = true;
       error = null;
+      currentPage = 1; // Reset ke halaman pertama saat data dimuat ulang
       
       console.log('Loading leads for branch:', branchName);
       
@@ -173,7 +203,7 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-100">
-          {#each leadData as lead}
+          {#each paginatedLeads as lead}
             <tr class="hover:bg-[rgba(148,35,146,0.02)] transition-colors cursor-pointer" on:click={() => showLeadDetail(lead)}>
               <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                 <div class="flex items-center">
@@ -203,6 +233,48 @@
         </tbody>
       </table>
     </div>
+    
+    <!-- Pagination -->
+    {#if totalPages > 1}
+      <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-700">
+            Menampilkan {startIndex + 1} sampai {Math.min(endIndex, leadData.length)} dari {leadData.length} hasil
+          </div>
+          <div class="flex items-center space-x-2">
+            <button
+              on:click={goToPreviousPage}
+              disabled={currentPage === 1}
+              class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              <ChevronLeft class="w-4 h-4" />
+            </button>
+            
+            {#each Array.from({length: Math.min(5, totalPages)}, (_, i) => {
+              const start = Math.max(1, currentPage - 2);
+              return start + i;
+            }) as page}
+              {#if page <= totalPages}
+                <button
+                  on:click={() => goToPage(page)}
+                  class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 {currentPage === page ? 'bg-[rgb(148,35,146)] text-white border-[rgb(148,35,146)]' : ''}"
+                >
+                  {page}
+                </button>
+              {/if}
+            {/each}
+            
+            <button
+              on:click={goToNextPage}
+              disabled={currentPage === totalPages}
+              class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              <ChevronRight class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
     
     <!-- Summary -->
     <div class="bg-[rgba(148,35,146,0.05)] border border-[rgba(148,35,146,0.15)] rounded-lg p-4">
@@ -263,13 +335,6 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-3">
-                <Mail class="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <div class="min-w-0">
-                  <p class="text-sm text-gray-500">Email</p>
-                  <p class="text-gray-900 break-words">{selectedLead.email || '-'}</p>
-                </div>
-              </div>
 
               <div class="flex items-center gap-3">
                 <Building class="w-4 h-4 text-gray-400 flex-shrink-0" />

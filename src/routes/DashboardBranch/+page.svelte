@@ -1,11 +1,11 @@
 <script>
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import SummaryCards from '$lib/components/SummaryCards.svelte';
-  import SalesInquiryOverview from '$lib/components/SalesInquiryOverview.svelte';
+  import SummaryCardsBranch from '$lib/components/SummaryCardsBranch.svelte';
+  import SalesInquiryOverviewBranch from '$lib/components/SalesInquiryOverviewBranch.svelte';
   import TopSales from '$lib/components/TopSales.svelte';
-  import PackageTopSales from '$lib/components/PackageTopSales.svelte';
-import TopInquiry from '$lib/components/TopInquiry.svelte';
+  import PackageTopSalesBranch from '$lib/components/PackageTopSalesBranch.svelte';
+import TopInquiryBranch from '$lib/components/TopInquiryBranch.svelte';
 import CustomerTableBranch from '$lib/components/CustomerTableBranch.svelte';
 import LeadTableBranch from '$lib/components/LeadTableBranch.svelte';
 import RoleGuard from '$lib/components/RoleGuard.svelte';
@@ -46,13 +46,13 @@ import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
         </div>
 
         <!-- Summary Cards -->
-        <SummaryCards />
+        <SummaryCardsBranch />
         
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-10">
           <!-- Sales & Inquiry Overview - Lebih besar (2 kolom) -->
           <div class="xl:col-span-2">
-            <SalesInquiryOverview />
+            <SalesInquiryOverviewBranch />
           </div>
           
           <!-- Top Sales - Lebih kecil (1 kolom) -->
@@ -64,10 +64,10 @@ import ProfileDropdown from '$lib/components/ProfileDropdown.svelte';
         <!-- Bottom Row -->
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-10 mb-10">
           <!-- Package Top Sales -->
-          <PackageTopSales />
+          <PackageTopSalesBranch />
           
           <!-- Top Inquiry -->
-          <TopInquiry />
+          <TopInquiryBranch />
         </div>
         
                     <!-- Customer Table Section -->

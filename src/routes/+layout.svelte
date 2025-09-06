@@ -128,28 +128,6 @@
   <!-- Layout untuk halaman tanpa sidebar (auth dan dashboard branch) -->
   <slot />
 
-  {#if $user && !isAuthPage}
-    <!-- Floating Refresh Button on pages without sidebar (exclude auth pages) -->
-    <div class="fixed bottom-4 right-4 z-[60]">
-      <button
-        class="inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg text-white bg-primary-600 hover:bg-primary-700 active:scale-[0.98] transition disabled:opacity-60"
-        on:click={handleGlobalRefresh}
-        disabled={isRefreshing}
-        aria-label="Refresh data"
-      >
-        {#if isRefreshing}
-          <span class="relative inline-block w-5 h-5">
-            <span class="absolute inset-0 rounded-full border-2 border-white/30"></span>
-            <span class="absolute inset-0 rounded-full border-2 border-transparent border-t-white animate-spin"></span>
-          </span>
-          <span>Refreshing...</span>
-        {:else}
-          <RefreshCw class="w-5 h-5 text-white" />
-          <span>Refresh</span>
-        {/if}
-      </button>
-    </div>
-  {/if}
 {:else}
   <!-- Layout untuk dashboard (dengan sidebar) -->
   <div class="min-h-screen bg-gray-50 pt-1 pb-2 px-2 lg:pt-2 lg:pb-4 lg:px-4">
@@ -176,26 +154,4 @@
     <Sidebar />
   </div>
 
-  {#if $user && !isDashboardRoot}
-    <!-- Floating Refresh Button (hidden on dashboard root) -->
-    <div class="fixed bottom-4 right-4 z-[60]">
-      <button
-        class="inline-flex items-center gap-2 px-4 py-3 rounded-full shadow-lg text-white bg-primary-600 hover:bg-primary-700 active:scale-[0.98] transition disabled:opacity-60"
-        on:click={handleGlobalRefresh}
-        disabled={isRefreshing}
-        aria-label="Refresh data"
-      >
-        {#if isRefreshing}
-          <span class="relative inline-block w-5 h-5">
-            <span class="absolute inset-0 rounded-full border-2 border-white/30"></span>
-            <span class="absolute inset-0 rounded-full border-2 border-transparent border-t-white animate-spin"></span>
-          </span>
-          <span>Refreshing...</span>
-        {:else}
-          <RefreshCw class="w-5 h-5 text-white" />
-          <span>Refresh</span>
-        {/if}
-      </button>
-    </div>
-  {/if}
 {/if}

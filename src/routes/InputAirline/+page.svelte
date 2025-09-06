@@ -172,12 +172,28 @@
   <div class="p-2 sm:p-3 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6">
     <!-- Header Halaman -->
     <div class="mb-4 sm:mb-6">
-      <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 mb-1 sm:mb-2">
-        Manajemen Penerbangan
-      </h1>
-      <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
-        Kelola data penerbangan
-      </p>
+      <div class="flex items-center justify-between mb-1 sm:mb-2">
+        <div>
+          <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-800 mb-1 sm:mb-2">
+            Manajemen Penerbangan
+          </h1>
+          <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
+            Kelola data penerbangan
+          </p>
+        </div>
+        
+        <!-- Refresh Button -->
+        <button
+          type="button"
+          on:click={refreshAirlinesData}
+          disabled={loadingAirlines}
+          class="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Refresh data penerbangan"
+        >
+          <RefreshCw class="w-4 h-4 sm:w-5 sm:h-5 {loadingAirlines ? 'animate-spin' : ''}" />
+          <span class="text-sm font-medium">Refresh</span>
+        </button>
+      </div>
     </div>
 
     <!-- Layout Grid -->
@@ -190,40 +206,18 @@
       <!-- Data Table List Airline -->
       <div>
         <div class="bg-white rounded-xl sm:rounded-2xl shadow-soft p-3 sm:p-4 lg:p-6 border border-white/60">
-          <div class="flex items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6">
-            <div class="flex items-center gap-2 sm:gap-3">
-              <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-green-600">
-                  <path d="M3 3h18v18H3zM9 9h6v6H9z"/>
-                </svg>
-              </div>
-              <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Daftar Penerbangan</h2>
+          <div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 lg:mb-6">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-green-100 rounded-xl flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-green-600">
+                <path d="M3 3h18v18H3zM9 9h6v6H9z"/>
+              </svg>
             </div>
-            
-            <!-- Refresh Button -->
-            <button
-              type="button"
-              on:click={refreshAirlinesData}
-              disabled={loadingAirlines}
-              class="p-1.5 sm:p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Refresh data penerbangan"
-            >
-              <RefreshCw class="w-4 h-4 sm:w-5 sm:h-5 {loadingAirlines ? 'animate-spin' : ''}" />
-            </button>
+            <h2 class="text-base sm:text-lg lg:text-xl font-bold text-slate-800">Daftar Penerbangan</h2>
           </div>
 
           {#if error}
             <div class="mb-3 sm:mb-4 p-2.5 sm:p-3 rounded-lg bg-red-100 text-red-800 border border-red-200 text-xs sm:text-sm">
-              <div class="flex items-center justify-between">
-                <span>{error}</span>
-                <button 
-                  on:click={refreshAirlinesData}
-                  class="ml-2 px-2 py-1 bg-red-200 hover:bg-red-300 text-red-800 rounded text-xs font-medium transition-colors flex items-center gap-1"
-                >
-                  <RefreshCw class="w-3 h-3" />
-                  Retry
-                </button>
-              </div>
+              <span>{error}</span>
             </div>
           {/if}
 
@@ -295,6 +289,7 @@
           <button
             on:click={closeEditModal}
             class="text-slate-400 hover:text-slate-600 transition-colors"
+            aria-label="Tutup modal"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6">
               <path d="M18 6 6 18M6 6l12 12"/>
@@ -394,6 +389,7 @@
         <button
           on:click={() => showToastNotification = false}
           class="ml-2 p-1 rounded-full hover:bg-white/20 transition-colors"
+          aria-label="Tutup notifikasi"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4">
             <path d="M18 6 6 18M6 6l12 12"/>

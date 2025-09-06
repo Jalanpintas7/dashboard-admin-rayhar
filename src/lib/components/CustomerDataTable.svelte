@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { Eye, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Calendar, Package, Globe, FileText, DollarSign, CheckCircle, RefreshCw, User, MapPin, Phone, Mail } from 'lucide-svelte';
+  import { Eye, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle, Calendar, Package, Globe, FileText, DollarSign, CheckCircle, RefreshCw, User, MapPin, Phone, Mail, Hash, Building } from 'lucide-svelte';
   import { supabase } from '$lib/supabase.js';
   import { 
     generateCacheKey, 
@@ -563,104 +563,197 @@
 
 <!-- Detail Modal -->
 {#if showDetailModal && selectedItem}
-  <div class="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50">
-    <div class="bg-white/90 backdrop-blur-lg rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/60 shadow-2xl">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-900">Detail Pelanggan</h3>
-          <button
-            on:click={closeModals}
-            class="text-gray-400 hover:text-gray-600"
-          >
-            <X class="w-6 h-6" />
-          </button>
-        </div>
-        
-        <div class="space-y-4">
-          <!-- Personal Info -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Nama Lengkap</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.full_name || selectedItem.nama || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">No. KP</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.nokp || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Telefon</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.telefon || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Email</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.email || 'N/A'}</p>
-            </div>
+  <div class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/50">
+      <!-- Header Modal -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+            <span class="text-lg font-bold text-purple-600">
+              {selectedItem.avatar_initials || (selectedItem.full_name || selectedItem.nama || 'N/A').charAt(0).toUpperCase()}
+            </span>
           </div>
-          
-          <!-- Address -->
           <div>
-            <div class="block text-sm font-medium text-gray-700">Alamat</div>
-            <p class="mt-1 text-sm text-gray-900">{selectedItem.full_address || 'N/A'}</p>
+            <h2 class="text-2xl font-bold text-gray-900">{selectedItem.full_name || selectedItem.nama || 'N/A'}</h2>
+            <p class="text-gray-500">Detail Lengkap Pelanggan</p>
           </div>
-          
-          <!-- Package Info -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Jenis Pakej</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.package_type || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Destinasi/Musim</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.season_destination || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Kategori Umrah</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.umrah_category_name || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Bilangan Pax</div>
-              <p class="mt-1 text-sm text-gray-900">{(selectedItem.bilangan || 0) + 1}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Total Harga</div>
-              <p class="mt-1 text-sm text-gray-900">{formatCurrency(selectedItem.total_price)}</p>
-            </div>
-          </div>
-          
-          <!-- Branch Info -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Cawangan</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.branch_name || 'N/A'}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Sales Consultant</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.consultant_name || 'N/A'}</p>
-            </div>
-          </div>
-          
-          <!-- Dates -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Tanggal Daftar</div>
-              <p class="mt-1 text-sm text-gray-900">{formatDate(selectedItem.created_at)}</p>
-            </div>
-            <div>
-              <div class="block text-sm font-medium text-gray-700">Dari Inquiry</div>
-              <p class="mt-1 text-sm text-gray-900">{selectedItem.from_inquiry_status || 'N/A'}</p>
-            </div>
-          </div>
-          
         </div>
-        
-        <div class="mt-6 flex justify-end">
-          <button
-            on:click={closeModals}
-            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Tutup
-          </button>
+        <button
+          on:click={closeModals}
+          class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <X class="w-6 h-6 text-gray-500" />
+        </button>
+      </div>
+
+      <!-- Content Modal -->
+      <div class="p-6 space-y-6">
+        <!-- Informasi Pribadi -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <User class="w-5 h-5 text-purple-600" />
+              Informasi Pribadi
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <Mail class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Email</p>
+                  <p class="text-gray-900">{selectedItem.email || '-'}</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <Phone class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Telepon</p>
+                  <p class="text-gray-900">{selectedItem.telefon || '-'}</p>
+                </div>
+              </div>
+              
+              {#if selectedItem.nokp}
+                <div class="flex items-center gap-3">
+                  <Hash class="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p class="text-sm text-gray-500">No. KP</p>
+                    <p class="text-gray-900">{selectedItem.nokp}</p>
+                  </div>
+                </div>
+              {/if}
+              
+              {#if selectedItem.full_address}
+                <div class="flex items-start gap-3">
+                  <MapPin class="w-4 h-4 text-gray-400 mt-1" />
+                  <div>
+                    <p class="text-sm text-gray-500">Alamat Lengkap</p>
+                    <p class="text-gray-900">{selectedItem.full_address}</p>
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          <!-- Informasi Perjalanan -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Globe class="w-5 h-5 text-[rgb(148,35,146)]" />
+              Informasi Perjalanan
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <Building class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Cawangan</p>
+                  <p class="text-gray-900">{selectedItem.branch_name || '-'}</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <Package class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Jenis Pakej</p>
+                  <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200">
+                    {selectedItem.package_type || '-'}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <Globe class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Musim/Destinasi</p>
+                  <p class="text-gray-900">{selectedItem.season_destination || selectedItem.umrah_category_name || '-'}</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <Calendar class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Tarikh Daftar</p>
+                  <p class="text-gray-900">{formatDate(selectedItem.created_at)}</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-3">
+                <Hash class="w-4 h-4 text-gray-400" />
+                <div>
+                  <p class="text-sm text-gray-500">Dari Inquiry</p>
+                  <span class="text-sm font-medium">
+                    {#if selectedItem.from_inquiry_status === 'Ya' || selectedItem.from_inquiry_status === 'yes'}
+                      <span class="text-green-600">✓ Ya</span>
+                    {:else}
+                      <span class="text-red-600">✗ Tidak</span>
+                    {/if}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- Harga dan Informasi Tambahan -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <FileText class="w-5 h-5 text-green-600" />
+              Harga dan Pembayaran
+            </h3>
+            
+            <div class="space-y-3">
+              {#if selectedItem.total_price}
+                <div>
+                  <p class="text-sm text-gray-500">Total Harga</p>
+                  <p class="text-2xl font-bold text-green-600">{formatCurrency(selectedItem.total_price)}</p>
+                </div>
+              {/if}
+              
+              <div>
+                <p class="text-sm text-gray-500">Jumlah Pax</p>
+                <p class="text-lg font-semibold text-gray-900">{(selectedItem.bilangan || 0) + 1} orang</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informasi Tambahan -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <User class="w-5 h-5 text-orange-600" />
+              Informasi Tambahan
+            </h3>
+            
+            <div class="space-y-3">
+              {#if selectedItem.consultant_name}
+                <div>
+                  <p class="text-sm text-gray-500">Sales Consultant</p>
+                  <p class="text-gray-900">{selectedItem.consultant_name}</p>
+                </div>
+              {/if}
+              
+              {#if selectedItem.consultant_whatsapp}
+                <div class="flex items-center gap-3">
+                  <Phone class="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p class="text-sm text-gray-500">WhatsApp Consultant</p>
+                    <p class="text-gray-900">{selectedItem.consultant_whatsapp}</p>
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Modal -->
+      <div class="flex justify-end gap-3 p-6 border-t border-gray-200">
+        <button
+          on:click={closeModals}
+          class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Tutup
+        </button>
       </div>
     </div>
   </div>

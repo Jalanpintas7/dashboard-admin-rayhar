@@ -202,7 +202,14 @@
         
         <!-- Actions -->
         <div class="flex items-center gap-2">
-          <!-- Refresh button removed -->
+          <button
+            on:click={forceRefreshAllData}
+            class="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            title="Refresh semua data"
+          >
+            <RefreshCw class="w-4 h-4 sm:w-5 sm:h-5" />
+            <span class="text-sm font-medium">Refresh</span>
+          </button>
         </div>
       </div>
       
